@@ -65,6 +65,8 @@ dependencies {
     //Coil
     implementation(libs.coil)
 
+    implementation(project(":domain"))
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
