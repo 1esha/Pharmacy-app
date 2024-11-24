@@ -9,5 +9,22 @@
         android:id="@+id/splashFragment"
         android:name="com.example.pharmacyapp.main.SplashFragment"
         android:label="fragment_splash"
-        tools:layout="@layout/fragment_splash" />
+        tools:layout="@layout/fragment_splash" >
+        <action
+            android:id="@+id/action_splashFragment_to_initFragment"
+            app:destination="@id/initFragment" />
+        <action
+            android:id="@+id/action_splashFragment_to_tabsFragment"
+            app:destination="@id/tabsFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/initFragment"
+        android:name="com.example.pharmacyapp.main.InitFragment"
+        android:label="fragment_init"
+        tools:layout="@layout/fragment_init" />
+    <fragment
+        android:id="@+id/tabsFragment"
+        android:name="com.example.pharmacyapp.main.TabsFragment"
+        android:label="fragment_tabs"
+        tools:layout="@layout/fragment_tabs" />
 </navigation>
