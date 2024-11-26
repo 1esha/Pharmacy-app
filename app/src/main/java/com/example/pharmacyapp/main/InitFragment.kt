@@ -35,8 +35,7 @@ class InitFragment : Fragment() {
         )
         val initAdapter = InitAdapter(
             listPages = listPages,
-            onClickSignIn = ::onClickSignIn,
-            onClickSignUp = ::onClickSignUp
+            onClickLogIn = ::onClickLogIn,
         )
         vpInit.adapter = initAdapter
         vpInit.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
@@ -56,9 +55,7 @@ class InitFragment : Fragment() {
         _binding = null
     }
 
-    private fun onClickSignIn() {}
-    private fun onClickSignUp() {}
-
+    private fun onClickLogIn() {}
 
     private fun updatePageCircle(selectedPosition: Int) = with(binding) {
         when (selectedPosition) {

@@ -35,16 +35,11 @@
         android:visibility="invisible">
 
         <Button
-            android:id="@+id/bSignIn"
+            android:id="@+id/bLogIn"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Sign in" />
+            android:text="Log in" />
 
-        <Button
-            android:id="@+id/bSignUp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Sign up" />
     </LinearLayout>
 
 </LinearLayout>

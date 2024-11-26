@@ -11,8 +11,7 @@ import com.example.pharmacyapp.databinding.ItemInitBinding
 
 class InitAdapter(
     private val listPages: List<PageModel>,
-    private val onClickSignIn:() -> Unit,
-    private val onClickSignUp:() -> Unit
+    private val onClickLogIn:() -> Unit
     ) : RecyclerView.Adapter<InitAdapter.InitHolder>() {
 
 
@@ -32,7 +31,7 @@ class InitAdapter(
         val page = listPages[position]
         tvDescription.text = page.description
 
-        bSignIn.setOnClickListener { onClickSignIn() }
-        bSignUp.setOnClickListener { onClickSignUp() }
+        bLogIn.setOnClickListener { onClickLogIn() }
+
     }
 }
