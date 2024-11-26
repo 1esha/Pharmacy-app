@@ -16,6 +16,9 @@
         <action
             android:id="@+id/action_splashFragment_to_tabsFragment"
             app:destination="@id/tabsFragment" />
+        <action
+            android:id="@+id/action_splashFragment_to_loginFragment"
+            app:destination="@id/loginFragment" />
     </fragment>
     <fragment
         android:id="@+id/initFragment"
@@ -27,4 +30,9 @@
         android:name="com.example.pharmacyapp.main.TabsFragment"
         android:label="fragment_tabs"
         tools:layout="@layout/fragment_tabs" />
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.example.pharmacyapp.main.LoginFragment"
+        android:label="fragment_login"
+        tools:layout="@layout/fragment_login" />
 </navigation>

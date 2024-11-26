@@ -11,7 +11,7 @@ import com.example.pharmacyapp.databinding.FragmentTabsBinding
 class TabsFragment : Fragment() {
 
     private var _binding: FragmentTabsBinding? = null
-    private val binding = _binding!!
+    private val binding get() = _binding!!
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,

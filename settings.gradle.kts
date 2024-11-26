@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Pharmacy app"
 include(":app")
+include(":domain")
