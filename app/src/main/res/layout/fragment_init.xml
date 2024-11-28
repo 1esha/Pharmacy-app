@@ -6,13 +6,22 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:fitsSystemWindows="true"
     tools:context=".main.InitFragment">
-
 
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/vpInit"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
+
+    <Button
+        android:id="@+id/bSkip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_margin="16dp"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:text="Skip" />
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -24,23 +33,23 @@
 
             <ImageView
                 android:id="@+id/ivCircle1"
-                android:layout_width="12dp"
-                android:layout_height="12dp"
-                android:layout_marginHorizontal="3dp"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginHorizontal="5dp"
                 android:src="@drawable/shape_circle_not_selected" />
 
             <ImageView
                 android:id="@+id/ivCircle2"
-                android:layout_width="12dp"
-                android:layout_height="12dp"
-                android:layout_marginHorizontal="3dp"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginHorizontal="5dp"
                 android:src="@drawable/shape_circle_not_selected" />
 
             <ImageView
                 android:id="@+id/ivCircle3"
-                android:layout_width="12dp"
-                android:layout_height="12dp"
-                android:layout_marginHorizontal="3dp"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginHorizontal="5dp"
                 android:src="@drawable/shape_circle_not_selected" />
         </LinearLayout>
 

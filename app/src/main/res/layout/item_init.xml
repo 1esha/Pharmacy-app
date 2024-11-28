@@ -35,7 +35,7 @@
         android:visibility="invisible">
 
         <Button
-            android:id="@+id/bLogIn"
+            android:id="@+id/bGoToLogIn"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Log in" />

@@ -6,6 +6,8 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.navigation.fragment.findNavController
+import androidx.navigation.navOptions
 import androidx.viewpager2.widget.ViewPager2
 import com.example.domain.models.PageModel
 import com.example.pharmacyapp.R
@@ -31,11 +33,11 @@ class InitFragment : Fragment() {
         val listPages = listOf(
             PageModel("Бронируйте товары в аптеках по выгодной цене", 0),
             PageModel("Получайте скидки", 0),
-            PageModel("Войдите или зарегестрируйтесь, чтобы получать больше выгоды!", 0)
+            PageModel("Войдите, чтобы получать больше выгоды!", 0)
         )
         val initAdapter = InitAdapter(
             listPages = listPages,
-            onClickLogIn = ::onClickLogIn,
+            onClickGoToLogIn = ::onClickGoToLogIn
         )
         vpInit.adapter = initAdapter
         vpInit.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
@@ -47,6 +49,9 @@ class InitFragment : Fragment() {
 
         })
 
+        bSkip.setOnClickListener {
+            onClickSkip()
+        }
 
     }
 
@@ -55,7 +60,20 @@ class InitFragment : Fragment() {
         _binding = null
     }
 
-    private fun onClickLogIn() {}
+    private fun onClickGoToLogIn() {
+        val navControllerMain = findNavController()
+        navControllerMain.navigate(R.id.action_initFragment_to_loginFragment)
+
+    }
+
+    private fun onClickSkip(){
+        val navControllerMain = findNavController()
+        navControllerMain.navigate(R.id.action_initFragment_to_tabsFragment, null, navOptions {
+            popUpTo(R.id.initFragment){
+                inclusive = true
+            }
+        })
+    }
 
     private fun updatePageCircle(selectedPosition: Int) = with(binding) {
         when (selectedPosition) {

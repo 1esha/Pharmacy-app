@@ -16,15 +16,19 @@
         <action
             android:id="@+id/action_splashFragment_to_tabsFragment"
             app:destination="@id/tabsFragment" />
-        <action
-            android:id="@+id/action_splashFragment_to_loginFragment"
-            app:destination="@id/loginFragment" />
     </fragment>
     <fragment
         android:id="@+id/initFragment"
         android:name="com.example.pharmacyapp.main.InitFragment"
         android:label="fragment_init"
-        tools:layout="@layout/fragment_init" />
+        tools:layout="@layout/fragment_init" >
+        <action
+            android:id="@+id/action_initFragment_to_loginFragment"
+            app:destination="@id/loginFragment" />
+        <action
+            android:id="@+id/action_initFragment_to_tabsFragment"
+            app:destination="@id/tabsFragment" />
+    </fragment>
     <fragment
         android:id="@+id/tabsFragment"
         android:name="com.example.pharmacyapp.main.TabsFragment"
@@ -34,5 +38,14 @@
         android:id="@+id/loginFragment"
         android:name="com.example.pharmacyapp.main.LoginFragment"
         android:label="fragment_login"
-        tools:layout="@layout/fragment_login" />
+        tools:layout="@layout/fragment_login" >
+        <action
+            android:id="@+id/action_loginFragment_to_registrationFragment"
+            app:destination="@id/registrationFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/registrationFragment"
+        android:name="com.example.pharmacyapp.main.RegistrationFragment"
+        android:label="fragment_registration"
+        tools:layout="@layout/fragment_registration" />
 </navigation>

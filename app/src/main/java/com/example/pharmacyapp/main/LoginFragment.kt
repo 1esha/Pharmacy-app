@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.navigation.fragment.findNavController
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.databinding.FragmentLoginBinding
 
@@ -22,8 +23,14 @@ class LoginFragment : Fragment() {
         return view
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) = with(binding) {
 
+        val navControllerMain = findNavController()
+
+        bLogIn.setOnClickListener {  }
+        bGoToRegister.setOnClickListener {
+            navControllerMain.navigate(R.id.action_loginFragment_to_registrationFragment)
+        }
     }
 
     override fun onDestroyView() {
