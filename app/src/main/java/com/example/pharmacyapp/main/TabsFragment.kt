@@ -5,6 +5,9 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.navigation.NavHost
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.setupWithNavController
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.databinding.FragmentTabsBinding
 
@@ -22,7 +25,12 @@ class TabsFragment : Fragment() {
         return view
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) = with(binding){
+
+        val navHostTabs = childFragmentManager.findFragmentById(R.id.navHostFragmentTabs) as NavHostFragment
+        val navControllerTabs = navHostTabs.navController
+
+        bnvTabs.setupWithNavController(navControllerTabs)
 
     }
 

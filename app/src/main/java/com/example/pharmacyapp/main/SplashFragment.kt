@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
 import com.example.pharmacyapp.R
@@ -35,23 +36,25 @@ class SplashFragment : Fragment() {
         //isInit отвечает за то надо ли показывать пользователю InitFragment
         var isInit = true
 
-        CoroutineScope(Dispatchers.Main).launch {
-            delay(DEFAULT_DELAY)
-            if (isInit){
-                navControllerMain.navigate(R.id.action_splashFragment_to_initFragment,null, navOptions {
-                    popUpTo(R.id.splashFragment){
-                        inclusive = true
-                    }
-                })
+            CoroutineScope(Dispatchers.Main).launch {
+                delay(DEFAULT_DELAY)
+                if (isInit){
+                    navControllerMain.navigate(R.id.action_splashFragment_to_initFragment,null, navOptions {
+                        popUpTo(R.id.splashFragment){
+                            inclusive = true
+                        }
+                    })
+                }
+                else{
+                    navControllerMain.navigate(R.id.action_splashFragment_to_tabsFragment,null, navOptions {
+                        popUpTo(R.id.splashFragment){
+                            inclusive = true
+                        }
+                    })
+                }
             }
-            else{
-                navControllerMain.navigate(R.id.action_splashFragment_to_tabsFragment,null, navOptions {
-                    popUpTo(R.id.splashFragment){
-                        inclusive = true
-                    }
-                })
-            }
-        }
+
+
 
     }
 

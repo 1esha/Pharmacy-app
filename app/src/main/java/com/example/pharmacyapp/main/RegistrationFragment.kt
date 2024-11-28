@@ -1,6 +1,7 @@
 package com.example.pharmacyapp.main
 
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -10,6 +11,7 @@ import androidx.navigation.fragment.findNavController
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.databinding.FragmentRegistrationBinding
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
+import com.google.android.material.textfield.TextInputLayout
 
 class RegistrationFragment : Fragment() {
 
@@ -28,8 +30,12 @@ class RegistrationFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) = with(binding){
 
         val navControllerMain = findNavController()
+        val listCity = listOf("Чебоксары","Новочебоксарск")
 
-        setupCityText()
+        setupCityText(
+            textInputLayout = binding.layoutCity,
+            listCity = listCity
+        )
 
         tvLogin.setOnClickListener {
             navControllerMain.popBackStack()
@@ -42,10 +48,10 @@ class RegistrationFragment : Fragment() {
         _binding = null
     }
 
-    private fun setupCityText(){
-        val items = listOf("Item 1", "Item 2", "Item 3", "Item 4")
-        val adapter = ArrayAdapter(requireContext(), R.layout.item_city, items)
-        (binding.layoutCity.editText as? MaterialAutoCompleteTextView)?.setAdapter(adapter)
+    private fun setupCityText(textInputLayout:TextInputLayout, listCity:List<String>){
+        Log.i("TAG","setupCityText")
+        val adapter = ArrayAdapter(requireContext(), R.layout.item_city, listCity)
+        (textInputLayout.editText as? MaterialAutoCompleteTextView)?.setAdapter(adapter)
     }
 
 }
