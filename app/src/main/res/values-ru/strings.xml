@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pharmacy app</string>
+    <string name="login"><u>Логин</u></string>
+    <string name="error">Ошибка</string>
+    <string name="enter_the_data">Введите данные</string>
+    <string name="cheboksary">Чебоксары</string>
+    <string name="novocheboksarsk">Новочебоксарск</string>
+    <string name="skip">Пропустить</string>
+    <string name="log_in">Авторизоваться</string>
+    <string name="login_to_your_account">Войдите в свою учетную запись</string>
+    <string name="password">Пароль</string>
+    <string name="register">Зарегистрировать</string>
+    <string name="registration">Регистрация</string>
+    <string name="create_your_new_account">Создайте свою новую учетную запись</string>
+    <string name="first_name">Имя</string>
+    <string name="last_name">Фамилия</string>
+    <string name="email">Электронная почта</string>
+    <string name="phone_number">Номер телефона</string>
+    <string name="city">Город</string>
+    <string name="already_have_an_account">У вас уже есть учетная запись?</string>
+</resources>

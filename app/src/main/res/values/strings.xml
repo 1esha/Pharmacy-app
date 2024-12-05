@@ -5,4 +5,17 @@
     <string name="enter_the_data">Enter the data</string>
     <string name="cheboksary">Cheboksary</string>
     <string name="novocheboksarsk">Novocheboksarsk</string>
+    <string name="skip">Skip</string>
+    <string name="log_in">Log in</string>
+    <string name="login_to_your_account">Login to your account</string>
+    <string name="password">Password</string>
+    <string name="register">Register</string>
+    <string name="registration">Registration</string>
+    <string name="create_your_new_account">Create your new account</string>
+    <string name="first_name">First name</string>
+    <string name="last_name">Last name</string>
+    <string name="email">Email</string>
+    <string name="phone_number">Phone number</string>
+    <string name="city">City</string>
+    <string name="already_have_an_account">Already have an account?</string>
 </resources>
