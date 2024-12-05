@@ -1,12 +1,14 @@
 <resources>
     <string name="app_name">Pharmacy app</string>
-    <string name="login"><u>Login</u></string>
+    <string name="underlined_login"><u>Login</u></string>
+    <string name="login">Login</string>
     <string name="error">Error</string>
     <string name="enter_the_data">Enter the data</string>
     <string name="cheboksary">Cheboksary</string>
     <string name="novocheboksarsk">Novocheboksarsk</string>
     <string name="skip">Skip</string>
     <string name="log_in">Log in</string>
+    <string name="underlined_log_in"><u>Log in</u>></string>
     <string name="login_to_your_account">Login to your account</string>
     <string name="password">Password</string>
     <string name="register">Register</string>
