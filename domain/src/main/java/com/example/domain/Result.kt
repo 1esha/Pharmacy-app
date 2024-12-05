@@ -1,7 +1,5 @@
 package com.example.domain
 
-import com.example.domain.profile.models.ResponseModel
-
 sealed class Result <T>
 
 class PendingResult<T>: Result<T>()

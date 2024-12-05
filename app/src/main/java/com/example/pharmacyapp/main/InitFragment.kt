@@ -1,5 +1,6 @@
 package com.example.pharmacyapp.main
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -10,6 +11,8 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
 import androidx.viewpager2.widget.ViewPager2
 import com.example.domain.models.PageModel
+import com.example.pharmacyapp.KEY_IS_INIT
+import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.databinding.FragmentInitBinding
 import com.example.pharmacyapp.main.adapters.InitAdapter
@@ -68,6 +71,10 @@ class InitFragment : Fragment() {
 
     private fun onClickSkip(){
         val navControllerMain = findNavController()
+        val sharedPreferences = requireContext().getSharedPreferences(
+            NAME_SHARED_PREFERENCES,
+            Context.MODE_PRIVATE)
+        sharedPreferences.edit().putBoolean(KEY_IS_INIT,false).apply()
         navControllerMain.navigate(R.id.action_initFragment_to_tabsFragment, null, navOptions {
             popUpTo(R.id.initFragment){
                 inclusive = true

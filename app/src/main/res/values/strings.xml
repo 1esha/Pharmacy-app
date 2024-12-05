@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">Pharmacy app</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="login"><u>Login</u></string>
+    <string name="error">Error</string>
+    <string name="enter_the_data">Enter the data</string>
+    <string name="cheboksary">Cheboksary</string>
+    <string name="novocheboksarsk">Novocheboksarsk</string>
 </resources>

@@ -33,6 +33,7 @@ class ProfileRepositoryDataSourceRemoteImpl<T> :
     override suspend fun createUser(userInfoDataSourceModel: UserInfoDataSourceModel): ResultDataSource<ResponseDataSourceModel> =
         withContext(Dispatchers.IO) {
             try {
+                Log.i("TAG", "userInfoDataSourceModel = $userInfoDataSourceModel")
                 val response = client.request {
                     url(CREATE_USER_URL)
                     method = HttpMethod.Post
@@ -41,7 +42,7 @@ class ProfileRepositoryDataSourceRemoteImpl<T> :
 
                 }
                 val responseDataSourceModel = response.body<ResponseDataSourceModel>()
-                Log.i("TAG", "responseDataSourceModel = $responseDataSourceModel")
+
                 val successResultDataSource = SuccessResultDataSource(
                     value = responseDataSourceModel
                 )
