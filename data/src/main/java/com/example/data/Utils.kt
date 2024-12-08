@@ -4,14 +4,20 @@ import com.example.data.profile.datasource.ErrorResultDataSource
 import com.example.data.profile.datasource.PendingResultDataSource
 import com.example.data.profile.datasource.ResultDataSource
 import com.example.data.profile.datasource.SuccessResultDataSource
+import com.example.data.profile.datasource.models.LogInDataSourceModel
 import com.example.data.profile.datasource.models.ResponseDataSourceModel
+import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
+import com.example.data.profile.datasource.models.UserDataSourceModel
 import com.example.data.profile.datasource.models.UserInfoDataSourceModel
 import com.example.domain.ErrorResult
 import com.example.domain.PendingResult
 import com.example.domain.Result
 import com.example.domain.SuccessResult
+import com.example.domain.profile.models.LogInModel
 import com.example.domain.profile.models.ResponseModel
+import com.example.domain.profile.models.ResponseValueModel
 import com.example.domain.profile.models.UserInfoModel
+import com.example.domain.profile.models.UserModel
 
 fun UserInfoModel.toUserInfoDataSourceModel(): UserInfoDataSourceModel {
 
@@ -43,13 +49,41 @@ fun <I,O> ResultDataSource<I>.toResult(value:O?):Result<O>{
     }
 }
 
+
 fun <T>ResultDataSource<T>.asSuccessResultDataSource():SuccessResultDataSource<T>?{
     return if (this is SuccessResultDataSource<T>) this else null
 }
+
 
 fun ResponseDataSourceModel.toResponseModel():ResponseModel{
     return ResponseModel(
         message = this.message,
         status = this.status
+    )
+}
+
+fun ResponseValueDataSourceModel<UserDataSourceModel>.toResponseValueModel(): ResponseValueModel<UserModel>{
+    return ResponseValueModel(
+        value = this.value?.let {
+            UserModel(
+                userId = it.userId,
+                userInfoModel = UserInfoModel(
+                    firstName = this.value.userInfoModel.firstName,
+                    lastName = this.value.userInfoModel.lastName,
+                    email = this.value.userInfoModel.email,
+                    phoneNumber = this.value.userInfoModel.phoneNumber,
+                    userPassword = this.value.userInfoModel.userPassword,
+                    city = this.value.userInfoModel.city,
+                )
+            )
+        },
+        responseModel = this.responseDataSourceModel.toResponseModel()
+    )
+}
+
+fun LogInModel.toLogInDataSourceModel(): LogInDataSourceModel {
+    return LogInDataSourceModel(
+        login = this.login,
+        userPassword = this.userPassword
     )
 }

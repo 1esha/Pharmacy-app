@@ -6,20 +6,17 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.profile.ProfileRepositoryImpl
-import com.example.domain.ErrorResult
 import com.example.domain.PendingResult
 import com.example.domain.Result
-import com.example.domain.SuccessResult
 import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.UserInfoModel
 import com.example.domain.profile.usecases.CreateUserUseCase
-import com.example.pharmacyapp.KEY_ENTER_THE_DATA
-import com.example.pharmacyapp.getResultByStatus
+import com.example.pharmacyapp.R
 import kotlinx.coroutines.launch
 
 class RegistrationViewModel: ViewModel() {
 
-    private val profileRepository = ProfileRepositoryImpl<Any>()
+    private val profileRepositoryImpl = ProfileRepositoryImpl()
 
     private val _result = MutableLiveData<Result<ResponseModel>>(PendingResult())
     val result: LiveData<Result<ResponseModel>> = _result
@@ -29,7 +26,7 @@ class RegistrationViewModel: ViewModel() {
 
     fun setUserInfo(
         userInfoModel: UserInfoModel,
-        mapMessage: Map<String,String>
+        getStringById:(Int) -> String
     ){
         if (
             userInfoModel.firstName.isEmpty() || userInfoModel.firstName.isBlank() ||
@@ -39,12 +36,12 @@ class RegistrationViewModel: ViewModel() {
             userInfoModel.userPassword.isEmpty() || userInfoModel.userPassword.isBlank() ||
             userInfoModel.city.isEmpty() || userInfoModel.city.isBlank()
             ){
-            _message.value = mapMessage.getValue(KEY_ENTER_THE_DATA)
+            _message.value = getStringById(R.string.enter_the_data)
         }
         else{
             viewModelScope.launch {
                 val createUserUseCase = CreateUserUseCase(
-                    profileRepository = profileRepository,
+                    profileRepository = profileRepositoryImpl,
                     userInfoModel = userInfoModel
                 )
                 val result = createUserUseCase.execute()
@@ -53,6 +50,11 @@ class RegistrationViewModel: ViewModel() {
             }
         }
 
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.i("TAG","RegistrationViewModel onCleared")
     }
 
 }
