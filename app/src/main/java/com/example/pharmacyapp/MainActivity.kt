@@ -17,8 +17,6 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val sharedPreferences = this.getSharedPreferences(NAME_SHARED_PREFERENCES, MODE_PRIVATE)
-        Log.i("TAG","MainActivity is exist = ${sharedPreferences.getBoolean(KEY_IS_EXIST,false)}")
     }
 
 }

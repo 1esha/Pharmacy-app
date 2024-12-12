@@ -20,10 +20,11 @@ import com.example.domain.SuccessResult
 import com.example.domain.profile.ProfileResult
 import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.UserInfoModel
-import com.example.pharmacyapp.KEY_IS_EXIST
 import com.example.pharmacyapp.KEY_IS_INIT
+import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
+import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.FragmentRegistrationBinding
 import com.example.pharmacyapp.main.viewmodels.RegistrationViewModel
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -41,7 +42,7 @@ class RegistrationFragment() : Fragment(), ProfileResult {
 
     private lateinit var navControllerMain: NavController
 
-    override var isShow: Boolean by Delegates.notNull()
+    override var isShow = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -53,6 +54,8 @@ class RegistrationFragment() : Fragment(), ProfileResult {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) = with(binding) {
+
+        isShow = false
 
         val registrationViewModel: RegistrationViewModel by viewModels()
 
@@ -87,7 +90,7 @@ class RegistrationFragment() : Fragment(), ProfileResult {
                 city = actvCity.text.toString()
             )
             Log.i("TAG", "RegistrationFragment userInfoModel = $userInfoModel")
-            registrationViewModel.setUserInfo(
+            registrationViewModel.createUser(
                 userInfoModel = userInfoModel,
                 getStringById = ::getStringById
             )
@@ -102,7 +105,8 @@ class RegistrationFragment() : Fragment(), ProfileResult {
                             val value = result.value ?: throw NullPointerException("RegistrationFragment result.value = null")
 
                             if (value.status in 200..299) {
-                                onSuccessResultListener()
+                                val userId = registrationViewModel.userId.value?: UNAUTHORIZED_USER
+                                onSuccessResultListener(userId = userId)
                             } else {
                                 if (value.message != null) {
                                     showToast(context = requireContext(), message = value.message!!)
@@ -139,10 +143,11 @@ class RegistrationFragment() : Fragment(), ProfileResult {
         return resources.getString(id)
     }
 
-    override fun onSuccessResultListener() {
-        sharedPreferences.edit().putBoolean(KEY_IS_EXIST, true).apply()
+    override fun onSuccessResultListener(userId: Int) {
         sharedPreferences.edit().putBoolean(KEY_IS_INIT, false).apply()
-        Log.i("TAG", "RegistrationFragment is exist = ${sharedPreferences.getBoolean(KEY_IS_EXIST, false)}")
+        sharedPreferences.edit().putInt(KEY_USER_ID, userId).apply()
+        Log.i("TAG","RegistrationFragment onSuccessResultListener userId = ${sharedPreferences.getInt(
+            KEY_USER_ID, UNAUTHORIZED_USER)}")
         navControllerMain.navigate(R.id.action_registrationFragment_to_tabsFragment, null, navOptions {
             popUpTo(R.id.initFragment) {
                 inclusive = true

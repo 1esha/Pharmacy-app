@@ -62,7 +62,7 @@ fun ResponseDataSourceModel.toResponseModel():ResponseModel{
     )
 }
 
-fun ResponseValueDataSourceModel<UserDataSourceModel>.toResponseValueModel(): ResponseValueModel<UserModel>{
+fun ResponseValueDataSourceModel<UserDataSourceModel>.toResponseValueUserModelModel(): ResponseValueModel<UserModel>{
     return ResponseValueModel(
         value = this.value?.let {
             UserModel(
@@ -77,6 +77,13 @@ fun ResponseValueDataSourceModel<UserDataSourceModel>.toResponseValueModel(): Re
                 )
             )
         },
+        responseModel = this.responseDataSourceModel.toResponseModel()
+    )
+}
+
+fun ResponseValueDataSourceModel<Int>.toResponseValueIntModel(): ResponseValueModel<Int>{
+    return ResponseValueModel(
+        value = this.value ,
         responseModel = this.responseDataSourceModel.toResponseModel()
     )
 }

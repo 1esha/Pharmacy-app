@@ -8,7 +8,8 @@ import com.example.data.profile.datasource.models.UserDataSourceModel
 import com.example.data.profile.datasource.remote.ProfileRepositoryDataSourceRemoteImpl
 import com.example.data.toLogInDataSourceModel
 import com.example.data.toResponseModel
-import com.example.data.toResponseValueModel
+import com.example.data.toResponseValueIntModel
+import com.example.data.toResponseValueUserModelModel
 import com.example.data.toResult
 import com.example.data.toUserInfoDataSourceModel
 import com.example.domain.Result
@@ -19,7 +20,7 @@ import com.example.domain.profile.models.ResponseValueModel
 import com.example.domain.profile.models.UserInfoModel
 import com.example.domain.profile.models.UserModel
 
-class ProfileRepositoryImpl : ProfileRepository<ResponseModel, ResponseValueModel<UserModel>> {
+class ProfileRepositoryImpl : ProfileRepository<ResponseModel, ResponseValueModel<UserModel>,ResponseValueModel<Int>> {
 
     private val profileRepositoryDataSourceRemote = ProfileRepositoryDataSourceRemoteImpl()
 
@@ -43,7 +44,20 @@ class ProfileRepositoryImpl : ProfileRepository<ResponseModel, ResponseValueMode
         )
         val value = resultDataSource.asSuccessResultDataSource()?.value
         val result = resultDataSource.toResult<ResponseValueDataSourceModel<UserDataSourceModel>,ResponseValueModel<UserModel>>(
-            value = value?.toResponseValueModel()
+            value = value?.toResponseValueUserModelModel()
+        )
+
+        return result
+    }
+
+    override suspend fun getUserId(userInfoModel: UserInfoModel): Result<ResponseValueModel<Int>> {
+        val userInfoDataSourceModel = userInfoModel.toUserInfoDataSourceModel()
+        val resultDataSource = profileRepositoryDataSourceRemote.getUserId(
+            userInfoDataSourceModel = userInfoDataSourceModel
+        )
+        val value = resultDataSource.asSuccessResultDataSource()?.value
+        val result = resultDataSource.toResult(
+            value = value?.toResponseValueIntModel()
         )
 
         return result

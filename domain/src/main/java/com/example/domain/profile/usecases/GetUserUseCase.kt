@@ -8,7 +8,7 @@ import com.example.domain.profile.models.ResponseValueModel
 import com.example.domain.profile.models.UserModel
 
 class GetUserUseCase(
-    private val profileRepository: ProfileRepository<ResponseModel,ResponseValueModel<UserModel>>,
+    private val profileRepository: ProfileRepository<ResponseModel, ResponseValueModel<UserModel>,ResponseValueModel<Int>>,
     private val logInModel: LogInModel
 ) {
 

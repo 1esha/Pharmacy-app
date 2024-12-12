@@ -1,19 +1,23 @@
 package com.example.pharmacyapp.main
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
 import androidx.viewpager2.widget.ViewPager2
 import com.example.domain.models.PageModel
 import com.example.pharmacyapp.KEY_IS_INIT
+import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
+import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.FragmentInitBinding
 import com.example.pharmacyapp.main.adapters.InitAdapter
 
@@ -21,6 +25,10 @@ class InitFragment : Fragment() {
 
     private var _binding: FragmentInitBinding? = null
     private val binding get() = _binding!!
+
+    private lateinit var sharedPreferences: SharedPreferences
+
+    private lateinit var navControllerMain: NavController
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -32,6 +40,10 @@ class InitFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?): Unit = with(binding) {
+
+        navControllerMain = findNavController()
+
+        sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
 
         val listPages = listOf(
             PageModel("Бронируйте товары в аптеках по выгодной цене", 0),
@@ -70,11 +82,8 @@ class InitFragment : Fragment() {
     }
 
     private fun onClickSkip(){
-        val navControllerMain = findNavController()
-        val sharedPreferences = requireContext().getSharedPreferences(
-            NAME_SHARED_PREFERENCES,
-            Context.MODE_PRIVATE)
         sharedPreferences.edit().putBoolean(KEY_IS_INIT,false).apply()
+        sharedPreferences.edit().putInt(KEY_USER_ID, UNAUTHORIZED_USER).apply()
         navControllerMain.navigate(R.id.action_initFragment_to_tabsFragment, null, navOptions {
             popUpTo(R.id.initFragment){
                 inclusive = true

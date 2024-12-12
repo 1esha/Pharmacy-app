@@ -8,7 +8,7 @@ interface ProfileResult {
 
     fun getStringById(id: Int): String
 
-    fun onSuccessResultListener()
+    fun onSuccessResultListener(userId: Int)
 
     fun onErrorResultListener(exception: Exception)
 }

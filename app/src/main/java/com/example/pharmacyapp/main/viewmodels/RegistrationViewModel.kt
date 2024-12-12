@@ -6,12 +6,17 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.profile.ProfileRepositoryImpl
+import com.example.domain.ErrorResult
 import com.example.domain.PendingResult
 import com.example.domain.Result
+import com.example.domain.SuccessResult
 import com.example.domain.profile.models.ResponseModel
+import com.example.domain.profile.models.ResponseValueModel
 import com.example.domain.profile.models.UserInfoModel
 import com.example.domain.profile.usecases.CreateUserUseCase
+import com.example.domain.profile.usecases.GetUserIdUseCase
 import com.example.pharmacyapp.R
+import com.example.pharmacyapp.UNAUTHORIZED_USER
 import kotlinx.coroutines.launch
 
 class RegistrationViewModel: ViewModel() {
@@ -24,7 +29,10 @@ class RegistrationViewModel: ViewModel() {
     private val _message = MutableLiveData<String>()
     val message: LiveData<String> = _message
 
-    fun setUserInfo(
+    private val _userId = MutableLiveData<Int>(UNAUTHORIZED_USER)
+    val userId: LiveData<Int> = _userId
+
+    fun createUser(
         userInfoModel: UserInfoModel,
         getStringById:(Int) -> String
     ){
@@ -44,13 +52,31 @@ class RegistrationViewModel: ViewModel() {
                     profileRepository = profileRepositoryImpl,
                     userInfoModel = userInfoModel
                 )
-                val result = createUserUseCase.execute()
-                _result.value = result
+
+                val getUserIdUseCase = GetUserIdUseCase(
+                    profileRepository = profileRepositoryImpl,
+                    userInfoModel = userInfoModel
+                )
+
+                val resultCreateUser = createUserUseCase.execute()
+                val resultGetUserId = getUserIdUseCase.execute()
+
+                when(resultGetUserId){
+                    is SuccessResult -> {
+                        _userId.value = resultGetUserId.value?.value?: UNAUTHORIZED_USER
+                        _result.value = resultCreateUser
+                    }
+                    is ErrorResult -> {
+                        _message.value = getStringById(R.string.error_in_getting_the_id)
+                    }
+                    else -> {}
+                }
 
             }
         }
 
     }
+
 
     override fun onCleared() {
         super.onCleared()

@@ -20,4 +20,5 @@
     <string name="phone_number">Phone number</string>
     <string name="city">City</string>
     <string name="already_have_an_account">Already have an account?</string>
+    <string name="error_in_getting_the_id">Error in getting the ID</string>
 </resources>

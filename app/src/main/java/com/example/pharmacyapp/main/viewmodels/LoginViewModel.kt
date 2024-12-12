@@ -25,7 +25,6 @@ class LoginViewModel : ViewModel() {
     private val _message = MutableLiveData<String>()
     val message: LiveData<String> = _message
 
-
     fun setLogInData(logInModel: LogInModel,getStringById:(Int) -> String){
             if (
                 logInModel.login.isEmpty() || logInModel.login.isBlank() ||
@@ -39,7 +38,6 @@ class LoginViewModel : ViewModel() {
                         profileRepository = profileRepositoryImpl,
                         logInModel = logInModel
                     )
-
                     val result = getUserUseCase.execute()
                     _result.value = result
                 }

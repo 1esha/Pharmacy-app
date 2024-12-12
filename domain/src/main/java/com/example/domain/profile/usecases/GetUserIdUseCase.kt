@@ -7,13 +7,13 @@ import com.example.domain.profile.models.ResponseValueModel
 import com.example.domain.profile.models.UserInfoModel
 import com.example.domain.profile.models.UserModel
 
-class CreateUserUseCase(
-    private val profileRepository: ProfileRepository<ResponseModel, ResponseValueModel<UserModel>,ResponseValueModel<Int>>,
+class GetUserIdUseCase(
+    private val profileRepository: ProfileRepository<ResponseModel, ResponseValueModel<UserModel>, ResponseValueModel<Int>>,
     private val userInfoModel: UserInfoModel
 ) {
 
-    suspend fun execute():Result<ResponseModel>{
-        val result = profileRepository.createUser(
+    suspend fun execute(): Result<ResponseValueModel<Int>>{
+        val result = profileRepository.getUserId(
             userInfoModel = userInfoModel
         )
         return result

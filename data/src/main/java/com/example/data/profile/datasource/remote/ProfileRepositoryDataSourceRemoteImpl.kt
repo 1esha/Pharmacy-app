@@ -24,7 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class ProfileRepositoryDataSourceRemoteImpl :
-    ProfileRepositoryDataSourceRemote<ResponseDataSourceModel, ResponseValueDataSourceModel<UserDataSourceModel>> {
+    ProfileRepositoryDataSourceRemote<ResponseDataSourceModel, ResponseValueDataSourceModel<UserDataSourceModel>,ResponseValueDataSourceModel<Int>> {
 
     private val client = HttpClient(OkHttp) {
         install(ContentNegotiation) {
@@ -83,12 +83,40 @@ class ProfileRepositoryDataSourceRemoteImpl :
             }
         }
 
+    override suspend fun getUserId(userInfoDataSourceModel: UserInfoDataSourceModel): ResultDataSource<ResponseValueDataSourceModel<Int>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val response = client.request {
+                    url(GET_USER_ID_URL)
+                    method = HttpMethod.Post
+                    setBody(userInfoDataSourceModel)
+                    contentType(ContentType.Application.Json)
+                }
+                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<Int>>()
+
+                Log.i("TAG", "getUserId responseValueDataSourceModel ${responseValueDataSourceModel.value}")
+
+                val successResultDataSource = SuccessResultDataSource(
+                    value = responseValueDataSourceModel
+                )
+                Log.i("TAG", "getUserId successResultDataSource ${successResultDataSource.value}")
+                return@withContext successResultDataSource
+            } catch (e: Exception) {
+                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<Int>>(
+                    exception = e
+                )
+                Log.i("TAG", "getUserId errorResultDataSource ${errorResultDataSource.exception}")
+                return@withContext errorResultDataSource
+            }
+        }
+
 
     companion object {
         private const val PORT = "4000"
         private const val BASE_URL = "http://192.168.0.113:$PORT"
         const val CREATE_USER_URL = "$BASE_URL/create/user"
         const val GET_USER_URL = "$BASE_URL/user"
+        const val GET_USER_ID_URL = "$BASE_URL/user_id"
     }
 
 

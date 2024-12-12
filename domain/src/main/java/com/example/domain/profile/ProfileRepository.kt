@@ -4,9 +4,11 @@ import com.example.domain.Result
 import com.example.domain.profile.models.LogInModel
 import com.example.domain.profile.models.UserInfoModel
 
-interface ProfileRepository<R,V> {
+interface ProfileRepository<R,V,I> {
 
     suspend fun createUser(userInfoModel: UserInfoModel): Result<R>
 
     suspend fun getUser(logInModel: LogInModel): Result<V>
+
+    suspend fun getUserId(userInfoModel: UserInfoModel): Result<I>
 }

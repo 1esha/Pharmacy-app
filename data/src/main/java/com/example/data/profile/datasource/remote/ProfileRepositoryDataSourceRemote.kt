@@ -4,9 +4,11 @@ import com.example.data.profile.datasource.ResultDataSource
 import com.example.data.profile.datasource.models.LogInDataSourceModel
 import com.example.data.profile.datasource.models.UserInfoDataSourceModel
 
-interface ProfileRepositoryDataSourceRemote<R,V> {
+interface ProfileRepositoryDataSourceRemote<R,V,I> {
 
     suspend fun createUser(userInfoDataSourceModel: UserInfoDataSourceModel): ResultDataSource<R>
 
     suspend fun getUser(logInDataSourceModel: LogInDataSourceModel): ResultDataSource<V>
+
+    suspend fun getUserId(userInfoDataSourceModel: UserInfoDataSourceModel): ResultDataSource<I>
 }
