@@ -26,6 +26,7 @@ import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.FragmentRegistrationBinding
+import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.RegistrationViewModel
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputLayout
@@ -79,21 +80,32 @@ class RegistrationFragment() : Fragment(), ProfileResult {
 
         bRegister.setOnClickListener {
 
-            isShow = true
+            val isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext())
 
-            val userInfoModel = UserInfoModel(
-                firstName = etFirstName.text.toString(),
-                lastName = etLastName.text.toString(),
-                email = etEmail.text.toString(),
-                phoneNumber = etPhoneNumber.text.toString(),
-                userPassword = etPassword.text.toString(),
-                city = actvCity.text.toString()
-            )
-            Log.i("TAG", "RegistrationFragment userInfoModel = $userInfoModel")
-            registrationViewModel.createUser(
-                userInfoModel = userInfoModel,
-                getStringById = ::getStringById
-            )
+            if (isNetworkStatus){
+
+                isShow = true
+
+                val userInfoModel = UserInfoModel(
+                    firstName = etFirstName.text.toString(),
+                    lastName = etLastName.text.toString(),
+                    email = etEmail.text.toString(),
+                    phoneNumber = etPhoneNumber.text.toString(),
+                    userPassword = etPassword.text.toString(),
+                    city = actvCity.text.toString()
+                )
+                Log.i("TAG", "RegistrationFragment userInfoModel = $userInfoModel")
+                registrationViewModel.createUser(
+                    userInfoModel = userInfoModel,
+                    getStringById = { id ->
+                        getSupportActivity().getStringById(id = id)
+                    }
+                )
+            }
+            else{
+                getSupportActivity().showToast(message = getString(R.string.check_your_internet_connection))
+            }
+
         }
 
         registrationViewModel.result.observe(viewLifecycleOwner) { result ->
@@ -109,7 +121,7 @@ class RegistrationFragment() : Fragment(), ProfileResult {
                                 onSuccessResultListener(userId = userId)
                             } else {
                                 if (value.message != null) {
-                                    showToast(context = requireContext(), message = value.message!!)
+                                    getSupportActivity().showToast(message = value.message!!)
                                 }
                             }
                         }
@@ -124,7 +136,7 @@ class RegistrationFragment() : Fragment(), ProfileResult {
 
         registrationViewModel.message.observe(viewLifecycleOwner) { message ->
             if (isShow){
-                showToast(context = requireContext(), message = message)
+                getSupportActivity().showToast(message = message)
             }
         }
 
@@ -133,14 +145,6 @@ class RegistrationFragment() : Fragment(), ProfileResult {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-    }
-
-    private fun showToast(context: Context, message: String) {
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-    }
-
-    override fun getStringById(id: Int): String {
-        return resources.getString(id)
     }
 
     override fun onSuccessResultListener(userId: Int) {
@@ -156,7 +160,7 @@ class RegistrationFragment() : Fragment(), ProfileResult {
     }
 
     override fun onErrorResultListener(exception: Exception) {
-        showToast(context = requireContext(), message = resources.getString(R.string.error))
+        getSupportActivity().showToast(message = resources.getString(R.string.error))
     }
 
 

@@ -2,6 +2,7 @@
     <string name="app_name">Pharmacy app</string>
     <string name="underlined_login"><u>Login</u></string>
     <string name="login">Login</string>
+    <string name="account">Account</string>
     <string name="error">Error</string>
     <string name="enter_the_data">Enter the data</string>
     <string name="cheboksary">Cheboksary</string>
@@ -21,4 +22,9 @@
     <string name="city">City</string>
     <string name="already_have_an_account">Already have an account?</string>
     <string name="error_in_getting_the_id">Error in getting the ID</string>
+    <string name="book_products_at_pharmacies_at_a_bargain_price">Book products at pharmacies at a bargain price</string>
+    <string name="get_discounts">Get discounts</string>
+    <string name="log_in_to_get_more_benefits">Log in to get more benefits!</string>
+    <string name="check_your_internet_connection">Check your internet connection</string>
+
 </resources>

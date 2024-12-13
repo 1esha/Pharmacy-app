@@ -3,6 +3,7 @@
     <string name="app_name">Pharmacy app</string>
     <string name="underlined_login"><u>Логин</u></string>
     <string name="login">Логин</string>
+    <string name="account">Аккаунт</string>
     <string name="error">Ошибка</string>
     <string name="enter_the_data">Введите данные</string>
     <string name="cheboksary">Чебоксары</string>
@@ -22,4 +23,8 @@
     <string name="city">Город</string>
     <string name="already_have_an_account">У вас уже есть учетная запись?</string>
     <string name="error_in_getting_the_id">Ошибка при получении идентификатора</string>
+    <string name="book_products_at_pharmacies_at_a_bargain_price">Бронируйте товары в аптеках по выгодной цене</string>
+    <string name="get_discounts">Получайте скидки</string>
+    <string name="log_in_to_get_more_benefits">Войдите, чтобы получать больше выгоды!</string>
+    <string name="check_your_internet_connection">Проверьте подключение к интернету</string>
 </resources>

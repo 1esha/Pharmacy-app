@@ -3,31 +3,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph_tabs"
-    app:startDestination="@id/homeFragment">
-
-    <fragment
-        android:id="@+id/homeFragment"
-        android:name="com.example.pharmacyapp.tabs.HomeFragment"
-        android:label="fragment_home"
-        tools:layout="@layout/fragment_home" />
-    <fragment
-        android:id="@+id/catalogFragment"
-        android:name="com.example.pharmacyapp.tabs.CatalogFragment"
-        android:label="fragment_catalog"
-        tools:layout="@layout/fragment_catalog" />
-    <fragment
-        android:id="@+id/cardFragment"
-        android:name="com.example.pharmacyapp.tabs.CardFragment"
-        android:label="fragment_card"
-        tools:layout="@layout/fragment_card" />
-    <fragment
-        android:id="@+id/basketFragment"
-        android:name="com.example.pharmacyapp.tabs.BasketFragment"
-        android:label="fragment_basket"
-        tools:layout="@layout/fragment_basket" />
+    app:startDestination="@id/nav_graph_home">
+    <include app:graph="@navigation/nav_graph_home" />
+    <include app:graph="@navigation/nav_graph_catalog" />
+    <include app:graph="@navigation/nav_graph_card" />
+    <include app:graph="@navigation/nav_graph_basket" />
     <fragment
         android:id="@+id/profileFragment"
         android:name="com.example.pharmacyapp.tabs.ProfileFragment"
-        android:label="fragment_profile"
-        tools:layout="@layout/fragment_profile" />
+        android:label="ProfileFragment" />
 </navigation>

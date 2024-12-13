@@ -26,6 +26,7 @@ import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.databinding.FragmentLoginBinding
+import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.LoginViewModel
 import java.lang.Exception
 import kotlin.properties.Delegates
@@ -63,16 +64,25 @@ class LoginFragment : Fragment(), ProfileResult {
 
         bLogIn.setOnClickListener {
 
-            isShow = true
+            val isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext())
 
-            val logInModel = LogInModel(
-                login = etLogin.text.toString(),
-                userPassword = etPassword.text.toString()
-            )
-            loginViewModel.setLogInData(
-                logInModel = logInModel,
-                getStringById = ::getStringById
-            )
+            if (isNetworkStatus){
+                isShow = true
+
+                val logInModel = LogInModel(
+                    login = etLogin.text.toString(),
+                    userPassword = etPassword.text.toString()
+                )
+                loginViewModel.setLogInData(
+                    logInModel = logInModel,
+                    getStringById = { id ->
+                        getSupportActivity().getStringById(id = id)
+                    }
+                )
+            }
+            else{
+                getSupportActivity().showToast(message = getString(R.string.check_your_internet_connection))
+            }
 
         }
         bGoToRegister.setOnClickListener {
@@ -93,7 +103,7 @@ class LoginFragment : Fragment(), ProfileResult {
                                 onSuccessResultListener(userId = userId)
                             } else {
                                 if (value.responseModel.message != null) {
-                                    showToast(context = requireContext(), message = value.responseModel.message!!)
+                                    getSupportActivity().showToast(message = value.responseModel.message!!)
                                 }
                             }
                         }
@@ -108,10 +118,7 @@ class LoginFragment : Fragment(), ProfileResult {
         }
         loginViewModel.message.observe(viewLifecycleOwner){ message ->
             if (isShow){
-                showToast(
-                    context = requireContext(),
-                    message = message
-                )
+                getSupportActivity().showToast(message = message)
             }
         }
     }
@@ -122,13 +129,6 @@ class LoginFragment : Fragment(), ProfileResult {
         _binding = null
     }
 
-    private fun showToast(context: Context, message: String) {
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-    }
-
-    override fun getStringById(id: Int): String {
-        return resources.getString(id)
-    }
 
     override fun onSuccessResultListener(userId: Int) {
         sharedPreferences.edit().putBoolean(KEY_IS_INIT, false).apply()
@@ -143,7 +143,7 @@ class LoginFragment : Fragment(), ProfileResult {
     }
 
     override fun onErrorResultListener(exception: Exception) {
-        showToast(context = requireContext(), message = resources.getString(R.string.error))
+        getSupportActivity().showToast(message = resources.getString(R.string.error))
     }
 
 }
