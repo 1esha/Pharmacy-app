@@ -63,4 +63,14 @@ class ProfileRepositoryImpl : ProfileRepository<ResponseModel, ResponseValueMode
         return result
     }
 
+    override suspend fun getUserById(userId: Int): Result<ResponseValueModel<UserModel>> {
+        val resultDataSource = profileRepositoryDataSourceRemote.getUserById(userId = userId)
+        val value = resultDataSource.asSuccessResultDataSource()?.value
+        val result = resultDataSource.toResult<ResponseValueDataSourceModel<UserDataSourceModel>,ResponseValueModel<UserModel>>(
+            value = value?.toResponseValueUserModelModel()
+        )
+
+        return result
+    }
+
 }

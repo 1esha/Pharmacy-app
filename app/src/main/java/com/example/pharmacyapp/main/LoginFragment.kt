@@ -25,6 +25,7 @@ import com.example.pharmacyapp.KEY_IS_INIT
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
+import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.FragmentLoginBinding
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.LoginViewModel
@@ -32,7 +33,7 @@ import java.lang.Exception
 import kotlin.properties.Delegates
 
 
-class LoginFragment : Fragment(), ProfileResult {
+class LoginFragment : Fragment(), ProfileResult<ResponseValueModel<UserModel>> {
 
     private var _binding: FragmentLoginBinding? = null
     private val binding get() = _binding!!
@@ -76,7 +77,7 @@ class LoginFragment : Fragment(), ProfileResult {
                 loginViewModel.setLogInData(
                     logInModel = logInModel,
                     getStringById = { id ->
-                        getSupportActivity().getStringById(id = id)
+                        resources.getString(id)
                     }
                 )
             }
@@ -93,19 +94,12 @@ class LoginFragment : Fragment(), ProfileResult {
 
             if (isShow){
                 when (result) {
-                    is PendingResult<ResponseValueModel<UserModel>> -> {}
+                    is PendingResult<ResponseValueModel<UserModel>> -> { onPendingResult() }
                     is SuccessResult<ResponseValueModel<UserModel>> -> {
                         if (result.value != null) {
                             val value = result.value ?: throw NullPointerException("LoginFragment result.value = null")
-
-                            if (value.responseModel.status in 200..299) {
-                                val userId = value.value?.userId?: throw NullPointerException("LoginFragment userId = null")
-                                onSuccessResultListener(userId = userId)
-                            } else {
-                                if (value.responseModel.message != null) {
-                                    getSupportActivity().showToast(message = value.responseModel.message!!)
-                                }
-                            }
+                            val userId = value.value?.userId ?: UNAUTHORIZED_USER
+                            onSuccessResultListener(userId = userId, value = value)
                         }
 
                     }
@@ -130,20 +124,32 @@ class LoginFragment : Fragment(), ProfileResult {
     }
 
 
-    override fun onSuccessResultListener(userId: Int) {
-        sharedPreferences.edit().putBoolean(KEY_IS_INIT, false).apply()
-        sharedPreferences.edit().putInt(KEY_USER_ID, userId).apply()
-        Log.i("TAG","LoginFragment onSuccessResultListener userId = ${sharedPreferences.getInt(
-            KEY_USER_ID,-1)}")
-        navControllerMain.navigate(R.id.action_loginFragment_to_tabsFragment, null, navOptions {
-            popUpTo(R.id.initFragment) {
-                inclusive = true
-            }
-        })
+    override fun onSuccessResultListener(userId: Int, value: ResponseValueModel<UserModel>) {
+        val status = value.responseModel.status
+        val message = value.responseModel.message
+        if (status in 200..299){
+            sharedPreferences.edit().putBoolean(KEY_IS_INIT, false).apply()
+            sharedPreferences.edit().putInt(KEY_USER_ID, userId).apply()
+            Log.i("TAG","LoginFragment onSuccessResultListener userId = ${sharedPreferences.getInt(
+                KEY_USER_ID,-1)}")
+            navControllerMain.navigate(R.id.action_loginFragment_to_tabsFragment, null, navOptions {
+                popUpTo(R.id.initFragment) {
+                    inclusive = true
+                }
+            })
+        }
+        else{
+            if (message != null) getSupportActivity().showToast(message = message)
+        }
+
     }
 
     override fun onErrorResultListener(exception: Exception) {
         getSupportActivity().showToast(message = resources.getString(R.string.error))
+    }
+
+    override fun onPendingResult() {
+        Log.i("TAG","LoginFragment onPendingResult")
     }
 
 }

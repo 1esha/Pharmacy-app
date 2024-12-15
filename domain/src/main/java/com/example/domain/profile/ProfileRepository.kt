@@ -11,4 +11,6 @@ interface ProfileRepository<R,V,I> {
     suspend fun getUser(logInModel: LogInModel): Result<V>
 
     suspend fun getUserId(userInfoModel: UserInfoModel): Result<I>
+
+    suspend fun getUserById(userId: Int): Result<V>
 }

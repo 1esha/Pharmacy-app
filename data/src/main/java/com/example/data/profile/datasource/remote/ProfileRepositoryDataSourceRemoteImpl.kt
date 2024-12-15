@@ -110,6 +110,28 @@ class ProfileRepositoryDataSourceRemoteImpl :
             }
         }
 
+    override suspend fun getUserById(userId: Int): ResultDataSource<ResponseValueDataSourceModel<UserDataSourceModel>> =
+    withContext(Dispatchers.IO) {
+        try {
+            val response = client.request {
+                url(GET_USER_BY_ID_URL+"$userId")
+                method = HttpMethod.Get
+            }
+            val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<UserDataSourceModel>>()
+
+            val successResultDataSource = SuccessResultDataSource(
+                value = responseValueDataSourceModel
+            )
+            Log.i("TAG", "getUserById successResultDataSource ${successResultDataSource.value}")
+            return@withContext successResultDataSource
+        } catch (e: Exception) {
+            val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<UserDataSourceModel>>(
+                exception = e
+            )
+            Log.i("TAG", "getUserById errorResultDataSource ${errorResultDataSource.exception}")
+            return@withContext errorResultDataSource
+        }
+    }
 
     companion object {
         private const val PORT = "4000"
@@ -117,6 +139,7 @@ class ProfileRepositoryDataSourceRemoteImpl :
         const val CREATE_USER_URL = "$BASE_URL/create/user"
         const val GET_USER_URL = "$BASE_URL/user"
         const val GET_USER_ID_URL = "$BASE_URL/user_id"
+        const val GET_USER_BY_ID_URL = "$BASE_URL/user_by_id?id="
     }
 
 

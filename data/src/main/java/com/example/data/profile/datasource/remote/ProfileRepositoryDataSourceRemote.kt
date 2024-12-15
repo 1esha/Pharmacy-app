@@ -11,4 +11,6 @@ interface ProfileRepositoryDataSourceRemote<R,V,I> {
     suspend fun getUser(logInDataSourceModel: LogInDataSourceModel): ResultDataSource<V>
 
     suspend fun getUserId(userInfoDataSourceModel: UserInfoDataSourceModel): ResultDataSource<I>
+
+    suspend fun getUserById(userId: Int): ResultDataSource<V>
 }

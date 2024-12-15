@@ -27,4 +27,5 @@
     <string name="get_discounts">Получайте скидки</string>
     <string name="log_in_to_get_more_benefits">Войдите, чтобы получать больше выгоды!</string>
     <string name="check_your_internet_connection">Проверьте подключение к интернету</string>
+    <string name="try_again">Пробовать снова</string>
 </resources>

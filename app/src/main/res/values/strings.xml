@@ -26,5 +26,6 @@
     <string name="get_discounts">Get discounts</string>
     <string name="log_in_to_get_more_benefits">Log in to get more benefits!</string>
     <string name="check_your_internet_connection">Check your internet connection</string>
+    <string name="try_again">Try again</string>
 
 </resources>

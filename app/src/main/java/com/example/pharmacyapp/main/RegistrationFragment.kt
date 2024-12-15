@@ -34,7 +34,7 @@ import java.lang.Exception
 import kotlin.properties.Delegates
 
 
-class RegistrationFragment() : Fragment(), ProfileResult {
+class RegistrationFragment() : Fragment(), ProfileResult<ResponseModel> {
 
     private var _binding: FragmentRegistrationBinding? = null
     private val binding get() = _binding!!
@@ -111,14 +111,14 @@ class RegistrationFragment() : Fragment(), ProfileResult {
         registrationViewModel.result.observe(viewLifecycleOwner) { result ->
             if (isShow){
                 when (result) {
-                    is PendingResult<ResponseModel> -> {}
+                    is PendingResult<ResponseModel> -> { onPendingResult() }
                     is SuccessResult<ResponseModel> -> {
                         if (result.value != null) {
                             val value = result.value ?: throw NullPointerException("RegistrationFragment result.value = null")
 
                             if (value.status in 200..299) {
                                 val userId = registrationViewModel.userId.value?: UNAUTHORIZED_USER
-                                onSuccessResultListener(userId = userId)
+                                onSuccessResultListener(userId = userId, value = value)
                             } else {
                                 if (value.message != null) {
                                     getSupportActivity().showToast(message = value.message!!)
@@ -147,20 +147,33 @@ class RegistrationFragment() : Fragment(), ProfileResult {
         _binding = null
     }
 
-    override fun onSuccessResultListener(userId: Int) {
-        sharedPreferences.edit().putBoolean(KEY_IS_INIT, false).apply()
-        sharedPreferences.edit().putInt(KEY_USER_ID, userId).apply()
-        Log.i("TAG","RegistrationFragment onSuccessResultListener userId = ${sharedPreferences.getInt(
-            KEY_USER_ID, UNAUTHORIZED_USER)}")
-        navControllerMain.navigate(R.id.action_registrationFragment_to_tabsFragment, null, navOptions {
-            popUpTo(R.id.initFragment) {
-                inclusive = true
-            }
-        })
+    override fun onSuccessResultListener(userId: Int, value: ResponseModel) {
+
+        val status = value.status
+        val message = value.message
+        if (status in 200..299){
+            sharedPreferences.edit().putBoolean(KEY_IS_INIT, false).apply()
+            sharedPreferences.edit().putInt(KEY_USER_ID, userId).apply()
+            Log.i("TAG","RegistrationFragment onSuccessResultListener userId = ${sharedPreferences.getInt(
+                KEY_USER_ID, UNAUTHORIZED_USER)}")
+            navControllerMain.navigate(R.id.action_registrationFragment_to_tabsFragment, null, navOptions {
+                popUpTo(R.id.initFragment) {
+                    inclusive = true
+                }
+            })
+        }
+        else{
+            if (message != null) getSupportActivity().showToast(message = message)
+        }
+
     }
 
     override fun onErrorResultListener(exception: Exception) {
         getSupportActivity().showToast(message = resources.getString(R.string.error))
+    }
+
+    override fun onPendingResult() {
+        Log.i("TAG","RegistrationFragment onPendingResult")
     }
 
 
