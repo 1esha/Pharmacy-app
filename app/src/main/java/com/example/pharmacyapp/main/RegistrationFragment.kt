@@ -15,6 +15,7 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
 import com.example.domain.ErrorResult
+import com.example.domain.Network
 import com.example.domain.PendingResult
 import com.example.domain.SuccessResult
 import com.example.domain.profile.ProfileResult
@@ -60,6 +61,8 @@ class RegistrationFragment() : Fragment(), ProfileResult<ResponseModel> {
 
         val registrationViewModel: RegistrationViewModel by viewModels()
 
+        val network = Network()
+
         navControllerMain = findNavController()
 
         sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
@@ -82,29 +85,31 @@ class RegistrationFragment() : Fragment(), ProfileResult<ResponseModel> {
 
             val isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext())
 
-            if (isNetworkStatus){
+            network.checkNetworkStatus(
+                isNetworkStatus = isNetworkStatus,
+                connectionListener = {
+                    isShow = true
 
-                isShow = true
-
-                val userInfoModel = UserInfoModel(
-                    firstName = etFirstName.text.toString(),
-                    lastName = etLastName.text.toString(),
-                    email = etEmail.text.toString(),
-                    phoneNumber = etPhoneNumber.text.toString(),
-                    userPassword = etPassword.text.toString(),
-                    city = actvCity.text.toString()
-                )
-                Log.i("TAG", "RegistrationFragment userInfoModel = $userInfoModel")
-                registrationViewModel.createUser(
-                    userInfoModel = userInfoModel,
-                    getStringById = { id ->
-                        getSupportActivity().getStringById(id = id)
-                    }
-                )
-            }
-            else{
-                getSupportActivity().showToast(message = getString(R.string.check_your_internet_connection))
-            }
+                    val userInfoModel = UserInfoModel(
+                        firstName = etFirstName.text.toString(),
+                        lastName = etLastName.text.toString(),
+                        email = etEmail.text.toString(),
+                        phoneNumber = etPhoneNumber.text.toString(),
+                        userPassword = etPassword.text.toString(),
+                        city = actvCity.text.toString()
+                    )
+                    Log.i("TAG", "RegistrationFragment userInfoModel = $userInfoModel")
+                    registrationViewModel.createUser(
+                        userInfoModel = userInfoModel,
+                        getStringById = { id ->
+                            getSupportActivity().getStringById(id = id)
+                        }
+                    )
+                },
+                disconnectionListener = {
+                    getSupportActivity().showToast(message = getString(R.string.check_your_internet_connection))
+                }
+            )
 
         }
 

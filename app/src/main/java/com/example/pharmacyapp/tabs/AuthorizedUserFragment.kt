@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
 import com.example.domain.ErrorResult
+import com.example.domain.Network
 import com.example.domain.PendingResult
 import com.example.domain.SuccessResult
 import com.example.domain.profile.ProfileResult
@@ -45,43 +46,59 @@ class AuthorizedUserFragment : Fragment(), ProfileResult<ResponseValueModel<User
 
         val sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
 
+        val userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
+
         val isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext())
 
-        if (isNetworkStatus){
-            val userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
+        val network = Network()
 
-            authorizedUserViewModel.getUserById(
-                userId = userId,
-                getStringById = { resources.getString(R.string.error_in_getting_the_id) }
-            )
-
-            authorizedUserViewModel.result.observe(viewLifecycleOwner){ result ->
-                when (result) {
-                    is PendingResult -> { onPendingResult() }
-                    is SuccessResult -> {
-                        val value = result.value?: throw NullPointerException("AuthorizedUserFragment result.value = null")
-                        onSuccessResultListener(userId = userId, value = value)
-                    }
-
-                    is ErrorResult -> {
-                        onErrorResultListener(exception = result.exception)
-                    }
-                }
+        network.checkNetworkStatus(
+            isNetworkStatus = isNetworkStatus,
+            connectionListener = {
+                authorizedUserViewModel.getUserById(
+                    userId = userId,
+                    getStringById = { resources.getString(R.string.error_in_getting_the_id) }
+                )
+            },
+            disconnectionListener = {
+                binding.authorizedPendingResult.root.visibility = View.VISIBLE
+                binding.authorizedPendingResult.bTryAgain.visibility = View.VISIBLE
+                getSupportActivity().showToast(message = getString(R.string.check_your_internet_connection))
             }
-
-        }
-        else{
-            binding.authorizedPendingResult.root.visibility = View.VISIBLE
-            binding.authorizedPendingResult.bTryAgain.visibility = View.VISIBLE
-            getSupportActivity().showToast(message = getString(R.string.check_your_internet_connection))
-        }
+        )
 
         authorizedPendingResult.bTryAgain.setOnClickListener {
-            onViewCreated(view, savedInstanceState)
+
+            network.checkNetworkStatus(
+                isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext()),
+                connectionListener = {
+                    authorizedUserViewModel.getUserById(
+                        userId = userId,
+                        getStringById = { resources.getString(R.string.error_in_getting_the_id) }
+                    )
+                },
+                disconnectionListener = {
+                    getSupportActivity().showToast(message = getString(R.string.check_your_internet_connection))
+                }
+            )
         }
 
         cardUserInfo.setOnClickListener {
 
+        }
+
+        authorizedUserViewModel.result.observe(viewLifecycleOwner){ result ->
+            Log.i("TAG","AuthorizedUserFragment current result = $result")
+            when (result) {
+                is PendingResult -> { onPendingResult() }
+                is SuccessResult -> {
+                    val value = result.value?: throw NullPointerException("AuthorizedUserFragment result.value = null")
+                    onSuccessResultListener(userId = userId, value = value)
+                }
+                is ErrorResult -> {
+                    onErrorResultListener(exception = result.exception)
+                }
+            }
         }
 
     }
@@ -106,6 +123,7 @@ class AuthorizedUserFragment : Fragment(), ProfileResult<ResponseValueModel<User
     }
 
     override fun onErrorResultListener(exception: Exception) {
+        binding.authorizedPendingResult.root.visibility = View.VISIBLE
         binding.authorizedPendingResult.bTryAgain.visibility = View.VISIBLE
         getSupportActivity().showToast(message = resources.getString(R.string.error))
     }

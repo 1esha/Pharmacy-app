@@ -15,6 +15,7 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
 import com.example.domain.ErrorResult
+import com.example.domain.Network
 import com.example.domain.PendingResult
 import com.example.domain.SuccessResult
 import com.example.domain.profile.ProfileResult
@@ -59,6 +60,8 @@ class LoginFragment : Fragment(), ProfileResult<ResponseValueModel<UserModel>> {
 
         val loginViewModel: LoginViewModel by viewModels()
 
+        val network = Network()
+
         navControllerMain = findNavController()
 
         sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
@@ -67,23 +70,26 @@ class LoginFragment : Fragment(), ProfileResult<ResponseValueModel<UserModel>> {
 
             val isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext())
 
-            if (isNetworkStatus){
-                isShow = true
+            network.checkNetworkStatus(
+                isNetworkStatus = isNetworkStatus,
+                connectionListener = {
+                    isShow = true
 
-                val logInModel = LogInModel(
-                    login = etLogin.text.toString(),
-                    userPassword = etPassword.text.toString()
-                )
-                loginViewModel.setLogInData(
-                    logInModel = logInModel,
-                    getStringById = { id ->
-                        resources.getString(id)
-                    }
-                )
-            }
-            else{
-                getSupportActivity().showToast(message = getString(R.string.check_your_internet_connection))
-            }
+                    val logInModel = LogInModel(
+                        login = etLogin.text.toString(),
+                        userPassword = etPassword.text.toString()
+                    )
+                    loginViewModel.setLogInData(
+                        logInModel = logInModel,
+                        getStringById = { id ->
+                            resources.getString(id)
+                        }
+                    )
+                },
+                disconnectionListener = {
+                    getSupportActivity().showToast(message = getString(R.string.check_your_internet_connection))
+                }
+            )
 
         }
         bGoToRegister.setOnClickListener {
