@@ -2,14 +2,12 @@ package com.example.pharmacyapp.main
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.fragment.app.viewModels
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
@@ -26,12 +24,12 @@ import com.example.pharmacyapp.KEY_IS_INIT
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
+import com.example.pharmacyapp.ToolbarSettings
 import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.FragmentLoginBinding
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.LoginViewModel
 import java.lang.Exception
-import kotlin.properties.Delegates
 
 
 class LoginFragment : Fragment(), ProfileResult<ResponseValueModel<UserModel>> {
@@ -62,9 +60,15 @@ class LoginFragment : Fragment(), ProfileResult<ResponseValueModel<UserModel>> {
 
         val network = Network()
 
+        val toolbarSettings = ToolbarSettings(toolbar = binding.layoutToolbarMainLogIn!!.toolbarMain)
+
         navControllerMain = findNavController()
 
         sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
+
+        toolbarSettings.installToolbarMain(icon = R.drawable.ic_back) {
+            navControllerMain.navigateUp()
+        }
 
         bLogIn.setOnClickListener {
 
@@ -122,7 +126,6 @@ class LoginFragment : Fragment(), ProfileResult<ResponseValueModel<UserModel>> {
             }
         }
     }
-
 
     override fun onDestroyView() {
         super.onDestroyView()

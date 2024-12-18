@@ -16,7 +16,11 @@
     android:fitsSystemWindows="true"
     tools:context=".main.RegistrationFragment">
 
-
+    <include
+        android:id="@+id/layoutToolbarMainRegistration"
+        layout="@layout/toolbar_main"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
         <LinearLayout
             android:layout_width="match_parent"

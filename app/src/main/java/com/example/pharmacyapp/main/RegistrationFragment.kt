@@ -25,6 +25,7 @@ import com.example.pharmacyapp.KEY_IS_INIT
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
+import com.example.pharmacyapp.ToolbarSettings
 import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.FragmentRegistrationBinding
 import com.example.pharmacyapp.getSupportActivity
@@ -63,9 +64,15 @@ class RegistrationFragment() : Fragment(), ProfileResult<ResponseModel> {
 
         val network = Network()
 
+        val toolbarSettings = ToolbarSettings(toolbar = binding.layoutToolbarMainRegistration!!.toolbarMain)
+
         navControllerMain = findNavController()
 
         sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
+
+        toolbarSettings.installToolbarMain(icon = R.drawable.ic_back) {
+            navControllerMain.navigateUp()
+        }
 
         setupCityText(textInputLayout = binding.layoutCity)
 

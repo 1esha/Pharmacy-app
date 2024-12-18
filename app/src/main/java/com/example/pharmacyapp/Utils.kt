@@ -1,9 +1,9 @@
 package com.example.pharmacyapp
 
 import android.content.Context
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.NavController
+import com.google.android.material.appbar.MaterialToolbar
 
 const val KEY_USER_ID = "KEY_USER_ID"
 const val UNAUTHORIZED_USER = -1
@@ -24,6 +24,15 @@ interface SupportActivity{
 
 fun Fragment.getSupportActivity():SupportActivity{
     return requireActivity() as SupportActivity
+}
+
+class ToolbarSettings(private val toolbar: MaterialToolbar){
+
+    fun installToolbarMain(icon: Int, onClickNavigationIcon:() -> Unit) = with(toolbar){
+            setNavigationIcon(icon)
+            setNavigationOnClickListener { onClickNavigationIcon() }
+
+    }
 }
 
 
