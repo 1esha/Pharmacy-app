@@ -67,15 +67,7 @@ class RegistrationFragment() : Fragment(), ProfileResult<ResponseModel> {
 
         sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
 
-        val listCity = listOf(
-            getString(R.string.cheboksary),
-            getString(R.string.novocheboksarsk)
-        )
-
-        setupCityText(
-            textInputLayout = binding.layoutCity,
-            listCity = listCity
-        )
+        setupCityText(textInputLayout = binding.layoutCity)
 
         tvLogin.setOnClickListener {
             navControllerMain.popBackStack()
@@ -182,8 +174,12 @@ class RegistrationFragment() : Fragment(), ProfileResult<ResponseModel> {
     }
 
 
-    private fun setupCityText(textInputLayout: TextInputLayout, listCity: List<String>) {
+    private fun setupCityText(textInputLayout: TextInputLayout) {
         Log.i("TAG", "setupCityText")
+        val listCity = listOf(
+            getString(R.string.cheboksary),
+            getString(R.string.novocheboksarsk)
+        )
         val adapter = ArrayAdapter(requireContext(), R.layout.item_city, listCity)
         (textInputLayout.editText as? MaterialAutoCompleteTextView)?.setAdapter(adapter)
     }
