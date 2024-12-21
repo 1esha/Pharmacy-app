@@ -11,3 +11,7 @@ class SuccessResult<T>(
 class ErrorResult<T>(
     val exception: Exception
 ) : Result<T>()
+
+fun <T>Result<T>.asSuccessResult(): SuccessResult<T>?{
+    return if (this is SuccessResult) this else null
+}

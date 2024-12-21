@@ -6,7 +6,11 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.profile.ProfileRepositoryImpl
+import com.example.domain.DataEntryError
 import com.example.domain.ErrorResult
+import com.example.domain.ErrorType
+import com.example.domain.IdentificationError
+import com.example.domain.OtherError
 import com.example.domain.PendingResult
 import com.example.domain.Result
 import com.example.domain.SuccessResult
@@ -15,27 +19,29 @@ import com.example.domain.profile.models.ResponseValueModel
 import com.example.domain.profile.models.UserInfoModel
 import com.example.domain.profile.usecases.CreateUserUseCase
 import com.example.domain.profile.usecases.GetUserIdUseCase
-import com.example.pharmacyapp.R
 import com.example.pharmacyapp.UNAUTHORIZED_USER
 import kotlinx.coroutines.launch
 
-class RegistrationViewModel: ViewModel() {
+class RegistrationViewModel : ViewModel() {
 
     private val profileRepositoryImpl = ProfileRepositoryImpl()
 
-    private val _result = MutableLiveData<Result<ResponseModel>>(PendingResult())
-    val result: LiveData<Result<ResponseModel>> = _result
+    private val _resultCreateUser = MutableLiveData<Result<ResponseModel>>()
+    val resultCreateUser: LiveData<Result<ResponseModel>> = _resultCreateUser
 
-    private val _message = MutableLiveData<String>()
-    val message: LiveData<String> = _message
+    private val _resultGetUserId = MutableLiveData<Result<ResponseValueModel<Int>>>(PendingResult())
+    val resultGetUserId: LiveData<Result<ResponseValueModel<Int>>> = _resultGetUserId
 
     private val _userId = MutableLiveData<Int>(UNAUTHORIZED_USER)
     val userId: LiveData<Int> = _userId
 
-    fun createUser(
-        userInfoModel: UserInfoModel,
-        getStringById:(Int) -> String
-    ){
+    private val _isShown = MutableLiveData<Boolean>(false)
+    val isShown: LiveData<Boolean> = _isShown
+
+    private val _errorType = MutableLiveData<ErrorType>(OtherError())
+    val errorType: LiveData<ErrorType> = _errorType
+
+    fun createUser(userInfoModel: UserInfoModel) {
         if (
             userInfoModel.firstName.isEmpty() || userInfoModel.firstName.isBlank() ||
             userInfoModel.lastName.isEmpty() || userInfoModel.lastName.isBlank() ||
@@ -43,44 +49,64 @@ class RegistrationViewModel: ViewModel() {
             userInfoModel.phoneNumber.isEmpty() || userInfoModel.phoneNumber.isBlank() ||
             userInfoModel.userPassword.isEmpty() || userInfoModel.userPassword.isBlank() ||
             userInfoModel.city.isEmpty() || userInfoModel.city.isBlank()
-            ){
-            _message.value = getStringById(R.string.enter_the_data)
+        ) {
+            setResult(
+                result = ErrorResult(exception = Exception()),
+                errorType = DataEntryError()
+            )
+            return
         }
-        else{
-            viewModelScope.launch {
-                val createUserUseCase = CreateUserUseCase(
-                    profileRepository = profileRepositoryImpl,
-                    userInfoModel = userInfoModel
-                )
+        viewModelScope.launch {
+            val createUserUseCase = CreateUserUseCase(
+                profileRepository = profileRepositoryImpl,
+                userInfoModel = userInfoModel
+            )
 
-                val getUserIdUseCase = GetUserIdUseCase(
-                    profileRepository = profileRepositoryImpl,
-                    userInfoModel = userInfoModel
-                )
+            val getUserIdUseCase = GetUserIdUseCase(
+                profileRepository = profileRepositoryImpl,
+                userInfoModel = userInfoModel
+            )
 
-                val resultCreateUser = createUserUseCase.execute()
-                val resultGetUserId = getUserIdUseCase.execute()
+            val resultCreateUser = createUserUseCase.execute()
+            val resultGetUserId = getUserIdUseCase.execute()
 
-                when(resultGetUserId){
-                    is SuccessResult -> {
-                        _userId.value = resultGetUserId.value?.value?: UNAUTHORIZED_USER
-                        _result.value = resultCreateUser
-                    }
-                    is ErrorResult -> {
-                        _message.value = getStringById(R.string.error_in_getting_the_id)
-                    }
-                    else -> {}
+            when (resultGetUserId) {
+                is PendingResult -> {}
+                is SuccessResult -> {
+                    _userId.value = resultGetUserId.value?.value ?: throw NullPointerException("RegistrationViewModel userId = null")
+                    _resultCreateUser.value = resultCreateUser
                 }
-
+                is ErrorResult -> {
+                    setResult(
+                        result = ErrorResult(exception = resultGetUserId.exception),
+                        errorType = IdentificationError()
+                    )
+                }
             }
+
         }
 
+    }
+
+    fun setIsShown(isShown: Boolean) {
+        _isShown.value = isShown
+    }
+
+    fun setResult(result: Result<ResponseModel>, errorType: ErrorType? = null) {
+        if (result is ErrorResult && errorType != null) {
+            _errorType.value = errorType ?: throw NullPointerException("RegistrationViewModel setResult errorType = null")
+        }
+        _resultCreateUser.value = result
+    }
+
+    fun clearErrorType() {
+        _errorType.value = OtherError()
     }
 
 
     override fun onCleared() {
         super.onCleared()
-        Log.i("TAG","RegistrationViewModel onCleared")
+        Log.i("TAG", "RegistrationViewModel onCleared")
     }
 
 }

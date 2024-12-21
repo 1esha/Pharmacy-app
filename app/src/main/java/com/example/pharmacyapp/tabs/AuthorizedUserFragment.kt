@@ -8,7 +8,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
+import com.example.domain.DataEntryError
+import com.example.domain.DisconnectionError
 import com.example.domain.ErrorResult
+import com.example.domain.IdentificationError
 import com.example.domain.Network
 import com.example.domain.PendingResult
 import com.example.domain.SuccessResult
@@ -22,14 +25,14 @@ import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.FragmentAuthorizedUserBinding
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.tabs.viewmodels.AuthorizedUserViewModel
-import java.lang.Exception
+
 
 class AuthorizedUserFragment : Fragment(), ProfileResult<ResponseValueModel<UserModel>> {
 
     private var _binding: FragmentAuthorizedUserBinding? = null
     private val binding get() = _binding!!
 
-    override var isShow: Boolean = false
+    private val authorizedUserViewModel: AuthorizedUserViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -42,9 +45,11 @@ class AuthorizedUserFragment : Fragment(), ProfileResult<ResponseValueModel<User
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?): Unit = with(binding) {
 
-        val authorizedUserViewModel: AuthorizedUserViewModel by viewModels()
+        val isShown: Boolean = authorizedUserViewModel.isShown.value?:throw NullPointerException("AuthorizedUserFragment isShown = null")
 
         val sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
+
+        val navControllerMain = getSupportActivity().getNavControllerMain()
 
         val userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
 
@@ -52,51 +57,66 @@ class AuthorizedUserFragment : Fragment(), ProfileResult<ResponseValueModel<User
 
         val network = Network()
 
-        network.checkNetworkStatus(
-            isNetworkStatus = isNetworkStatus,
-            connectionListener = {
-                authorizedUserViewModel.getUserById(
-                    userId = userId,
-                    getStringById = { resources.getString(R.string.error_in_getting_the_id) }
-                )
-            },
-            disconnectionListener = {
-                binding.authorizedPendingResult.root.visibility = View.VISIBLE
-                binding.authorizedPendingResult.bTryAgain.visibility = View.VISIBLE
-                getSupportActivity().showToast(message = getString(R.string.check_your_internet_connection))
-            }
-        )
+        if (!isShown){
+            network.checkNetworkStatus(
+                isNetworkStatus = isNetworkStatus,
+                connectionListener = {
+                    with(authorizedUserViewModel){
+                        setResult(result = PendingResult())
+                        getUserById(
+                            userId = userId
+                        )
+                    }
+                },
+                disconnectionListener = {
+                    authorizedUserViewModel.setResult(result = ErrorResult(exception = Exception()))
+                }
+            )
+            authorizedUserViewModel.setIsShown(isShown = true)
+        }
 
         authorizedPendingResult.bTryAgain.setOnClickListener {
 
             network.checkNetworkStatus(
                 isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext()),
                 connectionListener = {
-                    authorizedUserViewModel.getUserById(
-                        userId = userId,
-                        getStringById = { resources.getString(R.string.error_in_getting_the_id) }
-                    )
+                    with(authorizedUserViewModel){
+                        setResult(result = PendingResult())
+                        getUserById(userId = userId)
+                    }
                 },
                 disconnectionListener = {
+                    authorizedUserViewModel.setResult(result = ErrorResult(exception = Exception()), errorType = DisconnectionError())
                     getSupportActivity().showToast(message = getString(R.string.check_your_internet_connection))
                 }
             )
         }
 
         cardUserInfo.setOnClickListener {
-
+            navControllerMain.navigate(R.id.editFragment)
         }
 
-        authorizedUserViewModel.result.observe(viewLifecycleOwner){ result ->
-            Log.i("TAG","AuthorizedUserFragment current result = $result")
+        authorizedUserViewModel.result.observe(viewLifecycleOwner) { result ->
+            Log.i("TAG", "AuthorizedUserFragment current result = $result")
             when (result) {
-                is PendingResult -> { onPendingResult() }
+                is PendingResult -> {
+                    onPendingResult()
+                }
+
                 is SuccessResult -> {
                     val value = result.value?: throw NullPointerException("AuthorizedUserFragment result.value = null")
                     onSuccessResultListener(userId = userId, value = value)
                 }
+
                 is ErrorResult -> {
-                    onErrorResultListener(exception = result.exception)
+                    val errorType = authorizedUserViewModel.errorType.value
+                    val message = when(errorType){
+                        is DisconnectionError -> getString(R.string.check_your_internet_connection)
+                        is IdentificationError -> getString(R.string.error_in_getting_the_id)
+                        else -> getString(R.string.error)
+                    }
+                    onErrorResultListener(exception = result.exception, message = message)
+                    authorizedUserViewModel.clearErrorType()
                 }
             }
         }
@@ -111,26 +131,74 @@ class AuthorizedUserFragment : Fragment(), ProfileResult<ResponseValueModel<User
     override fun onSuccessResultListener(userId: Int, value: ResponseValueModel<UserModel>) {
         val status = value.responseModel.status
         val message = value.responseModel.message
-        if (status in 200..299){
-            binding.authorizedPendingResult.root.visibility = View.GONE
-            val userModel = value.value?: throw NullPointerException("AuthorizedUserFragment userModel = null")
-            binding.tvFullName.text = userModel.userInfoModel.firstName+" "+userModel.userInfoModel.lastName
+        if (status in 200..299) {
+            updateUI(
+                isVisible = false,
+                isProgressBar = false,
+                isButton = false,
+                isMessage = false,
+                message = null
+            )
+            val userModel = value.value ?: throw NullPointerException("AuthorizedUserFragment userModel = null")
+            binding.tvFullName.text = userModel.userInfoModel.firstName + " " + userModel.userInfoModel.lastName
             binding.tvCurrentCity.text = userModel.userInfoModel.city
-        }
-        else{
+        } else {
             if (message != null) getSupportActivity().showToast(message = message)
         }
     }
 
-    override fun onErrorResultListener(exception: Exception) {
-        binding.authorizedPendingResult.root.visibility = View.VISIBLE
-        binding.authorizedPendingResult.bTryAgain.visibility = View.VISIBLE
-        getSupportActivity().showToast(message = resources.getString(R.string.error))
+    override fun onErrorResultListener(exception: Exception, message: String) {
+        updateUI(
+            isVisible = true,
+            isProgressBar = false,
+            isButton = true,
+            isMessage = true,
+            message = message
+        )
     }
 
     override fun onPendingResult() {
-        Log.i("TAG","AuthorizedUserFragment onPendingResult")
-        binding.authorizedPendingResult.root.visibility = View.VISIBLE
+        Log.i("TAG", "AuthorizedUserFragment onPendingResult")
+        updateUI(
+            isVisible = true,
+            isProgressBar = true,
+            isButton = false,
+            isMessage = false,
+            message = null
+        )
+    }
+
+    private fun updateUI(
+        isVisible: Boolean,
+        isProgressBar: Boolean,
+        isButton: Boolean,
+        isMessage: Boolean,
+        message: String?
+    ) = with(binding.authorizedPendingResult) {
+        if (isVisible){
+            root.visibility = View.VISIBLE
+        } else{
+            root.visibility = View.GONE
+        }
+
+        if (isProgressBar){
+            progressBar.visibility = View.VISIBLE
+        } else{
+            progressBar.visibility = View.GONE
+        }
+
+        if (isButton){
+            bTryAgain.visibility = View.VISIBLE
+        } else{
+            bTryAgain.visibility = View.GONE
+        }
+
+        if (isMessage){
+            tvErrorMessage.visibility = View.VISIBLE
+            tvErrorMessage.text = message
+        } else{
+            tvErrorMessage.visibility = View.GONE
+        }
     }
 
 }

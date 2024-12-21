@@ -9,12 +9,16 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.Toast
+import android.widget.AutoCompleteTextView
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
+import com.example.domain.DataEntryError
+import com.example.domain.DisconnectionError
 import com.example.domain.ErrorResult
+import com.example.domain.IdentificationError
 import com.example.domain.Network
 import com.example.domain.PendingResult
 import com.example.domain.SuccessResult
@@ -30,10 +34,8 @@ import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.FragmentRegistrationBinding
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.RegistrationViewModel
-import com.google.android.material.textfield.MaterialAutoCompleteTextView
-import com.google.android.material.textfield.TextInputLayout
-import java.lang.Exception
-import kotlin.properties.Delegates
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 class RegistrationFragment() : Fragment(), ProfileResult<ResponseModel> {
@@ -41,11 +43,11 @@ class RegistrationFragment() : Fragment(), ProfileResult<ResponseModel> {
     private var _binding: FragmentRegistrationBinding? = null
     private val binding get() = _binding!!
 
+    private val registrationViewModel: RegistrationViewModel by viewModels()
+
     private lateinit var sharedPreferences: SharedPreferences
 
     private lateinit var navControllerMain: NavController
-
-    override var isShow = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -58,13 +60,9 @@ class RegistrationFragment() : Fragment(), ProfileResult<ResponseModel> {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) = with(binding) {
 
-        isShow = false
-
-        val registrationViewModel: RegistrationViewModel by viewModels()
-
         val network = Network()
 
-        val toolbarSettings = ToolbarSettings(toolbar = binding.layoutToolbarMainRegistration!!.toolbarMain)
+        val toolbarSettings = ToolbarSettings(toolbar = binding.layoutToolbarMainRegistration.toolbarMain)
 
         navControllerMain = findNavController()
 
@@ -74,7 +72,7 @@ class RegistrationFragment() : Fragment(), ProfileResult<ResponseModel> {
             navControllerMain.navigateUp()
         }
 
-        setupCityText(textInputLayout = binding.layoutCity)
+        setupCityText(autoCompleteTextView = binding.actvCity)
 
         tvLogin.setOnClickListener {
             navControllerMain.popBackStack()
@@ -82,13 +80,14 @@ class RegistrationFragment() : Fragment(), ProfileResult<ResponseModel> {
 
         bRegister.setOnClickListener {
 
+            registrationViewModel.setIsShown(isShown = false)
+
             val isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext())
 
             network.checkNetworkStatus(
                 isNetworkStatus = isNetworkStatus,
                 connectionListener = {
-                    isShow = true
-
+                    registrationViewModel.setResult(result = PendingResult())
                     val userInfoModel = UserInfoModel(
                         firstName = etFirstName.text.toString(),
                         lastName = etLastName.text.toString(),
@@ -98,49 +97,37 @@ class RegistrationFragment() : Fragment(), ProfileResult<ResponseModel> {
                         city = actvCity.text.toString()
                     )
                     Log.i("TAG", "RegistrationFragment userInfoModel = $userInfoModel")
-                    registrationViewModel.createUser(
-                        userInfoModel = userInfoModel,
-                        getStringById = { id ->
-                            getSupportActivity().getStringById(id = id)
-                        }
-                    )
+                    registrationViewModel.createUser(userInfoModel = userInfoModel)
                 },
                 disconnectionListener = {
-                    getSupportActivity().showToast(message = getString(R.string.check_your_internet_connection))
+                    registrationViewModel.setResult(
+                        result = ErrorResult(exception = Exception()),
+                        errorType = DisconnectionError()
+                    )
                 }
             )
 
         }
 
-        registrationViewModel.result.observe(viewLifecycleOwner) { result ->
-            if (isShow){
-                when (result) {
-                    is PendingResult<ResponseModel> -> { onPendingResult() }
-                    is SuccessResult<ResponseModel> -> {
-                        if (result.value != null) {
-                            val value = result.value ?: throw NullPointerException("RegistrationFragment result.value = null")
-
-                            if (value.status in 200..299) {
-                                val userId = registrationViewModel.userId.value?: UNAUTHORIZED_USER
-                                onSuccessResultListener(userId = userId, value = value)
-                            } else {
-                                if (value.message != null) {
-                                    getSupportActivity().showToast(message = value.message!!)
-                                }
-                            }
-                        }
-                    }
-
-                    is ErrorResult<ResponseModel> -> {
-                        onErrorResultListener(result.exception)
-                    }
+        registrationViewModel.resultCreateUser.observe(viewLifecycleOwner) { result ->
+            when (result) {
+                is PendingResult -> { onPendingResult() }
+                is SuccessResult -> {
+                    val value = result.value?: throw NullPointerException("RegistrationFragment value = null")
+                    val userId = registrationViewModel.userId.value?: UNAUTHORIZED_USER
+                    onSuccessResultListener(userId = userId, value = value)
                 }
-            }
-        }
-
-        registrationViewModel.message.observe(viewLifecycleOwner) { message ->
-            if (isShow){
-                getSupportActivity().showToast(message = message)
+                is ErrorResult -> {
+                    val errorType = registrationViewModel.errorType.value
+                    val message = when(errorType){
+                        is DisconnectionError -> getString(R.string.check_your_internet_connection)
+                        is DataEntryError -> getString(R.string.enter_the_data)
+                        is IdentificationError -> getString(R.string.error_in_getting_the_id)
+                        else -> getString(R.string.error)
+                    }
+                    onErrorResultListener(exception = result.exception, message = message)
+                    registrationViewModel.clearErrorType()
+                }
             }
         }
 
@@ -152,43 +139,59 @@ class RegistrationFragment() : Fragment(), ProfileResult<ResponseModel> {
     }
 
     override fun onSuccessResultListener(userId: Int, value: ResponseModel) {
-
-        val status = value.status
-        val message = value.message
-        if (status in 200..299){
-            sharedPreferences.edit().putBoolean(KEY_IS_INIT, false).apply()
-            sharedPreferences.edit().putInt(KEY_USER_ID, userId).apply()
-            Log.i("TAG","RegistrationFragment onSuccessResultListener userId = ${sharedPreferences.getInt(
-                KEY_USER_ID, UNAUTHORIZED_USER)}")
-            navControllerMain.navigate(R.id.action_registrationFragment_to_tabsFragment, null, navOptions {
-                popUpTo(R.id.initFragment) {
-                    inclusive = true
+        viewLifecycleOwner.lifecycleScope.launch {
+            val status = value.status
+            val message = value.message
+            delay(300)
+            binding.bRegister.isEnabled = true
+            if (status in 200..299){
+                sharedPreferences.edit().putBoolean(KEY_IS_INIT, false).apply()
+                sharedPreferences.edit().putInt(KEY_USER_ID, userId).apply()
+                Log.i("TAG","RegistrationFragment onSuccessResultListener userId = ${sharedPreferences.getInt(
+                    KEY_USER_ID, UNAUTHORIZED_USER)}")
+                navControllerMain.navigate(R.id.action_registrationFragment_to_tabsFragment, null, navOptions {
+                    popUpTo(R.id.initFragment) {
+                        inclusive = true
+                    }
+                })
+            }
+            else{
+                val isShown = registrationViewModel.isShown.value?: throw NullPointerException("RegistrationFragment onSuccessResultListener isShown = null")
+                if (!isShown){
+                    if (message != null) getSupportActivity().showToast(message = message)
                 }
-            })
-        }
-        else{
-            if (message != null) getSupportActivity().showToast(message = message)
-        }
+            }
 
+        }
     }
 
-    override fun onErrorResultListener(exception: Exception) {
-        getSupportActivity().showToast(message = resources.getString(R.string.error))
+    override fun onErrorResultListener(exception: Exception, message: String) {
+        viewLifecycleOwner.lifecycleScope.launch{
+            binding.bRegister.isEnabled = true
+            val isShown = registrationViewModel.isShown.value?: throw NullPointerException("RegistrationFragment onErrorResultListener isShown = null")
+            if (!isShown){
+                getSupportActivity().showToast(message = message)
+            }
+            registrationViewModel.setIsShown(isShown = true)
+        }
     }
 
     override fun onPendingResult() {
+        binding.bRegister.isEnabled = false
         Log.i("TAG","RegistrationFragment onPendingResult")
     }
 
 
-    private fun setupCityText(textInputLayout: TextInputLayout) {
+    private fun setupCityText(autoCompleteTextView: AutoCompleteTextView) {
         Log.i("TAG", "setupCityText")
+
         val listCity = listOf(
             getString(R.string.cheboksary),
             getString(R.string.novocheboksarsk)
         )
+
         val adapter = ArrayAdapter(requireContext(), R.layout.item_city, listCity)
-        (textInputLayout.editText as? MaterialAutoCompleteTextView)?.setAdapter(adapter)
+        autoCompleteTextView.setAdapter(adapter)
     }
 
 }

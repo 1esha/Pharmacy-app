@@ -4,11 +4,9 @@ import java.lang.Exception
 
 interface ProfileResult<T> {
 
-    var isShow: Boolean
-
     fun onSuccessResultListener(userId: Int, value: T)
 
-    fun onErrorResultListener(exception: Exception)
+    fun onErrorResultListener(exception: Exception, message: String)
 
     fun onPendingResult()
 }
