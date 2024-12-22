@@ -37,7 +37,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
-class LoginFragment : Fragment(), ProfileResult<ResponseValueModel<UserModel>> {
+class LoginFragment : Fragment(), ProfileResult {
 
     private var _binding: FragmentLoginBinding? = null
     private val binding get() = _binding!!
@@ -126,9 +126,10 @@ class LoginFragment : Fragment(), ProfileResult<ResponseValueModel<UserModel>> {
         _binding = null
     }
 
-    override fun onSuccessResultListener(userId: Int, value: ResponseValueModel<UserModel>) {
-        val status = value.responseModel.status
-        val message = value.responseModel.message
+    override fun <T> onSuccessResultListener(userId: Int, value: T, type: String?) {
+        val responseValueModel = value as ResponseValueModel<*>
+        val status = responseValueModel.responseModel.status
+        val message = responseValueModel.responseModel.message
         viewLifecycleOwner.lifecycleScope.launch {
             delay(300)
             binding.bLogIn.isEnabled = true

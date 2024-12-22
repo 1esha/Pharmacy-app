@@ -55,4 +55,9 @@
             android:id="@+id/action_registrationFragment_to_tabsFragment"
             app:destination="@id/tabsFragment" />
     </fragment>
+    <fragment
+        android:id="@+id/editFragment"
+        android:name="com.example.pharmacyapp.main.EditFragment"
+        android:label="fragment_edit"
+        tools:layout="@layout/fragment_edit" />
 </navigation>

@@ -2,6 +2,7 @@ package com.example.data.profile.datasource.remote
 
 import com.example.data.profile.datasource.ResultDataSource
 import com.example.data.profile.datasource.models.LogInDataSourceModel
+import com.example.data.profile.datasource.models.UserDataSourceModel
 import com.example.data.profile.datasource.models.UserInfoDataSourceModel
 
 interface ProfileRepositoryDataSourceRemote<R,V,I> {
@@ -13,4 +14,6 @@ interface ProfileRepositoryDataSourceRemote<R,V,I> {
     suspend fun getUserId(userInfoDataSourceModel: UserInfoDataSourceModel): ResultDataSource<I>
 
     suspend fun getUserById(userId: Int): ResultDataSource<V>
+
+    suspend fun editUser(userDataSourceModel: UserDataSourceModel): ResultDataSource<R>
 }

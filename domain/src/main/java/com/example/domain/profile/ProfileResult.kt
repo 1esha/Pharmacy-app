@@ -2,9 +2,9 @@ package com.example.domain.profile
 
 import java.lang.Exception
 
-interface ProfileResult<T> {
+interface ProfileResult {
 
-    fun onSuccessResultListener(userId: Int, value: T)
+    fun <T>onSuccessResultListener(userId: Int, value: T, type: String? = null)
 
     fun onErrorResultListener(exception: Exception, message: String)
 

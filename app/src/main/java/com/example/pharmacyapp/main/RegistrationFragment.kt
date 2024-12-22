@@ -38,7 +38,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
-class RegistrationFragment() : Fragment(), ProfileResult<ResponseModel> {
+class RegistrationFragment() : Fragment(), ProfileResult {
 
     private var _binding: FragmentRegistrationBinding? = null
     private val binding get() = _binding!!
@@ -138,10 +138,11 @@ class RegistrationFragment() : Fragment(), ProfileResult<ResponseModel> {
         _binding = null
     }
 
-    override fun onSuccessResultListener(userId: Int, value: ResponseModel) {
+    override fun <T> onSuccessResultListener(userId: Int, value: T, type: String?) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val status = value.status
-            val message = value.message
+            val responseModel = value as ResponseModel
+            val status = responseModel.status
+            val message = responseModel.message
             delay(300)
             binding.bRegister.isEnabled = true
             if (status in 200..299){

@@ -8,6 +8,10 @@ import com.google.android.material.appbar.MaterialToolbar
 const val KEY_USER_ID = "KEY_USER_ID"
 const val UNAUTHORIZED_USER = -1
 const val KEY_IS_INIT = "KEY_IS_INIT"
+const val TYPE_GET_USER_BY_ID = "TYPE_GET_USER_BY_ID"
+const val TYPE_EDIT_USER = "TYPE_EDIT_USER"
+const val TYPE_DELETE_USER = "TYPE_DELETE_USER"
+const val TYPE_OTHER = "TYPE_OTHER"
 const val NAME_SHARED_PREFERENCES = "NAME_SHARED_PREFERENCES"
 
 interface SupportActivity{

@@ -11,6 +11,7 @@ import com.example.data.toResponseModel
 import com.example.data.toResponseValueIntModel
 import com.example.data.toResponseValueUserModelModel
 import com.example.data.toResult
+import com.example.data.toUserDataSourceModel
 import com.example.data.toUserInfoDataSourceModel
 import com.example.domain.Result
 import com.example.domain.profile.ProfileRepository
@@ -68,6 +69,17 @@ class ProfileRepositoryImpl : ProfileRepository<ResponseModel, ResponseValueMode
         val value = resultDataSource.asSuccessResultDataSource()?.value
         val result = resultDataSource.toResult<ResponseValueDataSourceModel<UserDataSourceModel>,ResponseValueModel<UserModel>>(
             value = value?.toResponseValueUserModelModel()
+        )
+
+        return result
+    }
+
+    override suspend fun editUser(userModel: UserModel): Result<ResponseModel> {
+        val userDataSourceModel = userModel.toUserDataSourceModel()
+        val resultDataSource = profileRepositoryDataSourceRemote.editUser(userDataSourceModel = userDataSourceModel)
+        val value = resultDataSource.asSuccessResultDataSource()?.value
+        val result = resultDataSource.toResult(
+            value = value?.toResponseModel()
         )
 
         return result

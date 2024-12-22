@@ -7,8 +7,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.viewModels
-import com.example.domain.DataEntryError
+import androidx.fragment.app.activityViewModels
 import com.example.domain.DisconnectionError
 import com.example.domain.ErrorResult
 import com.example.domain.IdentificationError
@@ -27,12 +26,12 @@ import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.tabs.viewmodels.AuthorizedUserViewModel
 
 
-class AuthorizedUserFragment : Fragment(), ProfileResult<ResponseValueModel<UserModel>> {
+class AuthorizedUserFragment : Fragment(), ProfileResult {
 
     private var _binding: FragmentAuthorizedUserBinding? = null
     private val binding get() = _binding!!
 
-    private val authorizedUserViewModel: AuthorizedUserViewModel by viewModels()
+    private val authorizedUserViewModel: AuthorizedUserViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -69,7 +68,9 @@ class AuthorizedUserFragment : Fragment(), ProfileResult<ResponseValueModel<User
                     }
                 },
                 disconnectionListener = {
-                    authorizedUserViewModel.setResult(result = ErrorResult(exception = Exception()))
+                    authorizedUserViewModel.setResult(
+                        result = ErrorResult(exception = Exception()),
+                        errorType = DisconnectionError())
                 }
             )
             authorizedUserViewModel.setIsShown(isShown = true)
@@ -116,9 +117,12 @@ class AuthorizedUserFragment : Fragment(), ProfileResult<ResponseValueModel<User
                         else -> getString(R.string.error)
                     }
                     onErrorResultListener(exception = result.exception, message = message)
-                    authorizedUserViewModel.clearErrorType()
                 }
             }
+        }
+
+        authorizedUserViewModel.userModelLivedata.observe(viewLifecycleOwner){ userModel ->
+            updateUI(userModel = userModel)
         }
 
     }
@@ -128,27 +132,27 @@ class AuthorizedUserFragment : Fragment(), ProfileResult<ResponseValueModel<User
         _binding = null
     }
 
-    override fun onSuccessResultListener(userId: Int, value: ResponseValueModel<UserModel>) {
-        val status = value.responseModel.status
-        val message = value.responseModel.message
+    override fun <T> onSuccessResultListener(userId: Int, value: T, type: String?) {
+        val responseValueModel = value as ResponseValueModel<*>
+        val status = responseValueModel.responseModel.status
+        val message = responseValueModel.responseModel.message
         if (status in 200..299) {
-            updateUI(
+            updatePendingResultUI(
                 isVisible = false,
                 isProgressBar = false,
                 isButton = false,
                 isMessage = false,
                 message = null
             )
-            val userModel = value.value ?: throw NullPointerException("AuthorizedUserFragment userModel = null")
-            binding.tvFullName.text = userModel.userInfoModel.firstName + " " + userModel.userInfoModel.lastName
-            binding.tvCurrentCity.text = userModel.userInfoModel.city
+            val userModel = responseValueModel.value ?: throw NullPointerException("AuthorizedUserFragment userModel = null")
+            updateUI(userModel = userModel as UserModel)
         } else {
             if (message != null) getSupportActivity().showToast(message = message)
         }
     }
 
     override fun onErrorResultListener(exception: Exception, message: String) {
-        updateUI(
+        updatePendingResultUI(
             isVisible = true,
             isProgressBar = false,
             isButton = true,
@@ -159,7 +163,8 @@ class AuthorizedUserFragment : Fragment(), ProfileResult<ResponseValueModel<User
 
     override fun onPendingResult() {
         Log.i("TAG", "AuthorizedUserFragment onPendingResult")
-        updateUI(
+        authorizedUserViewModel.clearErrorType()
+        updatePendingResultUI(
             isVisible = true,
             isProgressBar = true,
             isButton = false,
@@ -168,7 +173,12 @@ class AuthorizedUserFragment : Fragment(), ProfileResult<ResponseValueModel<User
         )
     }
 
-    private fun updateUI(
+    private fun updateUI(userModel: UserModel){
+        binding.tvFullName.text = userModel.userInfoModel.firstName + " " + userModel.userInfoModel.lastName
+        binding.tvCurrentCity.text = userModel.userInfoModel.city
+    }
+
+    private fun updatePendingResultUI(
         isVisible: Boolean,
         isProgressBar: Boolean,
         isButton: Boolean,

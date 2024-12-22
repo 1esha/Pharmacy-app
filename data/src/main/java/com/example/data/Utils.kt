@@ -94,3 +94,10 @@ fun LogInModel.toLogInDataSourceModel(): LogInDataSourceModel {
         userPassword = this.userPassword
     )
 }
+
+fun UserModel.toUserDataSourceModel(): UserDataSourceModel{
+    return UserDataSourceModel(
+        userId = this.userId,
+        userInfoModel = this.userInfoModel.toUserInfoDataSourceModel()
+    )
+}

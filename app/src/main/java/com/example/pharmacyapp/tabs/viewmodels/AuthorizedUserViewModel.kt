@@ -29,6 +29,9 @@ class AuthorizedUserViewModel: ViewModel() {
     private val _errorType = MutableLiveData<ErrorType>(OtherError())
     val errorType: LiveData<ErrorType> = _errorType
 
+    private val _userModelLiveData = MutableLiveData<UserModel>()
+    val userModelLivedata: LiveData<UserModel> = _userModelLiveData
+
     fun getUserById(userId: Int){
         if (userId <= 0){
             setResult(result = ErrorResult(exception = Exception()), errorType = IdentificationError())
@@ -60,5 +63,9 @@ class AuthorizedUserViewModel: ViewModel() {
 
     fun setIsShown(isShown: Boolean){
         _isShown.value = isShown
+    }
+
+    fun setUserModel(userModel: UserModel){
+        _userModelLiveData.value = userModel
     }
 }

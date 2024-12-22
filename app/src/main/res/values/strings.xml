@@ -9,7 +9,7 @@
     <string name="novocheboksarsk">Novocheboksarsk</string>
     <string name="skip">Skip</string>
     <string name="log_in">Log in</string>
-    <string name="underlined_log_in"><u>Log in</u>></string>
+    <string name="underlined_log_in"><u>Log in</u></string>
     <string name="login_to_your_account">Login to your account</string>
     <string name="password">Password</string>
     <string name="register">Register</string>
@@ -27,5 +27,11 @@
     <string name="log_in_to_get_more_benefits">Log in to get more benefits!</string>
     <string name="check_your_internet_connection">Check your internet connection</string>
     <string name="try_again">Try again</string>
+    <string name="delete_an_account">Delete an account</string>
+    <string name="edit_data">Edit data</string>
+    <string name="edit_data_your_account">Edit data your account</string>
+    <string name="cancel">Cancel</string>
+    <string name="edit">Edit</string>
+    <string name="the_data_has_been_successfully_edited">The data has been successfully edited</string>
 
 </resources>

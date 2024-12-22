@@ -133,6 +133,31 @@ class ProfileRepositoryDataSourceRemoteImpl :
         }
     }
 
+    override suspend fun editUser(userDataSourceModel: UserDataSourceModel): ResultDataSource<ResponseDataSourceModel> =
+        withContext(Dispatchers.IO) {
+            try {
+                val response = client.request {
+                    url(EDIT_USER_URL)
+                    method = HttpMethod.Post
+                    setBody(userDataSourceModel)
+                    contentType(ContentType.Application.Json)
+                }
+                val responseDataSourceModel = response.body<ResponseDataSourceModel>()
+
+                val successResultDataSource = SuccessResultDataSource(
+                    value = responseDataSourceModel
+                )
+                Log.i("TAG", "editUser successResultDataSource ${successResultDataSource.value}")
+                return@withContext successResultDataSource
+            } catch (e: Exception) {
+                val errorResultDataSource = ErrorResultDataSource<ResponseDataSourceModel>(
+                    exception = e
+                )
+                Log.i("TAG", "editUser errorResultDataSource ${errorResultDataSource.exception}")
+                return@withContext errorResultDataSource
+            }
+        }
+
     companion object {
         private const val PORT = "4000"
         private const val BASE_URL = "http://192.168.0.113:$PORT"
@@ -140,6 +165,7 @@ class ProfileRepositoryDataSourceRemoteImpl :
         const val GET_USER_URL = "$BASE_URL/user"
         const val GET_USER_ID_URL = "$BASE_URL/user_id"
         const val GET_USER_BY_ID_URL = "$BASE_URL/user_by_id?id="
+        const val EDIT_USER_URL ="$BASE_URL/user/edit"
     }
 
 
