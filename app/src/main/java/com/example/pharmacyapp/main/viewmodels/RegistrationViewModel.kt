@@ -15,7 +15,6 @@ import com.example.domain.PendingResult
 import com.example.domain.Result
 import com.example.domain.SuccessResult
 import com.example.domain.profile.models.ResponseModel
-import com.example.domain.profile.models.ResponseValueModel
 import com.example.domain.profile.models.UserInfoModel
 import com.example.domain.profile.usecases.CreateUserUseCase
 import com.example.domain.profile.usecases.GetUserIdUseCase
@@ -29,17 +28,17 @@ class RegistrationViewModel : ViewModel() {
     private val _resultCreateUser = MutableLiveData<Result<ResponseModel>>()
     val resultCreateUser: LiveData<Result<ResponseModel>> = _resultCreateUser
 
-    private val _resultGetUserId = MutableLiveData<Result<ResponseValueModel<Int>>>(PendingResult())
-    val resultGetUserId: LiveData<Result<ResponseValueModel<Int>>> = _resultGetUserId
-
-    private val _userId = MutableLiveData<Int>(UNAUTHORIZED_USER)
+    private val _userId = MutableLiveData(UNAUTHORIZED_USER)
     val userId: LiveData<Int> = _userId
 
-    private val _isShown = MutableLiveData<Boolean>(false)
+    private val _isShown = MutableLiveData(false)
     val isShown: LiveData<Boolean> = _isShown
 
     private val _errorType = MutableLiveData<ErrorType>(OtherError())
     val errorType: LiveData<ErrorType> = _errorType
+
+    private val _isSetupCity = MutableLiveData(true)
+    val isSetupCity: LiveData<Boolean> = _isSetupCity
 
     fun createUser(userInfoModel: UserInfoModel) {
         if (

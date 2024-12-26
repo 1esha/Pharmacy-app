@@ -8,21 +8,23 @@
     android:fitsSystemWindows="true"
     tools:context=".main.LoginFragment">
 
-    <include
-        android:id="@+id/layoutToolbarMainLogIn"
-        layout="@layout/toolbar_main"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:gravity="center"
             android:orientation="vertical">
+
+            <ProgressBar
+                android:id="@+id/progressBarLogIn"
+                style="?android:attr/progressBarStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:visibility="invisible"/>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -99,7 +101,31 @@
                     android:text="@string/register" />
             </LinearLayout>
 
+            <LinearLayout
+                android:id="@+id/layoutSkip"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_marginTop="32dp"
+                android:orientation="horizontal">
+
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
+                    android:text="@string/do_you_want_to_log_in_later" />
+
+                <TextView
+                    android:id="@+id/tvSkipAgain"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textStyle="bold"
+                    android:text="@string/underlined_skip" />
+            </LinearLayout>
+
         </LinearLayout>
+
 
     </androidx.core.widget.NestedScrollView>
 

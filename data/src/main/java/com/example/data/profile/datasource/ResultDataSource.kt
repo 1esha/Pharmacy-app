@@ -1,6 +1,5 @@
 package com.example.data.profile.datasource
 
-import com.example.data.profile.datasource.models.ResponseDataSourceModel
 
 sealed class ResultDataSource <T>
 

@@ -3,6 +3,10 @@ package com.example.pharmacyapp
 import android.content.Context
 import androidx.fragment.app.Fragment
 import androidx.navigation.NavController
+import com.example.domain.DataEntryError
+import com.example.domain.DisconnectionError
+import com.example.domain.ErrorType
+import com.example.domain.IdentificationError
 import com.google.android.material.appbar.MaterialToolbar
 
 const val KEY_USER_ID = "KEY_USER_ID"
@@ -36,6 +40,16 @@ class ToolbarSettings(private val toolbar: MaterialToolbar){
             setNavigationIcon(icon)
             setNavigationOnClickListener { onClickNavigationIcon() }
 
+    }
+
+}
+
+fun getMessageByErrorType(errorType: ErrorType?): Int{
+    return when(errorType){
+        is DisconnectionError -> R.string.check_your_internet_connection
+        is IdentificationError -> R.string.error_in_getting_the_id
+        is DataEntryError -> R.string.enter_the_data
+        else -> R.string.error
     }
 }
 

@@ -9,8 +9,9 @@
     <string name="cheboksary">Чебоксары</string>
     <string name="novocheboksarsk">Новочебоксарск</string>
     <string name="skip">Пропустить</string>
-    <string name="log_in">Авторизоваться</string>
-    <string name="underlined_log_in"><u>Авторизоваться</u></string>
+    <string name="underlined_skip"><u>Пропустить</u></string>
+    <string name="log_in">Войти</string>
+    <string name="underlined_log_in"><u>Войти</u></string>
     <string name="login_to_your_account">Войдите в свою учетную запись</string>
     <string name="password">Пароль</string>
     <string name="register">Зарегистрировать</string>
@@ -34,4 +35,10 @@
     <string name="cancel">Отмена</string>
     <string name="edit">Редактировать</string>
     <string name="the_data_has_been_successfully_edited">Данные были успешно отредактированы</string>
+    <string name="do_you_really_want_to_delete_your_account">Вы действительно хотите удалить аккаунт?</string>
+    <string name="after_deleting_the_account_all_data_about_it_will_be_deleted">После удаления аккаунта все данные о нём будут удалены</string>
+    <string name="delete">Удалить</string>
+    <string name="log_out">Выйти</string>
+    <string name="log_out_of_your_account">Выйти из аккаунта?</string>
+    <string name="do_you_want_to_log_in_later">Вы хотите войти позже?</string>
 </resources>

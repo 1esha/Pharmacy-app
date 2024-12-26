@@ -84,6 +84,24 @@
 
             </com.google.android.material.card.MaterialCardView>
 
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="bottom"
+                android:layout_margin="16dp"
+                android:orientation="vertical">
+
+                <Button
+                    android:id="@+id/bExit"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/log_out" />
+            </LinearLayout>
+
         </LinearLayout>
-    </LinearLayout>
+
+
+</LinearLayout>
 

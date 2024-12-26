@@ -8,17 +8,20 @@
     android:fitsSystemWindows="true"
     tools:context=".main.LoginFragment">
 
-    <include
-        android:id="@+id/layoutToolbarMainLogIn"
-        layout="@layout/toolbar_main"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="10"
         android:gravity="center"
         android:orientation="vertical">
+
+        <ProgressBar
+            android:id="@+id/progressBarLogIn"
+            style="?android:attr/progressBarStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:visibility="invisible"/>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -36,9 +39,9 @@
                 android:id="@+id/textView5"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="16sp"
                 android:gravity="center"
-                android:text="@string/login_to_your_account" />
+                android:text="@string/login_to_your_account"
+                android:textSize="16sp" />
         </LinearLayout>
 
         <LinearLayout
@@ -68,8 +71,8 @@
                     android:id="@+id/etPassword"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textPassword"
-                    android:hint="@string/password" />
+                    android:hint="@string/password"
+                    android:inputType="textPassword" />
             </com.google.android.material.textfield.TextInputLayout>
 
         </LinearLayout>
@@ -97,7 +100,27 @@
 
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/layoutSkip"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="horizontal">
 
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="6dp"
+            android:text="@string/do_you_want_to_log_in_later" />
+
+        <TextView
+            android:id="@+id/tvSkipAgain"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:text="@string/underlined_skip" />
+    </LinearLayout>
 
 </LinearLayout>

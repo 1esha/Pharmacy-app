@@ -13,24 +13,21 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
-import com.example.domain.DataEntryError
 import com.example.domain.DisconnectionError
 import com.example.domain.ErrorResult
-import com.example.domain.ErrorType
 import com.example.domain.Network
 import com.example.domain.PendingResult
 import com.example.domain.SuccessResult
 import com.example.domain.profile.ProfileResult
 import com.example.domain.profile.models.LogInModel
 import com.example.domain.profile.models.ResponseValueModel
-import com.example.domain.profile.models.UserModel
 import com.example.pharmacyapp.KEY_IS_INIT
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
-import com.example.pharmacyapp.ToolbarSettings
 import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.FragmentLoginBinding
+import com.example.pharmacyapp.getMessageByErrorType
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.LoginViewModel
 import kotlinx.coroutines.delay
@@ -59,20 +56,18 @@ class LoginFragment : Fragment(), ProfileResult {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) = with(binding) {
 
-        val network = Network()
-
-        val toolbarSettings = ToolbarSettings(toolbar = binding.layoutToolbarMainLogIn.toolbarMain)
-
         navControllerMain = findNavController()
 
         sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
 
-        toolbarSettings.installToolbarMain(icon = R.drawable.ic_back) {
-            navControllerMain.navigateUp()
-        }
+        val network = Network()
+
+        layoutSkip.visibility =  if (!sharedPreferences.getBoolean(KEY_IS_INIT,true)) View.GONE else View.VISIBLE
 
         bLogIn.setOnClickListener {
+
             loginViewModel.setIsShown(isShown = false)
+
             val isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext())
 
             network.checkNetworkStatus(
@@ -92,13 +87,17 @@ class LoginFragment : Fragment(), ProfileResult {
 
         }
         bGoToRegister.setOnClickListener {
-            navControllerMain.navigate(R.id.action_loginFragment_to_registrationFragment)
+            navControllerMain.navigate(R.id.registrationFragment)
+        }
+
+        tvSkipAgain.setOnClickListener {
+            onClickSkipAgain()
         }
 
         loginViewModel.result.observe(viewLifecycleOwner){ result ->
             when (result) {
-                is PendingResult<ResponseValueModel<UserModel>> -> { onPendingResult() }
-                is SuccessResult<ResponseValueModel<UserModel>> -> {
+                is PendingResult -> { onPendingResult() }
+                is SuccessResult-> {
                     if (result.value != null) {
                         val value = result.value ?: throw NullPointerException("LoginFragment result.value = null")
                         val userId = value.value?.userId ?: UNAUTHORIZED_USER
@@ -107,15 +106,11 @@ class LoginFragment : Fragment(), ProfileResult {
 
                 }
 
-                is ErrorResult<ResponseValueModel<UserModel>> -> {
+                is ErrorResult -> {
                     val errorType = loginViewModel.errorType.value
-                    val message = when(errorType){
-                        is DisconnectionError -> getString(R.string.check_your_internet_connection)
-                        is DataEntryError -> getString(R.string.enter_the_data)
-                        else -> getString(R.string.error)
-                    }
+                    val message = getString(getMessageByErrorType(errorType = errorType))
                     onErrorResultListener(exception = result.exception, message = message)
-                    loginViewModel.clearErrorType()
+
                 }
             }
         }
@@ -132,18 +127,23 @@ class LoginFragment : Fragment(), ProfileResult {
         val message = responseValueModel.responseModel.message
         viewLifecycleOwner.lifecycleScope.launch {
             delay(300)
+            binding.progressBarLogIn.visibility = View.INVISIBLE
             binding.bLogIn.isEnabled = true
+            setEnable(isEnabled = true)
 
             if (status in 200..299){
-                sharedPreferences.edit().putBoolean(KEY_IS_INIT, false).apply()
-                sharedPreferences.edit().putInt(KEY_USER_ID, userId).apply()
-                Log.i("TAG","LoginFragment onSuccessResultListener userId = ${sharedPreferences.getInt(
-                    KEY_USER_ID,-1)}")
-                navControllerMain.navigate(R.id.action_loginFragment_to_tabsFragment, null, navOptions {
-                    popUpTo(R.id.initFragment) {
+                sharedPreferences.apply {
+                    edit().putBoolean(KEY_IS_INIT, false).apply()
+                    edit().putInt(KEY_USER_ID, userId).apply()
+                }
+
+                Log.i("TAG","LoginFragment onSuccessResultListener userId = ${sharedPreferences.getInt(KEY_USER_ID,-1)}")
+                navControllerMain.navigate(R.id.tabsFragment, null, navOptions {
+                    popUpTo(R.id.nav_graph_log_in) {
                         inclusive = true
                     }
                 })
+
             }
             else{
                 val isShown = loginViewModel.isShown.value?:throw NullPointerException("LoginFragment onSuccessResultListener isShown = null")
@@ -164,12 +164,35 @@ class LoginFragment : Fragment(), ProfileResult {
             getSupportActivity().showToast(message = message)
         }
         loginViewModel.setIsShown(isShown = true)
+        binding.progressBarLogIn.visibility = View.INVISIBLE
         binding.bLogIn.isEnabled = true
+        setEnable(isEnabled = true)
     }
 
     override fun onPendingResult() {
         Log.i("TAG","LoginFragment onPendingResult")
+        binding.progressBarLogIn.visibility = View.VISIBLE
         binding.bLogIn.isEnabled = false
+        setEnable(isEnabled = false)
+        loginViewModel.clearErrorType()
+
+    }
+
+    private fun setEnable(isEnabled: Boolean) = with(binding){
+        etLogin.isEnabled = isEnabled
+        etPassword.isEnabled = isEnabled
+    }
+
+    private fun onClickSkipAgain(){
+        sharedPreferences.apply {
+            edit().putBoolean(KEY_IS_INIT,false).apply()
+            edit().putInt(KEY_USER_ID, UNAUTHORIZED_USER).apply()
+        }
+        navControllerMain.navigate(R.id.tabsFragment, null, navOptions {
+            popUpTo(R.id.nav_graph_log_in){
+                inclusive = true
+            }
+        })
     }
 
 }

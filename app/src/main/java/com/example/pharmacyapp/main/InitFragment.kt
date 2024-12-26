@@ -3,7 +3,6 @@ package com.example.pharmacyapp.main
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -77,13 +76,19 @@ class InitFragment : Fragment() {
 
     private fun onClickGoToLogIn() {
         val navControllerMain = findNavController()
-        navControllerMain.navigate(R.id.action_initFragment_to_loginFragment)
+        navControllerMain.navigate(R.id.nav_graph_log_in, null, navOptions {
+            popUpTo(R.id.initFragment){
+                inclusive = true
+            }
+        })
 
     }
 
     private fun onClickSkip(){
-        sharedPreferences.edit().putBoolean(KEY_IS_INIT,false).apply()
-        sharedPreferences.edit().putInt(KEY_USER_ID, UNAUTHORIZED_USER).apply()
+        sharedPreferences.apply {
+            edit().putBoolean(KEY_IS_INIT,false).apply()
+            edit().putInt(KEY_USER_ID, UNAUTHORIZED_USER).apply()
+        }
         navControllerMain.navigate(R.id.action_initFragment_to_tabsFragment, null, navOptions {
             popUpTo(R.id.initFragment){
                 inclusive = true

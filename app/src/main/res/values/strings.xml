@@ -8,6 +8,7 @@
     <string name="cheboksary">Cheboksary</string>
     <string name="novocheboksarsk">Novocheboksarsk</string>
     <string name="skip">Skip</string>
+    <string name="underlined_skip"><u>Skip</u></string>
     <string name="log_in">Log in</string>
     <string name="underlined_log_in"><u>Log in</u></string>
     <string name="login_to_your_account">Login to your account</string>
@@ -33,5 +34,11 @@
     <string name="cancel">Cancel</string>
     <string name="edit">Edit</string>
     <string name="the_data_has_been_successfully_edited">The data has been successfully edited</string>
+    <string name="do_you_really_want_to_delete_your_account">Do you really want to delete your account?</string>
+    <string name="after_deleting_the_account_all_data_about_it_will_be_deleted">After deleting the account, all data about it will be deleted.</string>
+    <string name="delete">Delete</string>
+    <string name="log_out">Log out</string>
+    <string name="log_out_of_your_account">Log out of your account?</string>
+    <string name="do_you_want_to_log_in_later">Do you want to log in later?</string>
 
 </resources>

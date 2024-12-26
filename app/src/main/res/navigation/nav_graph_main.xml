@@ -23,11 +23,11 @@
         android:label="fragment_init"
         tools:layout="@layout/fragment_init" >
         <action
-            android:id="@+id/action_initFragment_to_loginFragment"
-            app:destination="@id/loginFragment" />
-        <action
             android:id="@+id/action_initFragment_to_tabsFragment"
             app:destination="@id/tabsFragment" />
+        <action
+            android:id="@+id/action_initFragment_to_nav_graph_log_in"
+            app:destination="@id/nav_graph_log_in" />
     </fragment>
     <fragment
         android:id="@+id/tabsFragment"
@@ -35,29 +35,9 @@
         android:label="fragment_tabs"
         tools:layout="@layout/fragment_tabs" />
     <fragment
-        android:id="@+id/loginFragment"
-        android:name="com.example.pharmacyapp.main.LoginFragment"
-        android:label="fragment_login"
-        tools:layout="@layout/fragment_login" >
-        <action
-            android:id="@+id/action_loginFragment_to_registrationFragment"
-            app:destination="@id/registrationFragment" />
-        <action
-            android:id="@+id/action_loginFragment_to_tabsFragment"
-            app:destination="@id/tabsFragment" />
-    </fragment>
-    <fragment
-        android:id="@+id/registrationFragment"
-        android:name="com.example.pharmacyapp.main.RegistrationFragment"
-        android:label="fragment_registration"
-        tools:layout="@layout/fragment_registration" >
-        <action
-            android:id="@+id/action_registrationFragment_to_tabsFragment"
-            app:destination="@id/tabsFragment" />
-    </fragment>
-    <fragment
         android:id="@+id/editFragment"
         android:name="com.example.pharmacyapp.main.EditFragment"
         android:label="fragment_edit"
         tools:layout="@layout/fragment_edit" />
+    <include app:graph="@navigation/nav_graph_log_in" />
 </navigation>

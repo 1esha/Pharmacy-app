@@ -37,7 +37,6 @@ class LoginViewModel : ViewModel() {
             logInModel.userPassword.isEmpty() || logInModel.userPassword.isBlank()
         ){
             setResult(result = ErrorResult(exception = Exception()), errorType = DataEntryError())
-            setIsShown(isShown = true)
             return
         }
         viewModelScope.launch {

@@ -9,16 +9,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.AutoCompleteTextView
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
-import com.example.domain.DataEntryError
 import com.example.domain.DisconnectionError
 import com.example.domain.ErrorResult
-import com.example.domain.IdentificationError
 import com.example.domain.Network
 import com.example.domain.PendingResult
 import com.example.domain.SuccessResult
@@ -32,6 +29,7 @@ import com.example.pharmacyapp.R
 import com.example.pharmacyapp.ToolbarSettings
 import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.FragmentRegistrationBinding
+import com.example.pharmacyapp.getMessageByErrorType
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.RegistrationViewModel
 import kotlinx.coroutines.delay
@@ -72,8 +70,6 @@ class RegistrationFragment() : Fragment(), ProfileResult {
             navControllerMain.navigateUp()
         }
 
-        setupCityText(autoCompleteTextView = binding.actvCity)
-
         tvLogin.setOnClickListener {
             navControllerMain.popBackStack()
         }
@@ -109,7 +105,12 @@ class RegistrationFragment() : Fragment(), ProfileResult {
 
         }
 
+        registrationViewModel.isSetupCity.observe(viewLifecycleOwner) {
+            setupCityText()
+        }
+
         registrationViewModel.resultCreateUser.observe(viewLifecycleOwner) { result ->
+
             when (result) {
                 is PendingResult -> { onPendingResult() }
                 is SuccessResult -> {
@@ -119,14 +120,9 @@ class RegistrationFragment() : Fragment(), ProfileResult {
                 }
                 is ErrorResult -> {
                     val errorType = registrationViewModel.errorType.value
-                    val message = when(errorType){
-                        is DisconnectionError -> getString(R.string.check_your_internet_connection)
-                        is DataEntryError -> getString(R.string.enter_the_data)
-                        is IdentificationError -> getString(R.string.error_in_getting_the_id)
-                        else -> getString(R.string.error)
-                    }
+                    val message = getString(getMessageByErrorType(errorType = errorType))
                     onErrorResultListener(exception = result.exception, message = message)
-                    registrationViewModel.clearErrorType()
+
                 }
             }
         }
@@ -145,13 +141,15 @@ class RegistrationFragment() : Fragment(), ProfileResult {
             val message = responseModel.message
             delay(300)
             binding.bRegister.isEnabled = true
+            setEnable(isEnabled = true)
+            binding.progressBarRegistration.visibility = View.INVISIBLE
             if (status in 200..299){
                 sharedPreferences.edit().putBoolean(KEY_IS_INIT, false).apply()
                 sharedPreferences.edit().putInt(KEY_USER_ID, userId).apply()
                 Log.i("TAG","RegistrationFragment onSuccessResultListener userId = ${sharedPreferences.getInt(
                     KEY_USER_ID, UNAUTHORIZED_USER)}")
-                navControllerMain.navigate(R.id.action_registrationFragment_to_tabsFragment, null, navOptions {
-                    popUpTo(R.id.initFragment) {
+                navControllerMain.navigate(R.id.tabsFragment, null, navOptions {
+                    popUpTo(R.id.nav_graph_log_in) {
                         inclusive = true
                     }
                 })
@@ -162,29 +160,44 @@ class RegistrationFragment() : Fragment(), ProfileResult {
                     if (message != null) getSupportActivity().showToast(message = message)
                 }
             }
+            registrationViewModel.setIsShown(isShown = true)
 
         }
     }
 
     override fun onErrorResultListener(exception: Exception, message: String) {
         viewLifecycleOwner.lifecycleScope.launch{
+            delay(300)
             binding.bRegister.isEnabled = true
+            setEnable(isEnabled = true)
+            binding.progressBarRegistration.visibility = View.INVISIBLE
             val isShown = registrationViewModel.isShown.value?: throw NullPointerException("RegistrationFragment onErrorResultListener isShown = null")
-            if (!isShown){
-                getSupportActivity().showToast(message = message)
-            }
+            if (!isShown) getSupportActivity().showToast(message = message)
+
             registrationViewModel.setIsShown(isShown = true)
         }
+
     }
 
     override fun onPendingResult() {
         binding.bRegister.isEnabled = false
+        binding.progressBarRegistration.visibility = View.VISIBLE
+        setEnable(isEnabled = false)
+        registrationViewModel.clearErrorType()
         Log.i("TAG","RegistrationFragment onPendingResult")
     }
 
+    private fun setEnable(isEnabled: Boolean) = with(binding){
+        etFirstName.isEnabled = isEnabled
+        etLastName.isEnabled = isEnabled
+        etEmail.isEnabled = isEnabled
+        etPhoneNumber.isEnabled = isEnabled
+        etPassword.isEnabled = isEnabled
+        layoutCity.isEnabled = isEnabled
+    }
 
-    private fun setupCityText(autoCompleteTextView: AutoCompleteTextView) {
-        Log.i("TAG", "setupCityText")
+
+    private fun setupCityText() {
 
         val listCity = listOf(
             getString(R.string.cheboksary),
@@ -192,7 +205,7 @@ class RegistrationFragment() : Fragment(), ProfileResult {
         )
 
         val adapter = ArrayAdapter(requireContext(), R.layout.item_city, listCity)
-        autoCompleteTextView.setAdapter(adapter)
+        binding.actvCity.setAdapter(adapter)
     }
 
 }
