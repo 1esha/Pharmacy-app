@@ -1,6 +1,5 @@
 package com.example.data.profile
 
-import android.util.Log
 import com.example.data.asSuccessResultDataSource
 import com.example.data.profile.datasource.models.ResponseDataSourceModel
 import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
@@ -65,9 +64,9 @@ class ProfileRepositoryImpl : ProfileRepository<ResponseModel, ResponseValueMode
     }
 
     override suspend fun getUserById(userId: Int): Result<ResponseValueModel<UserModel>> {
-        val resultDataSource = profileRepositoryDataSourceRemote.getUserById(userId = userId)
-        val value = resultDataSource.asSuccessResultDataSource()?.value
-        val result = resultDataSource.toResult<ResponseValueDataSourceModel<UserDataSourceModel>,ResponseValueModel<UserModel>>(
+        val resultDataSourceModel = profileRepositoryDataSourceRemote.getUserById(userId = userId)
+        val value = resultDataSourceModel.asSuccessResultDataSource()?.value
+        val result = resultDataSourceModel.toResult<ResponseValueDataSourceModel<UserDataSourceModel>,ResponseValueModel<UserModel>>(
             value = value?.toResponseValueUserModelModel()
         )
 
@@ -79,6 +78,18 @@ class ProfileRepositoryImpl : ProfileRepository<ResponseModel, ResponseValueMode
         val resultDataSource = profileRepositoryDataSourceRemote.editUser(userDataSourceModel = userDataSourceModel)
         val value = resultDataSource.asSuccessResultDataSource()?.value
         val result = resultDataSource.toResult(
+            value = value?.toResponseModel()
+        )
+
+        return result
+    }
+
+    override suspend fun deleteUser(userId: Int): Result<ResponseModel> {
+        val resultDataSourceModel = profileRepositoryDataSourceRemote.deleteUser(
+            userId = userId
+        )
+        val value = resultDataSourceModel.asSuccessResultDataSource()?.value
+        val result = resultDataSourceModel.toResult(
             value = value?.toResponseModel()
         )
 

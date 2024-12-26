@@ -16,4 +16,6 @@ interface ProfileRepositoryDataSourceRemote<R,V,I> {
     suspend fun getUserById(userId: Int): ResultDataSource<V>
 
     suspend fun editUser(userDataSourceModel: UserDataSourceModel): ResultDataSource<R>
+
+    suspend fun deleteUser(userId: Int): ResultDataSource<R>
 }

@@ -16,4 +16,6 @@ interface ProfileRepository<R,V,I> {
     suspend fun getUserById(userId: Int): Result<V>
 
     suspend fun editUser(userModel: UserModel): Result<R>
+
+    suspend fun deleteUser(userId: Int): Result<R>
 }

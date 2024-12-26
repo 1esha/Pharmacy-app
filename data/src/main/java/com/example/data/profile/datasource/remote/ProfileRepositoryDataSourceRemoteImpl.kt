@@ -158,6 +158,29 @@ class ProfileRepositoryDataSourceRemoteImpl :
             }
         }
 
+    override suspend fun deleteUser(userId: Int): ResultDataSource<ResponseDataSourceModel> =
+        withContext(Dispatchers.IO) {
+            try {
+                val response = client.request {
+                    url(DELETE_USER_URL+"$userId")
+                    method = HttpMethod.Get
+                }
+                val responseDataSourceModel = response.body<ResponseDataSourceModel>()
+
+                val successResultDataSource = SuccessResultDataSource(
+                    value = responseDataSourceModel
+                )
+                Log.i("TAG", "deleteUser successResultDataSource ${successResultDataSource.value}")
+                return@withContext successResultDataSource
+            } catch (e: Exception) {
+                val errorResultDataSource = ErrorResultDataSource<ResponseDataSourceModel>(
+                    exception = e
+                )
+                Log.i("TAG", "deleteUser errorResultDataSource ${errorResultDataSource.exception}")
+                return@withContext errorResultDataSource
+            }
+        }
+
     companion object {
         private const val PORT = "4000"
         private const val BASE_URL = "http://192.168.0.113:$PORT"
@@ -166,6 +189,7 @@ class ProfileRepositoryDataSourceRemoteImpl :
         const val GET_USER_ID_URL = "$BASE_URL/user_id"
         const val GET_USER_BY_ID_URL = "$BASE_URL/user_by_id?id="
         const val EDIT_USER_URL ="$BASE_URL/user/edit"
+        const val DELETE_USER_URL = "$BASE_URL/user/delete?id="
     }
 
 
