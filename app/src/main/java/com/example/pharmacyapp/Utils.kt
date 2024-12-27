@@ -8,6 +8,7 @@ import com.example.domain.DisconnectionError
 import com.example.domain.ErrorType
 import com.example.domain.IdentificationError
 import com.google.android.material.appbar.MaterialToolbar
+import io.ktor.util.toLowerCasePreservingASCIIRules
 
 const val KEY_USER_ID = "KEY_USER_ID"
 const val UNAUTHORIZED_USER = -1
@@ -32,6 +33,16 @@ interface SupportActivity{
 
 fun Fragment.getSupportActivity():SupportActivity{
     return requireActivity() as SupportActivity
+}
+
+fun String.toPath(): String {
+    var path = ""
+    this.toLowerCasePreservingASCIIRules().forEach { char ->
+        path += if (char == ' ') '_' else char
+
+    }
+
+    return path
 }
 
 class ToolbarSettings(private val toolbar: MaterialToolbar){

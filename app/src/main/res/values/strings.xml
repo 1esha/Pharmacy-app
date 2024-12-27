@@ -40,5 +40,10 @@
     <string name="log_out">Log out</string>
     <string name="log_out_of_your_account">Log out of your account?</string>
     <string name="do_you_want_to_log_in_later">Do you want to log in later?</string>
-
+    <string name="medicines_and_dietary_supplements">Medicines and dietary supplements</string>
+    <string name="medical_devices">Medical devices</string>
+    <string name="hygiene_and_care">Hygiene and care</string>
+    <string name="optics">Optics</string>
+    <string name="mom_and_baby">Mom and baby</string>
+    <string name="orthopedic_products">Orthopedic products</string>
 </resources>

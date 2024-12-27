@@ -41,4 +41,10 @@
     <string name="log_out">Выйти</string>
     <string name="log_out_of_your_account">Выйти из аккаунта?</string>
     <string name="do_you_want_to_log_in_later">Вы хотите войти позже?</string>
+    <string name="medicines_and_dietary_supplements">Лекарственные препараты и БАДы</string>
+    <string name="medical_devices">Медицинские приборы</string>
+    <string name="hygiene_and_care">Гигиена и уход</string>
+    <string name="optics">Оптика</string>
+    <string name="mom_and_baby">Мама и малыш</string>
+    <string name="orthopedic_products">Ортопедические изделия</string>
 </resources>
