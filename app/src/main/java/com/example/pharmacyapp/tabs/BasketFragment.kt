@@ -5,13 +5,18 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.activityViewModels
+import com.example.pharmacyapp.R
+import com.example.pharmacyapp.ToolbarDataModel
 import com.example.pharmacyapp.databinding.FragmentBasketBinding
+import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 
 class BasketFragment : Fragment() {
 
     private var _binding: FragmentBasketBinding? = null
     private val binding get() = _binding!!
 
+    private val toolbarViewModel: ToolbarViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -20,6 +25,11 @@ class BasketFragment : Fragment() {
         _binding = FragmentBasketBinding.inflate(inflater, container, false)
         val view = binding.root
         return view
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+
+        toolbarViewModel.setToolbarData(toolbarDataModel = ToolbarDataModel(title = getString(R.string.basket)){})
     }
 
     override fun onDestroyView() {

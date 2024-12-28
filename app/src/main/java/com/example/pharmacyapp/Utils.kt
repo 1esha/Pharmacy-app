@@ -25,6 +25,8 @@ const val TYPE_OTHER = "TYPE_OTHER"
 
 const val NAME_SHARED_PREFERENCES = "NAME_SHARED_PREFERENCES"
 
+typealias OnClickNavigationIcon = () -> Unit
+
 interface SupportActivity {
 
     fun getNavControllerMain(): NavController
@@ -54,15 +56,22 @@ fun String.toPath(): String {
     return path
 }
 
-class ToolbarSettings(private val toolbar: MaterialToolbar){
+class ToolbarSettings(private val toolbar: MaterialToolbar) {
 
-    fun installToolbarMain(icon: Int, onClickNavigationIcon:() -> Unit) = with(toolbar){
+    fun installToolbarMain(icon: Int, title: String? = null, onClickNavigationIcon: () -> Unit) =
+        with(toolbar) {
             setNavigationIcon(icon)
             setNavigationOnClickListener { onClickNavigationIcon() }
-
-    }
+            if (title != null) setTitle(title)
+        }
 
 }
+
+data class ToolbarDataModel(
+    val title: String? = null,
+    val icon: Int? = null,
+    val onClickNavigationIcon: OnClickNavigationIcon
+)
 
 fun getMessageByErrorType(errorType: ErrorType?): Int {
     return when (errorType) {

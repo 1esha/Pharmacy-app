@@ -114,4 +114,9 @@
     <string name="orthopedic_corset_retainer">Orthopedic corset / retainer</string>
     <string name="orthopedic_insoles">Orthopedic insoles</string>
     <string name="orthopedic_pillows">Orthopedic pillows</string>
+
+    <string name="catalog">Catalog</string>
+    <string name="basket">Basket</string>
+    <string name="my_card">My card</string>
+    <string name="main">Main</string>
 </resources>

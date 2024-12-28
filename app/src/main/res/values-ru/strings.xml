@@ -115,4 +115,9 @@
     <string name="orthopedic_corset_retainer">Корсет / фиксатор ортопедический</string>
     <string name="orthopedic_insoles">Стельки ортопедические</string>
     <string name="orthopedic_pillows">Подушки ортопедические</string>
+
+    <string name="catalog">Каталог</string>
+    <string name="basket">Корзина</string>
+    <string name="my_card">Моя карта</string>
+    <string name="main">Главная</string>
 </resources>

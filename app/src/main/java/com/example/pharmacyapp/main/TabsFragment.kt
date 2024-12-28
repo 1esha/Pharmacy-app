@@ -5,10 +5,12 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.databinding.FragmentTabsBinding
+import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 
 class TabsFragment : Fragment() {
 
@@ -24,13 +26,23 @@ class TabsFragment : Fragment() {
         return view
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) = with(binding){
-
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?): Unit = with(binding){
+        val toolbarViewModel: ToolbarViewModel by activityViewModels()
         val navHostTabs = childFragmentManager.findFragmentById(R.id.navHostFragmentTabs) as NavHostFragment
         val navControllerTabs = navHostTabs.navController
 
         bnvTabs.setupWithNavController(navControllerTabs)
 
+        toolbarViewModel.toolbarLiveData.observe(viewLifecycleOwner){ toolbarDataModel ->
+            with(toolbarDataModel) {
+                toolbarTabs.setTitle(title)
+                if (icon != null) toolbarTabs.setNavigationIcon(icon) else toolbarTabs.navigationIcon = null
+                toolbarTabs.setNavigationOnClickListener {
+                    onClickNavigationIcon()
+                }
+            }
+
+        }
     }
 
     override fun onDestroyView() {

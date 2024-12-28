@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.activityViewModels
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
@@ -12,7 +13,9 @@ import com.example.domain.models.CatalogMainModel
 import com.example.pharmacyapp.KEY_ARRAY_LIST_CURRENT_ITEMS
 import com.example.pharmacyapp.KEY_PATH_MAIN
 import com.example.pharmacyapp.R
+import com.example.pharmacyapp.ToolbarDataModel
 import com.example.pharmacyapp.databinding.FragmentCatalogBinding
+import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 import com.example.pharmacyapp.tabs.catalog.adapters.CatalogMainAdapter
 import com.example.pharmacyapp.toPath
 
@@ -22,6 +25,8 @@ class CatalogFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var navControllerCatalog: NavController
+
+    private val toolbarViewModel: ToolbarViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -51,6 +56,8 @@ class CatalogFragment : Fragment() {
 
         rvCatalog.adapter = catalogMainAdapter
         rvCatalog.layoutManager = GridLayoutManager(requireContext(), 2)
+
+        toolbarViewModel.setToolbarData(toolbarDataModel = ToolbarDataModel(title = getString(R.string.catalog)){})
     }
 
     override fun onDestroyView() {

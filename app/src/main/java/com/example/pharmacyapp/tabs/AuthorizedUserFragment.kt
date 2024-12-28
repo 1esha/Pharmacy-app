@@ -25,10 +25,12 @@ import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.TYPE_GET_USER_BY_ID
 import com.example.pharmacyapp.TYPE_OTHER
+import com.example.pharmacyapp.ToolbarDataModel
 import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.FragmentAuthorizedUserBinding
 import com.example.pharmacyapp.getMessageByErrorType
 import com.example.pharmacyapp.getSupportActivity
+import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 import com.example.pharmacyapp.tabs.viewmodels.AuthorizedUserViewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
@@ -39,6 +41,8 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
     private val binding get() = _binding!!
 
     private val authorizedUserViewModel: AuthorizedUserViewModel by activityViewModels()
+
+    private val toolbarViewModel: ToolbarViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -103,6 +107,8 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
         bExit.setOnClickListener {
             dialogExit.show()
         }
+
+        toolbarViewModel.setToolbarData(toolbarDataModel = ToolbarDataModel(title = getString(R.string.account)){})
 
         authorizedUserViewModel.mediatorLiveData.observe(viewLifecycleOwner) { mediatorResult ->
             val type = mediatorResult.type
