@@ -8,7 +8,7 @@
     tools:context=".main.TabsFragment">
 
     <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appBarLayout"
+        android:id="@+id/appBarTabs"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintEnd_toEndOf="parent"
@@ -16,6 +16,7 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbarTabs"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
@@ -31,7 +32,7 @@
         app:layout_constraintBottom_toTopOf="@+id/bnvTabs"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/appBarLayout" />
+        app:layout_constraintTop_toBottomOf="@+id/appBarTabs" />
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bnvTabs"

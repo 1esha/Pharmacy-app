@@ -47,4 +47,72 @@
     <string name="optics">Оптика</string>
     <string name="mom_and_baby">Мама и малыш</string>
     <string name="orthopedic_products">Ортопедические изделия</string>
+
+    <string name="blood_pressure_relief_products">Средства для снижения давления</string>
+    <string name="vitamins_for_the_heart_blood_vessels">Витамины для сердца / сосудов</string>
+    <string name="blood_pressure_medications">Средства повышающие давление</string>
+    <string name="restoration_of_the_gastrointestinal_microflora">Восстановление микрофлоры ЖКТ</string>
+    <string name="anti_ulcer_agents">Противоязвенные средства</string>
+    <string name="heartburn">Изжога</string>
+    <string name="antimicrobial_agents">Противомикробные средства</string>
+    <string name="antiviral_agents">Противовирусные средства</string>
+    <string name="remedies_for_sore_throat">Средства от боли в горле</string>
+    <string name="remedies_for_the_common_cold">Средства от насморка</string>
+    <string name="cough_remedies">Средства от кашля</string>
+    <string name="sedatives">Успокоительные средства</string>
+    <string name="sleeping_pills">Снотворные средства</string>
+    <string name="vitamins_for_the_whole_family">Витамины для всей семьи</string>
+    <string name="painkillers">Обезболивающие средства</string>
+    <string name="antibiotics">Антибиотики</string>
+    <string name="herbs">Травы</string>
+
+    <string name="toothpaste">Зубная паста</string>
+    <string name="mouthwash">Ополаскиватель для рта</string>
+    <string name="toothbrushes_floss">Зубные щетки / нити</string>
+    <string name="blood_pressure_monitors">Тонометры</string>
+    <string name="inhalers">Ингаляторы</string>
+    <string name="thermometers">Термометры</string>
+    <string name="glucose_meters">Глюкометры</string>
+    <string name="applicators">Аппликаторы</string>
+    <string name="massagers">Массажеры</string>
+    <string name="crutches_canes">Костыли / трости</string>
+
+    <string name="ear_hygiene">Гигиена ушей</string>
+    <string name="acne_treatment">Лечение угревой болезни</string>
+    <string name="diapers">Пеленки</string>
+    <string name="cotton_pads">Ватные диски</string>
+    <string name="soap">Мыло</string>
+    <string name="antiseptic_gels_and_sprays">Антисептические гели и спреи</string>
+    <string name="shaving_products">Средства для бритья</string>
+    <string name="cotton_swabs">Ватные палочки</string>
+    <string name="toilet_paper">Туалетная бумага</string>
+    <string name="napkins">Салфетки</string>
+    <string name="washcloths">Мочалки</string>
+    <string name="shoe_covers">Бахилы</string>
+
+    <string name="contact_lens_solutions">Растворы для контактных линз</string>
+    <string name="contact_lenses">Контактные линзы</string>
+    <string name="glasses_for_vision">Очки для зрения</string>
+    <string name="accessories_for_glasses_and_lenses">Аксессуары для очков и линз</string>
+
+    <string name="baby_soap">Мыло детское</string>
+    <string name="diapers_for_children">Подгузники для детей</string>
+    <string name="baby_toothbrushes">Детские зубные щетки</string>
+    <string name="pacifier_nipples">Соски-пустышки</string>
+    <string name="children_s_accessories">Детские аксессуары</string>
+    <string name="feeding_bottles_drinking_bowls">Бутылочки / поильники для кормления</string>
+    <string name="bottle_pacifier">Соска для бутылочки</string>
+    <string name="children_s_tableware">Посуда детская</string>
+    <string name="pacifier_clip">Клипса для пустышки</string>
+    <string name="bibs_and_bibs">Нагрудники и слюнявчики</string>
+    <string name="rattles">Погремушки</string>
+    <string name="bottle_brushes">Ершики для бутылочки</string>
+    <string name="powder">Присыпка</string>
+    <string name="orthopedic_belt">Пояс ортопедический</string>
+    <string name="bandages">Бандажи</string>
+    <string name="the_reclinator">Реклинатор</string>
+    <string name="the_mattress_is_decongestant">Матрас противопролежный</string>
+    <string name="orthopedic_corset_retainer">Корсет / фиксатор ортопедический</string>
+    <string name="orthopedic_insoles">Стельки ортопедические</string>
+    <string name="orthopedic_pillows">Подушки ортопедические</string>
 </resources>

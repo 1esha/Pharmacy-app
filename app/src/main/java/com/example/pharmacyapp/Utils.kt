@@ -10,16 +10,22 @@ import com.example.domain.IdentificationError
 import com.google.android.material.appbar.MaterialToolbar
 import io.ktor.util.toLowerCasePreservingASCIIRules
 
-const val KEY_USER_ID = "KEY_USER_ID"
 const val UNAUTHORIZED_USER = -1
+const val EMPTY_STRING = ""
+
+const val KEY_USER_ID = "KEY_USER_ID"
 const val KEY_IS_INIT = "KEY_IS_INIT"
+const val KEY_PATH_MAIN = "KEY_PATH_MAIN"
+const val KEY_ARRAY_LIST_CURRENT_ITEMS = "KEY_ARRAY_LIST_CURRENT_ITEMS"
+
 const val TYPE_GET_USER_BY_ID = "TYPE_GET_USER_BY_ID"
 const val TYPE_EDIT_USER = "TYPE_EDIT_USER"
 const val TYPE_DELETE_USER = "TYPE_DELETE_USER"
 const val TYPE_OTHER = "TYPE_OTHER"
+
 const val NAME_SHARED_PREFERENCES = "NAME_SHARED_PREFERENCES"
 
-interface SupportActivity{
+interface SupportActivity {
 
     fun getNavControllerMain(): NavController
 
@@ -31,15 +37,18 @@ interface SupportActivity{
 
 }
 
-fun Fragment.getSupportActivity():SupportActivity{
+fun Fragment.getSupportActivity(): SupportActivity {
     return requireActivity() as SupportActivity
 }
 
 fun String.toPath(): String {
     var path = ""
     this.toLowerCasePreservingASCIIRules().forEach { char ->
-        path += if (char == ' ') '_' else char
-
+        path += when (char) {
+            ' ' -> '_'
+            '/' -> '-'
+            else -> char
+        }
     }
 
     return path
@@ -55,8 +64,8 @@ class ToolbarSettings(private val toolbar: MaterialToolbar){
 
 }
 
-fun getMessageByErrorType(errorType: ErrorType?): Int{
-    return when(errorType){
+fun getMessageByErrorType(errorType: ErrorType?): Int {
+    return when (errorType) {
         is DisconnectionError -> R.string.check_your_internet_connection
         is IdentificationError -> R.string.error_in_getting_the_id
         is DataEntryError -> R.string.enter_the_data

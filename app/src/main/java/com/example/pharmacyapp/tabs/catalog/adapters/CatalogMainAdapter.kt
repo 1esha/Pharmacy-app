@@ -1,4 +1,4 @@
-package com.example.pharmacyapp.tabs.catalog
+package com.example.pharmacyapp.tabs.catalog.adapters
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
