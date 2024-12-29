@@ -1,9 +1,5 @@
 package com.example.data
 
-import com.example.data.profile.datasource.ErrorResultDataSource
-import com.example.data.profile.datasource.PendingResultDataSource
-import com.example.data.profile.datasource.ResultDataSource
-import com.example.data.profile.datasource.SuccessResultDataSource
 import com.example.data.profile.datasource.models.LogInDataSourceModel
 import com.example.data.profile.datasource.models.ResponseDataSourceModel
 import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
@@ -50,7 +46,7 @@ fun <I,O> ResultDataSource<I>.toResult(value:O?):Result<O>{
 }
 
 
-fun <T>ResultDataSource<T>.asSuccessResultDataSource():SuccessResultDataSource<T>?{
+fun <T> ResultDataSource<T>.asSuccessResultDataSource(): SuccessResultDataSource<T>?{
     return if (this is SuccessResultDataSource<T>) this else null
 }
 
@@ -78,6 +74,13 @@ fun ResponseValueDataSourceModel<UserDataSourceModel>.toResponseValueUserModelMo
             )
         },
         responseModel = this.responseDataSourceModel.toResponseModel()
+    )
+}
+
+fun ResponseValueDataSourceModel<*>?.toResponseValueModel(): ResponseValueModel<*>{
+    return ResponseValueModel(
+        value = this?.value,
+        responseModel = this?.responseDataSourceModel!!.toResponseModel()
     )
 }
 

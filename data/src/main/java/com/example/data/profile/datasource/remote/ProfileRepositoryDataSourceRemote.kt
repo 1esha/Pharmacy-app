@@ -1,6 +1,6 @@
 package com.example.data.profile.datasource.remote
 
-import com.example.data.profile.datasource.ResultDataSource
+import com.example.data.ResultDataSource
 import com.example.data.profile.datasource.models.LogInDataSourceModel
 import com.example.data.profile.datasource.models.UserDataSourceModel
 import com.example.data.profile.datasource.models.UserInfoDataSourceModel

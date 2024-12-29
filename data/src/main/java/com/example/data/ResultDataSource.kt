@@ -1,4 +1,4 @@
-package com.example.data.profile.datasource
+package com.example.data
 
 
 sealed class ResultDataSource <T>

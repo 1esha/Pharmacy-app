@@ -1,9 +1,9 @@
 package com.example.data.profile.datasource.remote
 
 import android.util.Log
-import com.example.data.profile.datasource.ErrorResultDataSource
-import com.example.data.profile.datasource.ResultDataSource
-import com.example.data.profile.datasource.SuccessResultDataSource
+import com.example.data.ErrorResultDataSource
+import com.example.data.ResultDataSource
+import com.example.data.SuccessResultDataSource
 import com.example.data.profile.datasource.models.LogInDataSourceModel
 import com.example.data.profile.datasource.models.ResponseDataSourceModel
 import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
