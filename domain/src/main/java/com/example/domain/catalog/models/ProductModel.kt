@@ -1,12 +1,12 @@
 package com.example.domain.catalog.models
 
 data class ProductModel(
-    val productId: Int,
+    val product_id: Int,
     val title: String,
-    val productPath: String,
-    val price: Int,
-    val discount: Int,
-    val productBasicInfo: Map<String,String>,
-    val productDetailedInfo: Map<String,String>,
+    val product_path: String,
+    val price: Double,
+    val discount: Double,
+    val product_basic_info: List<Map<String,String>>,
+    val product_detailed_info: List<Map<String,String>>,
     val image: String
 )

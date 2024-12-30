@@ -1,5 +1,6 @@
 package com.example.data
 
+import com.example.data.catalog.datasource.models.ProductDataSourceModel
 import com.example.data.profile.datasource.models.LogInDataSourceModel
 import com.example.data.profile.datasource.models.ResponseDataSourceModel
 import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
@@ -9,6 +10,7 @@ import com.example.domain.ErrorResult
 import com.example.domain.PendingResult
 import com.example.domain.Result
 import com.example.domain.SuccessResult
+import com.example.domain.catalog.models.ProductModel
 import com.example.domain.profile.models.LogInModel
 import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.ResponseValueModel
@@ -77,9 +79,29 @@ fun ResponseValueDataSourceModel<UserDataSourceModel>.toResponseValueUserModelMo
     )
 }
 
-fun ResponseValueDataSourceModel<*>?.toResponseValueModel(): ResponseValueModel<*>{
+fun List<ProductDataSourceModel>.toListProductModel(): List<ProductModel>{
+    val listProductModel = mutableListOf<ProductModel>()
+    this.forEach { productDataSourceModel ->
+        listProductModel.add(
+            ProductModel(
+                product_id = productDataSourceModel.product_id,
+                title = productDataSourceModel.title,
+                product_path = productDataSourceModel.product_path,
+                price = productDataSourceModel.price,
+                discount = productDataSourceModel.discount,
+                product_basic_info = productDataSourceModel.product_basic_info,
+                product_detailed_info = productDataSourceModel.product_detailed_info,
+                image = productDataSourceModel.image
+            )
+        )
+    }
+
+    return listProductModel
+}
+
+fun ResponseValueDataSourceModel<List<ProductDataSourceModel>>?.toResponseValueListProductModel(): ResponseValueModel<List<ProductModel>>{
     return ResponseValueModel(
-        value = this?.value,
+        value = this?.value?.toListProductModel(),
         responseModel = this?.responseDataSourceModel!!.toResponseModel()
     )
 }
