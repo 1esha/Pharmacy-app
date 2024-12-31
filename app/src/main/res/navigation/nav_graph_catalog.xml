@@ -18,5 +18,14 @@
         android:id="@+id/subdirectoryFragment"
         android:name="com.example.pharmacyapp.tabs.catalog.SubdirectoryFragment"
         android:label="fragment_subdirectory"
-        tools:layout="@layout/fragment_subdirectory" />
+        tools:layout="@layout/fragment_subdirectory" >
+        <action
+            android:id="@+id/action_subdirectoryFragment_to_productsFragment"
+            app:destination="@id/productsFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/productsFragment"
+        android:name="com.example.pharmacyapp.tabs.catalog.ProductsFragment"
+        android:label="fragment_products"
+        tools:layout="@layout/fragment_products" />
 </navigation>

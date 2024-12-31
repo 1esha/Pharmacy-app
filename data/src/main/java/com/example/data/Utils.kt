@@ -99,10 +99,10 @@ fun List<ProductDataSourceModel>.toListProductModel(): List<ProductModel>{
     return listProductModel
 }
 
-fun ResponseValueDataSourceModel<List<ProductDataSourceModel>>?.toResponseValueListProductModel(): ResponseValueModel<List<ProductModel>>{
+fun ResponseValueDataSourceModel<List<ProductDataSourceModel>?>.toResponseValueListProductModel(): ResponseValueModel<List<ProductModel>?>{
     return ResponseValueModel(
-        value = this?.value?.toListProductModel(),
-        responseModel = this?.responseDataSourceModel!!.toResponseModel()
+        value = this.value?.toListProductModel(),
+        responseModel = this.responseDataSourceModel.toResponseModel()
     )
 }
 

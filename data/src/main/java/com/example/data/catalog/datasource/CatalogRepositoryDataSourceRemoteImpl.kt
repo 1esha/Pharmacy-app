@@ -5,7 +5,6 @@ import com.example.data.ErrorResultDataSource
 import com.example.data.ResultDataSource
 import com.example.data.SuccessResultDataSource
 import com.example.data.catalog.datasource.models.ProductDataSourceModel
-import com.example.data.profile.datasource.models.ResponseDataSourceModel
 import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -19,7 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 
-class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<ResponseValueDataSourceModel<List<ProductDataSourceModel>>> {
+class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<ResponseValueDataSourceModel<List<ProductDataSourceModel>?>> {
 
     private val client = HttpClient(OkHttp) {
         install(ContentNegotiation) {
@@ -27,7 +26,7 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<R
         }
     }
 
-    override suspend fun getAllProducts(): ResultDataSource<ResponseValueDataSourceModel<List<ProductDataSourceModel>>> =
+    override suspend fun getAllProducts(): ResultDataSource<ResponseValueDataSourceModel<List<ProductDataSourceModel>?>> =
         withContext(Dispatchers.IO) {
             try {
                 val response = client.request {
@@ -35,7 +34,7 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<R
                     method = HttpMethod.Get
                 }
 
-                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<List<ProductDataSourceModel>>>()
+                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<List<ProductDataSourceModel>?>>()
                 Log.i("TAG","getAllProducts responseValueDataSourceModel = $responseValueDataSourceModel")
                 val successResultDataSource = SuccessResultDataSource(
                     value = responseValueDataSourceModel
@@ -44,7 +43,7 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<R
                 return@withContext successResultDataSource
             }
             catch (e: Exception){
-                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<List<ProductDataSourceModel>>>(
+                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<List<ProductDataSourceModel>?>>(
                     exception = e
                 )
                 Log.i("TAG","getAllProducts errorResultDataSource = ${errorResultDataSource.exception}")
@@ -53,14 +52,14 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<R
 
         }
 
-    override suspend fun getProductsByPath(path: String): ResultDataSource<ResponseValueDataSourceModel<List<ProductDataSourceModel>>> =
+    override suspend fun getProductsByPath(path: String): ResultDataSource<ResponseValueDataSourceModel<List<ProductDataSourceModel>?>> =
         withContext(Dispatchers.IO) {
             try {
                 val response = client.request {
                     url(GET_PRODUCTS_BY_PATH+path)
                     method = HttpMethod.Get
                 }
-                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<List<ProductDataSourceModel>>>()
+                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<List<ProductDataSourceModel>?>>()
                 val successResultDataSource = SuccessResultDataSource(
                     value = responseValueDataSourceModel
                 )
@@ -68,7 +67,7 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<R
                 return@withContext successResultDataSource
             }
             catch (e: Exception) {
-                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<List<ProductDataSourceModel>>>(
+                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<List<ProductDataSourceModel>?>>(
                     exception = e
                 )
                 Log.i("TAG","getProductsByPath errorResultDataSource = ${errorResultDataSource.exception}")
