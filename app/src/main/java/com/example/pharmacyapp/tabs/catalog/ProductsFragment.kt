@@ -66,6 +66,7 @@ class ProductsFragment : Fragment(), CatalogResult {
 
         val path = arguments?.getString(KEY_PATH)?: throw NullPointerException("ProductsFragment path = null")
         val isShown = productsViewModel.isShown.value?: throw NullPointerException("ProductsFragment isShown = null")
+
         if (!isShown) {
             with(productsViewModel) {
                 onSuccessfulEvent(type = TYPE_GET_PRODUCTS_BY_PATH) {
@@ -81,6 +82,10 @@ class ProductsFragment : Fragment(), CatalogResult {
                     getProductsByPath(path = path)
                 }
             }
+        }
+
+        bFilters.setOnClickListener {
+            navControllerProducts.navigate(R.id.action_productsFragment_to_filterFragment)
         }
 
         productsViewModel.result.observe(viewLifecycleOwner) { result ->
@@ -110,7 +115,7 @@ class ProductsFragment : Fragment(), CatalogResult {
 
     override fun onPendingResult() {
         Log.i("TAG","ProductsFragment onPendingResult")
-        productsViewModel.clearErrorType()
+
         updateUI(flag = FLAG_PENDING_RESUL)
     }
 
@@ -144,6 +149,7 @@ class ProductsFragment : Fragment(), CatalogResult {
     override fun onErrorResultListener(exception: Exception, message: String) {
         Log.i("TAG","ProductsFragment onErrorResultListener")
         updateUI(FLAG_ERROR_RESUL, messageError = message)
+        productsViewModel.clearErrorType()
         productsViewModel.setIsShown(isShown = true)
     }
 

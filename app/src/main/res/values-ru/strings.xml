@@ -120,4 +120,11 @@
     <string name="basket">Корзина</string>
     <string name="my_card">Моя карта</string>
     <string name="main">Главная</string>
+    <string name="sorting">Сортировка</string>
+    <string name="filters">Фильтры</string>
+    <string name="discounted_product">Товар со скидкой</string>
+    <string name="availability_in_pharmacies">Наличие в аптеках</string>
+    <string name="price">Цена</string>
+    <string name="from">От</string>
+    <string name="before">До</string>
 </resources>

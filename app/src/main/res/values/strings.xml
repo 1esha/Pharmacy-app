@@ -119,4 +119,13 @@
     <string name="basket">Basket</string>
     <string name="my_card">My card</string>
     <string name="main">Main</string>
+    <string name="sorting">Sorting</string>
+    <string name="filters">Filters</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="discounted_product">Discounted product</string>
+    <string name="availability_in_pharmacies">Availability in pharmacies</string>
+    <string name="price">Price</string>
+    <string name="from">From</string>
+    <string name="before">Before</string>
 </resources>
