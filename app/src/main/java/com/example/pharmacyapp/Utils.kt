@@ -73,10 +73,15 @@ class ToolbarSettings(private val toolbar: MaterialToolbar) {
 
 }
 
-data class ToolbarDataModel(
+data class ToolbarSettingsModel(
     val title: String? = null,
     val icon: Int? = null,
     val onClickNavigationIcon: OnClickNavigationIcon
+)
+
+data class MenuSettingsModel(
+    val menu: Int,
+    val onClickMenuItem: () -> Unit
 )
 
 fun getMessageByErrorType(errorType: ErrorType?): Int {

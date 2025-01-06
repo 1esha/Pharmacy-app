@@ -19,13 +19,13 @@ import com.example.domain.PendingResult
 import com.example.domain.SuccessResult
 import com.example.domain.catalog.CatalogResult
 import com.example.domain.profile.models.ResponseValueModel
-import com.example.pharmacyapp.FLAG_ERROR_RESUL
-import com.example.pharmacyapp.FLAG_PENDING_RESUL
-import com.example.pharmacyapp.FLAG_SUCCESS_RESUL
+import com.example.pharmacyapp.FLAG_ERROR_RESULT
+import com.example.pharmacyapp.FLAG_PENDING_RESULT
+import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
 import com.example.pharmacyapp.KEY_PATH
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.TYPE_GET_PRODUCTS_BY_PATH
-import com.example.pharmacyapp.ToolbarDataModel
+import com.example.pharmacyapp.ToolbarSettingsModel
 import com.example.pharmacyapp.databinding.FragmentProductsBinding
 import com.example.pharmacyapp.getMessageByErrorType
 import com.example.pharmacyapp.getSupportActivity
@@ -44,7 +44,7 @@ class ProductsFragment : Fragment(), CatalogResult {
 
     private val productsViewModel: ProductsViewModel by viewModels()
 
-    private lateinit var navControllerProducts: NavController
+    private lateinit var navControllerCatalog: NavController
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -57,12 +57,14 @@ class ProductsFragment : Fragment(), CatalogResult {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?): Unit = with(binding) {
 
-        navControllerProducts = findNavController()
+        navControllerCatalog = findNavController()
 
-        toolbarViewModel.setToolbarData(toolbarDataModel = ToolbarDataModel(
+        toolbarViewModel.setToolbarSettings(toolbarSettingsModel = ToolbarSettingsModel(
             title = getString(R.string.catalog),
             icon = R.drawable.ic_back
-        ) { navControllerProducts.navigateUp()})
+        ) { navControllerCatalog.navigateUp()})
+
+        toolbarViewModel.setMenuSettings()
 
         val path = arguments?.getString(KEY_PATH)?: throw NullPointerException("ProductsFragment path = null")
         val isShown = productsViewModel.isShown.value?: throw NullPointerException("ProductsFragment isShown = null")

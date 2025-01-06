@@ -13,7 +13,7 @@ import com.example.domain.models.CatalogMainModel
 import com.example.pharmacyapp.KEY_ARRAY_LIST_CURRENT_ITEMS
 import com.example.pharmacyapp.KEY_PATH_MAIN
 import com.example.pharmacyapp.R
-import com.example.pharmacyapp.ToolbarDataModel
+import com.example.pharmacyapp.ToolbarSettingsModel
 import com.example.pharmacyapp.databinding.FragmentCatalogBinding
 import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 import com.example.pharmacyapp.tabs.catalog.adapters.CatalogMainAdapter
@@ -41,6 +41,9 @@ class CatalogFragment : Fragment() {
 
         navControllerCatalog = findNavController()
 
+        toolbarViewModel.setToolbarSettings(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.catalog)){})
+        toolbarViewModel.setMenuSettings()
+
         val listItems = listOf(
             CatalogMainModel(image = R.drawable.medicinal_products, title = getString(R.string.medicines_and_dietary_supplements)),
             CatalogMainModel(image = R.drawable.medical_devices, title = getString(R.string.medical_devices)),
@@ -57,7 +60,6 @@ class CatalogFragment : Fragment() {
         rvCatalog.adapter = catalogMainAdapter
         rvCatalog.layoutManager = GridLayoutManager(requireContext(), 2)
 
-        toolbarViewModel.setToolbarData(toolbarDataModel = ToolbarDataModel(title = getString(R.string.catalog)){})
     }
 
     override fun onDestroyView() {

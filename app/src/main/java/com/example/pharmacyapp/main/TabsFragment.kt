@@ -1,6 +1,7 @@
 package com.example.pharmacyapp.main
 
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -26,20 +27,48 @@ class TabsFragment : Fragment() {
         return view
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?): Unit = with(binding){
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?): Unit = with(binding) {
         val toolbarViewModel: ToolbarViewModel by activityViewModels()
-        val navHostTabs = childFragmentManager.findFragmentById(R.id.navHostFragmentTabs) as NavHostFragment
+        val navHostTabs =
+            childFragmentManager.findFragmentById(R.id.navHostFragmentTabs) as NavHostFragment
         val navControllerTabs = navHostTabs.navController
 
         bnvTabs.setupWithNavController(navControllerTabs)
 
-        toolbarViewModel.toolbarLiveData.observe(viewLifecycleOwner){ toolbarDataModel ->
-            with(toolbarDataModel) {
+        toolbarViewModel.toolbarSettings.observe(viewLifecycleOwner) { toolbarSettingsModel ->
+            with(toolbarSettingsModel) {
                 toolbarTabs.setTitle(title)
-                if (icon != null) toolbarTabs.setNavigationIcon(icon) else toolbarTabs.navigationIcon = null
+                if (icon != null) toolbarTabs.setNavigationIcon(icon) else toolbarTabs.navigationIcon =
+                    null
+
                 toolbarTabs.setNavigationOnClickListener {
                     onClickNavigationIcon()
                 }
+            }
+
+        }
+
+        toolbarViewModel.menuSettings.observe(viewLifecycleOwner) { menuSettingsModel ->
+            with(menuSettingsModel) {
+                if (this == null) {
+                    toolbarTabs.menu.clear()
+                }
+                else {
+                    toolbarTabs.inflateMenu(menu)
+                    toolbarTabs.setOnMenuItemClickListener { menuItem ->
+                        when (menuItem.itemId) {
+                            R.id.icDone -> {
+                                onClickMenuItem()
+                                true
+                            }
+
+                            else -> {
+                                false
+                            }
+                        }
+                    }
+                }
+
             }
 
         }

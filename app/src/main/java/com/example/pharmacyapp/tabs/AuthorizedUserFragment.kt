@@ -25,7 +25,7 @@ import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.TYPE_GET_USER_BY_ID
 import com.example.pharmacyapp.TYPE_OTHER
-import com.example.pharmacyapp.ToolbarDataModel
+import com.example.pharmacyapp.ToolbarSettingsModel
 import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.FragmentAuthorizedUserBinding
 import com.example.pharmacyapp.getMessageByErrorType
@@ -62,6 +62,9 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
         val isShown: Boolean = authorizedUserViewModel.isShown.value?:throw NullPointerException("AuthorizedUserFragment isShown = null")
 
         val navControllerMain = getSupportActivity().getNavControllerMain()
+
+        toolbarViewModel.setToolbarSettings(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.account)){})
+        toolbarViewModel.setMenuSettings()
 
         val dialogListener = DialogInterface.OnClickListener { dialogInterface, currentButton ->
             when(currentButton){
@@ -107,8 +110,6 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
         bExit.setOnClickListener {
             dialogExit.show()
         }
-
-        toolbarViewModel.setToolbarData(toolbarDataModel = ToolbarDataModel(title = getString(R.string.account)){})
 
         authorizedUserViewModel.mediatorLiveData.observe(viewLifecycleOwner) { mediatorResult ->
             val type = mediatorResult.type

@@ -8,7 +8,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.navOptions
 import com.example.pharmacyapp.R
-import com.example.pharmacyapp.ToolbarDataModel
+import com.example.pharmacyapp.ToolbarSettingsModel
 import com.example.pharmacyapp.databinding.FragmentUnauthorizedUserBinding
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
@@ -36,6 +36,9 @@ class UnauthorizedUserFragment : Fragment() {
 
         val navControllerMain  = getSupportActivity().getNavControllerMain()
 
+        toolbarViewModel.setToolbarSettings(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.log_in)){})
+        toolbarViewModel.setMenuSettings()
+
         bGoToLogInAgain.setOnClickListener {
             navControllerMain.navigate(R.id.nav_graph_log_in, null, navOptions {
                 popUpTo(R.id.tabsFragment){
@@ -44,7 +47,6 @@ class UnauthorizedUserFragment : Fragment() {
             })
         }
 
-        toolbarViewModel.setToolbarData(toolbarDataModel = ToolbarDataModel(title = getString(R.string.log_in)){})
     }
 
     override fun onDestroyView() {

@@ -127,4 +127,5 @@
     <string name="price">Цена</string>
     <string name="from">От</string>
     <string name="before">До</string>
+    <string name="done">Готово</string>
 </resources>

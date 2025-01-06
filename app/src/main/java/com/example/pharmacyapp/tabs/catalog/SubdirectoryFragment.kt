@@ -15,7 +15,7 @@ import com.example.pharmacyapp.KEY_ARRAY_LIST_CURRENT_ITEMS
 import com.example.pharmacyapp.KEY_PATH
 import com.example.pharmacyapp.KEY_PATH_MAIN
 import com.example.pharmacyapp.R
-import com.example.pharmacyapp.ToolbarDataModel
+import com.example.pharmacyapp.ToolbarSettingsModel
 import com.example.pharmacyapp.databinding.FragmentSubdirectoryBinding
 import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 import com.example.pharmacyapp.tabs.catalog.adapters.SubdirectoryAdapter
@@ -40,15 +40,17 @@ class SubdirectoryFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) = with(binding) {
 
-        toolbarViewModel.setToolbarData(toolbarDataModel = ToolbarDataModel(
+        navControllerCatalog = findNavController()
+
+        toolbarViewModel.setToolbarSettings(toolbarSettingsModel = ToolbarSettingsModel(
             title = getString(R.string.catalog),
             icon = R.drawable.ic_back,
             onClickNavigationIcon = {
-                findNavController().navigateUp()
+                navControllerCatalog.navigateUp()
             }
         ))
 
-        navControllerCatalog = findNavController()
+        toolbarViewModel.setMenuSettings()
 
         val arrayListItems = arguments?.getStringArrayList(KEY_ARRAY_LIST_CURRENT_ITEMS)?: arrayListOf()
         val pathMain = arguments?.getString(KEY_PATH_MAIN)?: EMPTY_STRING

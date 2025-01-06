@@ -9,7 +9,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import com.example.pharmacyapp.R
-import com.example.pharmacyapp.ToolbarDataModel
+import com.example.pharmacyapp.ToolbarSettingsModel
 import com.example.pharmacyapp.databinding.FragmentFilterBinding
 import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 
@@ -20,7 +20,7 @@ class FilterFragment : Fragment() {
 
     private val toolbarViewModel: ToolbarViewModel by activityViewModels()
 
-    private lateinit var navControllerFilter: NavController
+    private lateinit var navControllerCatalog: NavController
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -31,16 +31,22 @@ class FilterFragment : Fragment() {
         return view
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) = with(binding) {
 
-        navControllerFilter = findNavController()
+        navControllerCatalog = findNavController()
 
-        toolbarViewModel.setToolbarData(toolbarDataModel = ToolbarDataModel(
+        toolbarViewModel.setToolbarSettings(toolbarSettingsModel = ToolbarSettingsModel(
             title = getString(R.string.filters),
             icon = R.drawable.ic_back
         ) {
-            navControllerFilter.navigateUp()
+            navControllerCatalog.navigateUp()
         })
+        toolbarViewModel.setMenuSettings()
+
+        layoutAvailabilityInPharmacies.setOnClickListener {
+            navControllerCatalog.navigate(R.id.action_filterFragment_to_pharmacyAddressesFragment)
+        }
+
     }
 
     override fun onDestroyView() {
