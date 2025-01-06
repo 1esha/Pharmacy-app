@@ -7,7 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.activityViewModels
 import com.example.pharmacyapp.R
-import com.example.pharmacyapp.ToolbarDataModel
+import com.example.pharmacyapp.ToolbarSettingsModel
 import com.example.pharmacyapp.databinding.FragmentHomeBinding
 import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 
@@ -29,7 +29,8 @@ class HomeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
-        toolbarViewModel.setToolbarData(toolbarDataModel = ToolbarDataModel(title = getString(R.string.main)){})
+        toolbarViewModel.setToolbarSettings(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.main)){})
+        toolbarViewModel.setMenuSettings()
     }
 
     override fun onDestroyView() {

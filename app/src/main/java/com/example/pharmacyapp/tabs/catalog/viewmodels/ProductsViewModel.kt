@@ -44,7 +44,7 @@ class ProductsViewModel: ViewModel() {
 
     fun setResult(result: Result<ResponseValueModel<List<ProductModel>?>>, errorType: ErrorType? = null){
         if (result is ErrorResult && errorType != null){
-            _errorType.value = errorType?: throw NullPointerException("LoginViewModel setResult errorType = null")
+            _errorType.value = errorType?: throw NullPointerException("ProductsViewModel setResult errorType = null")
         }
         _result.value = result
     }

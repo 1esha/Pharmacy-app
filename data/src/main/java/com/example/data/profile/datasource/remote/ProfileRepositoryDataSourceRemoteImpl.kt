@@ -183,7 +183,7 @@ class ProfileRepositoryDataSourceRemoteImpl :
 
     companion object {
         private const val PORT = "4000"
-        private const val BASE_URL = "http://192.168.0.113:$PORT"
+        private const val BASE_URL = "http://192.168.0.114:$PORT"
         const val CREATE_USER_URL = "$BASE_URL/create/user"
         const val GET_USER_URL = "$BASE_URL/user"
         const val GET_USER_ID_URL = "$BASE_URL/user_id"

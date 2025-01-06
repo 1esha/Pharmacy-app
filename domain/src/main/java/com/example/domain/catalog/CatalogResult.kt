@@ -11,4 +11,6 @@ interface CatalogResult {
     fun onPendingResult()
 
     fun onSuccessfulEvent(type: String, exception: Exception? = null,onSuccessfulEventListener:() -> Unit)
+
+    fun updateUI(flag: String, messageError: String? = null)
 }

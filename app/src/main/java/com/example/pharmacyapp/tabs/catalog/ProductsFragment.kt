@@ -87,7 +87,7 @@ class ProductsFragment : Fragment(), CatalogResult {
         }
 
         bFilters.setOnClickListener {
-            navControllerProducts.navigate(R.id.action_productsFragment_to_filterFragment)
+            navControllerCatalog.navigate(R.id.action_productsFragment_to_filterFragment)
         }
 
         productsViewModel.result.observe(viewLifecycleOwner) { result ->
@@ -117,8 +117,8 @@ class ProductsFragment : Fragment(), CatalogResult {
 
     override fun onPendingResult() {
         Log.i("TAG","ProductsFragment onPendingResult")
-
-        updateUI(flag = FLAG_PENDING_RESUL)
+        productsViewModel.clearErrorType()
+        updateUI(flag = FLAG_PENDING_RESULT)
     }
 
     override fun <T> onSuccessResultListener(value: T, type: String?): Unit = with(binding){
@@ -128,7 +128,7 @@ class ProductsFragment : Fragment(), CatalogResult {
         val message = responseValueModel.responseModel.message
 
         if (status in 200..299){
-            updateUI(flag = FLAG_SUCCESS_RESUL)
+            updateUI(flag = FLAG_SUCCESS_RESULT)
 
             val listProducts = responseValueModel.value as List<*>
 
@@ -150,8 +150,8 @@ class ProductsFragment : Fragment(), CatalogResult {
 
     override fun onErrorResultListener(exception: Exception, message: String) {
         Log.i("TAG","ProductsFragment onErrorResultListener")
-        updateUI(FLAG_ERROR_RESUL, messageError = message)
-        productsViewModel.clearErrorType()
+        updateUI(FLAG_ERROR_RESULT, messageError = message)
+
         productsViewModel.setIsShown(isShown = true)
     }
 
@@ -178,21 +178,21 @@ class ProductsFragment : Fragment(), CatalogResult {
         )
     }
 
-    private fun updateUI(flag: String, messageError: String? = null) = with(binding.layoutPendingResultProducts) {
+    override fun updateUI(flag: String, messageError: String?) = with(binding.layoutPendingResultProducts) {
         when(flag) {
-            FLAG_PENDING_RESUL -> {
+            FLAG_PENDING_RESULT -> {
                 root.visibility = View.VISIBLE
                 bTryAgain.visibility = View.INVISIBLE
                 tvErrorMessage.visibility = View.INVISIBLE
                 progressBar.visibility = View.VISIBLE
             }
-            FLAG_SUCCESS_RESUL -> {
+            FLAG_SUCCESS_RESULT -> {
                 root.visibility = View.GONE
                 bTryAgain.visibility = View.INVISIBLE
                 tvErrorMessage.visibility = View.INVISIBLE
                 progressBar.visibility = View.INVISIBLE
             }
-            FLAG_ERROR_RESUL -> {
+            FLAG_ERROR_RESULT -> {
                 root.visibility = View.VISIBLE
                 bTryAgain.visibility = View.VISIBLE
                 tvErrorMessage.visibility = View.VISIBLE

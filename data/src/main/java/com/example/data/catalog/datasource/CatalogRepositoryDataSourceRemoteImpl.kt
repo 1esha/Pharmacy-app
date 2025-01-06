@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.data.ErrorResultDataSource
 import com.example.data.ResultDataSource
 import com.example.data.SuccessResultDataSource
+import com.example.data.catalog.datasource.models.PharmacyAddressesDataSourceModel
 import com.example.data.catalog.datasource.models.ProductDataSourceModel
 import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
 import io.ktor.client.HttpClient
@@ -18,7 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 
-class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<ResponseValueDataSourceModel<List<ProductDataSourceModel>?>> {
+class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<ResponseValueDataSourceModel<List<ProductDataSourceModel>?>,ResponseValueDataSourceModel<List<PharmacyAddressesDataSourceModel>?>> {
 
     private val client = HttpClient(OkHttp) {
         install(ContentNegotiation) {
@@ -75,11 +76,35 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<R
             }
         }
 
+    override suspend fun getPharmacyAddresses(): ResultDataSource<ResponseValueDataSourceModel<List<PharmacyAddressesDataSourceModel>?>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val response = client.request {
+                    url(GET_PHARMACY_ADDRESSES)
+                    method = HttpMethod.Get
+                }
+                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<List<PharmacyAddressesDataSourceModel>?>>()
+                val successResultDataSource = SuccessResultDataSource(
+                    value = responseValueDataSourceModel
+                )
+                Log.i("TAG","getPharmacyAddresses successResultDataSource = $successResultDataSource")
+                return@withContext successResultDataSource
+            }
+            catch (e: Exception) {
+                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<List<PharmacyAddressesDataSourceModel>?>>(
+                    exception = e
+                )
+                Log.i("TAG","getPharmacyAddresses errorResultDataSource = ${errorResultDataSource.exception}")
+                return@withContext errorResultDataSource
+            }
+        }
+
 
     companion object {
         private const val PORT = "4000"
-        private const val BASE_URL = "http://192.168.0.113:$PORT"
+        private const val BASE_URL = "http://192.168.0.114:$PORT"
         const val GET_ALL_PRODUCTS_URL = "$BASE_URL/products"
         const val GET_PRODUCTS_BY_PATH = "$BASE_URL/products/path?path="
+        const val GET_PHARMACY_ADDRESSES = "$BASE_URL/pharmacy/addresses"
     }
 }

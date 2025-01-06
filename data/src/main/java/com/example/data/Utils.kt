@@ -1,5 +1,6 @@
 package com.example.data
 
+import com.example.data.catalog.datasource.models.PharmacyAddressesDataSourceModel
 import com.example.data.catalog.datasource.models.ProductDataSourceModel
 import com.example.data.profile.datasource.models.LogInDataSourceModel
 import com.example.data.profile.datasource.models.ResponseDataSourceModel
@@ -11,6 +12,7 @@ import com.example.domain.PendingResult
 import com.example.domain.Result
 import com.example.domain.SuccessResult
 import com.example.domain.catalog.models.ProductModel
+import com.example.domain.models.PharmacyAddressesModel
 import com.example.domain.profile.models.LogInModel
 import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.ResponseValueModel
@@ -52,7 +54,6 @@ fun <T> ResultDataSource<T>.asSuccessResultDataSource(): SuccessResultDataSource
     return if (this is SuccessResultDataSource<T>) this else null
 }
 
-
 fun ResponseDataSourceModel.toResponseModel():ResponseModel{
     return ResponseModel(
         message = this.message,
@@ -79,7 +80,7 @@ fun ResponseValueDataSourceModel<UserDataSourceModel>.toResponseValueUserModelMo
     )
 }
 
-fun List<ProductDataSourceModel>.toListProductModel(): List<ProductModel>{
+fun List<ProductDataSourceModel>.toListProductModel(): List<ProductModel> {
     val listProductModel = mutableListOf<ProductModel>()
     this.forEach { productDataSourceModel ->
         listProductModel.add(
@@ -99,9 +100,31 @@ fun List<ProductDataSourceModel>.toListProductModel(): List<ProductModel>{
     return listProductModel
 }
 
+fun List<PharmacyAddressesDataSourceModel>.toListPharmacyAddressesModel(): List<PharmacyAddressesModel> {
+    val listPharmacyAddressesModel = mutableListOf<PharmacyAddressesModel>()
+    this.forEach { pharmacyAddressesDataSourceModel ->
+        listPharmacyAddressesModel.add(
+            PharmacyAddressesModel(
+                addressId = pharmacyAddressesDataSourceModel.address_id,
+                address = pharmacyAddressesDataSourceModel.address,
+                city = pharmacyAddressesDataSourceModel.city
+            )
+        )
+    }
+
+    return listPharmacyAddressesModel
+}
+
 fun ResponseValueDataSourceModel<List<ProductDataSourceModel>?>.toResponseValueListProductModel(): ResponseValueModel<List<ProductModel>?>{
     return ResponseValueModel(
         value = this.value?.toListProductModel(),
+        responseModel = this.responseDataSourceModel.toResponseModel()
+    )
+}
+
+fun ResponseValueDataSourceModel<List<PharmacyAddressesDataSourceModel>?>.toResponseValueListPharmacyAddressesModel(): ResponseValueModel<List<PharmacyAddressesModel>?> {
+    return ResponseValueModel(
+        value = this.value?.toListPharmacyAddressesModel(),
         responseModel = this.responseDataSourceModel.toResponseModel()
     )
 }
