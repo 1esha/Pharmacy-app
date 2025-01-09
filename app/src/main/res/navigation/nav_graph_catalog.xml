@@ -45,5 +45,12 @@
         android:id="@+id/pharmacyAddressesFragment"
         android:name="com.example.pharmacyapp.tabs.catalog.PharmacyAddressesFragment"
         android:label="fragment_pharmacy_addresses"
-        tools:layout="@layout/fragment_pharmacy_addresses" />
+        tools:layout="@layout/fragment_pharmacy_addresses" >
+        <action
+            android:id="@+id/action_pharmacyAddressesFragment_to_filterFragment"
+            app:destination="@id/filterFragment" />
+        <action
+            android:id="@+id/action_pharmacyAddressesFragment_self"
+            app:destination="@id/pharmacyAddressesFragment" />
+    </fragment>
 </navigation>
