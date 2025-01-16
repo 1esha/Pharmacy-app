@@ -5,6 +5,7 @@ import com.example.data.ErrorResultDataSource
 import com.example.data.ResultDataSource
 import com.example.data.SuccessResultDataSource
 import com.example.data.catalog.datasource.models.PharmacyAddressesDataSourceModel
+import com.example.data.catalog.datasource.models.ProductAvailabilityDataSourceModel
 import com.example.data.catalog.datasource.models.ProductDataSourceModel
 import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
 import io.ktor.client.HttpClient
@@ -19,7 +20,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 
-class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<ResponseValueDataSourceModel<List<ProductDataSourceModel>?>,ResponseValueDataSourceModel<List<PharmacyAddressesDataSourceModel>?>> {
+class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<
+        ResponseValueDataSourceModel<List<ProductDataSourceModel>?>,
+        ResponseValueDataSourceModel<List<PharmacyAddressesDataSourceModel>?>,
+        ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>> {
 
     private val client = HttpClient(OkHttp) {
         install(ContentNegotiation) {
@@ -99,6 +103,28 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<R
             }
         }
 
+    override suspend fun getProductAvailabilityByPath(path: String): ResultDataSource<ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val response = client.request {
+                    url(GET_PRODUCT_AVAILABILITY_BY_PATH+path)
+                    method = HttpMethod.Get
+                }
+                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>>()
+                val successResultDataSource = SuccessResultDataSource(
+                    value = responseValueDataSourceModel
+                )
+                Log.i("TAG","getProductAvailabilityByPath successResultDataSource = $successResultDataSource")
+                return@withContext successResultDataSource
+            }
+            catch (e: Exception) {
+                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>>(
+                    exception = e
+                )
+                Log.i("TAG","getProductAvailabilityByPath errorResultDataSource = ${errorResultDataSource.exception}")
+                return@withContext errorResultDataSource
+            }
+        }
 
     companion object {
         private const val PORT = "4000"
@@ -106,5 +132,6 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<R
         const val GET_ALL_PRODUCTS_URL = "$BASE_URL/products"
         const val GET_PRODUCTS_BY_PATH = "$BASE_URL/products/path?path="
         const val GET_PHARMACY_ADDRESSES = "$BASE_URL/pharmacy/addresses"
+        const val GET_PRODUCT_AVAILABILITY_BY_PATH = "$BASE_URL/availability?path="
     }
 }
