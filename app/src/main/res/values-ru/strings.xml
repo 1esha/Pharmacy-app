@@ -126,6 +126,12 @@
     <string name="availability_in_pharmacies">Наличие в аптеках</string>
     <string name="price">Цена</string>
     <string name="from">От</string>
-    <string name="before">До</string>
+    <string name="up_to">До</string>
     <string name="done">Готово</string>
+    <string name="close">Закрыть</string>
+    <string name="selected">Выбрано %1$s</string>
+    <string name="select_an_address">Выберите адрес</string>
+    <string name="clear">Отчистить</string>
+    <string name="apply">Применить</string>
+    <string name="addresses_selected">Выбрано адресов</string>
 </resources>

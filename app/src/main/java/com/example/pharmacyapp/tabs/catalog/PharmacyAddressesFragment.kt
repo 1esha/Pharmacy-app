@@ -7,10 +7,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.setFragmentResult
 import androidx.fragment.app.viewModels
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
-import androidx.navigation.navOptions
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.domain.DisconnectionError
 import com.example.domain.ErrorResult
@@ -19,15 +19,20 @@ import com.example.domain.OtherError
 import com.example.domain.PendingResult
 import com.example.domain.SuccessResult
 import com.example.domain.catalog.CatalogResult
+import com.example.domain.catalog.models.ProductAvailabilityModel
 import com.example.domain.models.PharmacyAddressesModel
+import com.example.domain.models.SelectedPharmacyAddressesModel
 import com.example.domain.profile.models.ResponseValueModel
 import com.example.pharmacyapp.FLAG_ERROR_RESULT
 import com.example.pharmacyapp.FLAG_PENDING_RESULT
 import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
 import com.example.pharmacyapp.KEY_ARRAY_LIST_SELECTED_ADDRESSES
+import com.example.pharmacyapp.KEY_PATH
+import com.example.pharmacyapp.KEY_RESULT_ARRAY_LIST_SELECTED_ADDRESSES
 import com.example.pharmacyapp.MenuSettingsModel
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.TYPE_GET_PHARMACY_ADDRESSES
+import com.example.pharmacyapp.TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH
 import com.example.pharmacyapp.ToolbarSettingsModel
 import com.example.pharmacyapp.databinding.FragmentPharmacyAddressesBinding
 import com.example.pharmacyapp.getMessageByErrorType
@@ -36,6 +41,7 @@ import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 import com.example.pharmacyapp.tabs.catalog.adapters.PharmacyAddressesAdapter
 import com.example.pharmacyapp.tabs.catalog.viewmodels.PharmacyAddressesViewModel
 import java.lang.Exception
+import kotlin.properties.Delegates
 
 class PharmacyAddressesFragment : Fragment(), CatalogResult {
 
@@ -45,6 +51,10 @@ class PharmacyAddressesFragment : Fragment(), CatalogResult {
     private val toolbarViewModel: ToolbarViewModel by activityViewModels()
 
     private val pharmacyAddressesViewModel: PharmacyAddressesViewModel by viewModels()
+
+    private lateinit var arrayListIdsAddresses: ArrayList<Int>
+
+    private var path: String by Delegates.notNull()
 
     private lateinit var navControllerCatalog: NavController
 
@@ -58,6 +68,10 @@ class PharmacyAddressesFragment : Fragment(), CatalogResult {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) = with(binding) {
+
+        path = arguments?.getString(KEY_PATH) ?: throw NullPointerException("PharmacyAddressesFragment path = null")
+
+        arrayListIdsAddresses = arguments?.getIntegerArrayList(KEY_ARRAY_LIST_SELECTED_ADDRESSES) ?: arrayListOf<Int>()
 
         navControllerCatalog = findNavController()
 
@@ -82,30 +96,35 @@ class PharmacyAddressesFragment : Fragment(), CatalogResult {
             }
         }
 
-        val isShown = pharmacyAddressesViewModel.isShown.value
-            ?: throw NullPointerException("PharmacyAddressesFragment isShown = null")
+        val isShownGetPharmacyAddresses = pharmacyAddressesViewModel.isShownGetPharmacyAddresses.value
+            ?: throw NullPointerException("PharmacyAddressesFragment isShownGetPharmacyAddresses = null")
 
-        if (!isShown) {
+        if (!isShownGetPharmacyAddresses) {
 
             onSuccessfulEvent(type = TYPE_GET_PHARMACY_ADDRESSES) {
-                with(pharmacyAddressesViewModel) {
-                    getPharmacyAddresses()
-                }
+                pharmacyAddressesViewModel.getPharmacyAddresses()
             }
+
+        }
+
+        fabSelectAddresses.setOnClickListener {
+            onClickSelectAddresses()
         }
 
         layoutPendingResultPharmacyAddresses.bTryAgain.setOnClickListener {
             onSuccessfulEvent(type = TYPE_GET_PHARMACY_ADDRESSES) {
                 with(pharmacyAddressesViewModel) {
                     getPharmacyAddresses()
+                    setIsShownGetPharmacyAddresses(isShown = false)
+                    setIsShownGetProductAvailabilityByPath(isShown = false)
                 }
             }
         }
 
-        pharmacyAddressesViewModel.result.observe(viewLifecycleOwner) { result ->
+        pharmacyAddressesViewModel.resultGetPharmacyAddresses.observe(viewLifecycleOwner) { result ->
             when (result) {
                 is PendingResult -> {
-                    onPendingResult()
+                    onPendingResultListener()
                 }
 
                 is SuccessResult -> {
@@ -122,6 +141,40 @@ class PharmacyAddressesFragment : Fragment(), CatalogResult {
                     onErrorResultListener(exception = result.exception, message = message)
                 }
             }
+
+            pharmacyAddressesViewModel.resultGetProductAvailabilityByPath.observe(viewLifecycleOwner) { result ->
+                when (result) {
+                    is PendingResult -> {
+                        onPendingResultListener()
+                    }
+
+                    is SuccessResult -> {
+                        val value = result.value
+                        onSuccessResultListener(
+                            value = value,
+                            type = TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH
+                        )
+                    }
+
+                    is ErrorResult -> {
+                        val errorType = pharmacyAddressesViewModel.errorType.value
+                        val message = getString(getMessageByErrorType(errorType = errorType))
+                        onErrorResultListener(exception = result.exception, message = message)
+                    }
+                }
+            }
+
+            pharmacyAddressesViewModel.mutableListSelectedPharmacyAddresses.observe(viewLifecycleOwner) { mutableList ->
+
+                pharmacyAddressesViewModel.setInitPharmacyAddresses(list = mutableList, counter = arrayListIdsAddresses.size)
+
+                val pharmacyAddressesAdapter = getSetupAdapter(mutableList = mutableList)
+
+                with(binding) {
+                    rvPharmacyAddresses.adapter = pharmacyAddressesAdapter
+                    rvPharmacyAddresses.layoutManager = LinearLayoutManager(requireContext())
+                }
+            }
         }
     }
 
@@ -132,59 +185,85 @@ class PharmacyAddressesFragment : Fragment(), CatalogResult {
 
     override fun <T> onSuccessResultListener(value: T, type: String?) {
         Log.i("TAG", "PharmacyAddressesFragment onSuccessResultListener")
-        val responseValueModel = value as ResponseValueModel<*>
-        val responseModel = responseValueModel.responseModel
-        val status = responseModel.status
-        val message = responseModel.message
 
-        if (status in 200..299) {
-            updateUI(flag = FLAG_SUCCESS_RESULT)
-            val listItems = responseValueModel.value as List<*>
+        when(type) {
+            TYPE_GET_PHARMACY_ADDRESSES -> {
+                val isShown = pharmacyAddressesViewModel.isShownGetPharmacyAddresses.value
+                    ?: throw NullPointerException("PharmacyAddressesFragment isShownGetPharmacyAddresses = null")
+                if (!isShown) {
+                    Log.i("TAG", "PharmacyAddressesFragment onSuccessResultListener TYPE_GET_PHARMACY_ADDRESSES")
+                    val responseValueModel = value as ResponseValueModel<*>
+                    val responseModel = responseValueModel.responseModel
+                    val status = responseModel.status
+                    val message = responseModel.message
 
-            pharmacyAddressesViewModel.setInitPharmacyAddresses(list = listItems)
+                    if (status in 200..299) {
 
-            val mutableListSelectedPharmacyAddresses =
-                pharmacyAddressesViewModel.listSelectedPharmacyAddresses.value
-                    ?: throw NullPointerException("PharmacyAddressesFragment mutableListSelectedPharmacyAddresses = null")
+                        val listAllPharmacyAddresses = responseValueModel.value as List<*> // получения списка всех адресов аптек
 
-            val pharmacyAddressesAdapter =
-                PharmacyAddressesAdapter(listItems = mutableListSelectedPharmacyAddresses) { position, isSelect ->
+                        pharmacyAddressesViewModel.setListPharmacyAddresses(list = listAllPharmacyAddresses)
 
-                    pharmacyAddressesViewModel.setPharmacyAddresses(
-                        position = position,
-                        isSelect = isSelect
-                    )
+                        onSuccessfulEvent(type = TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH) {
+                            pharmacyAddressesViewModel.getProductAvailabilityByPath(path = path)
+                        }
 
-                    updateCounter()
+                    } else {
+                        pharmacyAddressesViewModel.setResultGetPharmacyAddresses(
+                            result = ErrorResult(exception = Exception()),
+                            errorType = OtherError()
+                        )
+                        if (message != null) getSupportActivity().showToast(message = message)
+                    }
+                }
 
-                    Log.i("TAG","mutableListSelectedPharmacyAddresses = $mutableListSelectedPharmacyAddresses")
+                pharmacyAddressesViewModel.setIsShownGetPharmacyAddresses(isShown = true)
+            }
+            TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH -> {
+                val isShown = pharmacyAddressesViewModel.isShownGetProductAvailabilityByPath.value
+                    ?: throw NullPointerException("PharmacyAddressesFragment isShownGetProductAvailabilityByPath = null")
+                if (!isShown) {
+                    Log.i("TAG", "PharmacyAddressesFragment onSuccessResultListener TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH")
+                    val responseValueModel = value as ResponseValueModel<*>
+                    val responseModel = responseValueModel.responseModel
+                    val status = responseModel.status
+                    val message = responseModel.message
+
+                    if (status in 200..299) {
+
+                        val listProductAvailabilityModel = responseValueModel.value as List<*> // получения списка с данными о наличии товаров в аптеках
+
+                        installSelectedProductAvailability(listProductAvailabilityModel = listProductAvailabilityModel)
+
+                        updateUI(flag = FLAG_SUCCESS_RESULT)
+                    }
+                    else {
+                        pharmacyAddressesViewModel.setResultGetProductAvailabilityByPath(
+                            result = ErrorResult(exception = Exception()),
+                            errorType = OtherError()
+                        )
+                        if (message != null) getSupportActivity().showToast(message = message)
+                    }
+                }
+                pharmacyAddressesViewModel.setIsShownGetProductAvailabilityByPath(isShown = true)
 
                 }
 
-            with(binding) {
-                rvPharmacyAddresses.adapter = pharmacyAddressesAdapter
-                rvPharmacyAddresses.layoutManager = LinearLayoutManager(requireContext())
             }
 
-        } else {
-            pharmacyAddressesViewModel.setResult(
-                result = ErrorResult(exception = Exception()),
-                errorType = OtherError()
-            )
-            if (message != null) getSupportActivity().showToast(message = message)
         }
-        pharmacyAddressesViewModel.setIsShown(isShown = true)
-    }
+
 
     override fun onErrorResultListener(exception: Exception, message: String) {
         Log.i("TAG", "PharmacyAddressesFragment onErrorResultListener")
         updateUI(FLAG_ERROR_RESULT, messageError = message)
 
-        pharmacyAddressesViewModel.setIsShown(isShown = true)
+        pharmacyAddressesViewModel.setIsShownGetProductAvailabilityByPath(isShown = true)
+        pharmacyAddressesViewModel.setIsShownGetPharmacyAddresses(isShown = true)
+
     }
 
-    override fun onPendingResult() {
-        Log.i("TAG", "PharmacyAddressesFragment onPendingResult")
+    override fun onPendingResultListener() {
+        Log.i("TAG", "PharmacyAddressesFragment onPendingResultListener")
         pharmacyAddressesViewModel.clearErrorType()
         updateUI(flag = FLAG_PENDING_RESULT)
     }
@@ -201,7 +280,8 @@ class PharmacyAddressesFragment : Fragment(), CatalogResult {
             isNetworkStatus = isNetworkStatus,
             connectionListener = {
                 when (type) {
-                    TYPE_GET_PHARMACY_ADDRESSES -> pharmacyAddressesViewModel.setResult(result = PendingResult())
+                    TYPE_GET_PHARMACY_ADDRESSES -> pharmacyAddressesViewModel.setResultGetPharmacyAddresses(result = PendingResult())
+                    TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH -> pharmacyAddressesViewModel.setResultGetProductAvailabilityByPath(result = PendingResult())
                 }
                 onSuccessfulEventListener()
             },
@@ -209,7 +289,12 @@ class PharmacyAddressesFragment : Fragment(), CatalogResult {
                 val currentException = if (exception == null) Exception() else exception
                 val errorType = DisconnectionError()
                 when (type) {
-                    TYPE_GET_PHARMACY_ADDRESSES -> pharmacyAddressesViewModel.setResult(
+                    TYPE_GET_PHARMACY_ADDRESSES -> pharmacyAddressesViewModel.setResultGetPharmacyAddresses(
+                        result = ErrorResult(
+                            exception = currentException
+                        ), errorType = errorType
+                    )
+                    TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH -> pharmacyAddressesViewModel.setResultGetProductAvailabilityByPath(
                         result = ErrorResult(
                             exception = currentException
                         ), errorType = errorType
@@ -247,50 +332,122 @@ class PharmacyAddressesFragment : Fragment(), CatalogResult {
             }
         }
 
+    private fun getSetupAdapter(mutableList: MutableList<SelectedPharmacyAddressesModel>): PharmacyAddressesAdapter {
+        return PharmacyAddressesAdapter(listItems = mutableList) { position, isSelect ->
+
+            pharmacyAddressesViewModel.setPharmacyAddresses(
+                position = position,
+                isSelect = isSelect
+            )
+
+            updateCounter()
+
+            Log.i("TAG","PharmacyAddressesFragment mutableList = $mutableList")
+
+        }
+    }
+
     private fun updateCounter() {
         var counter = 0
-        pharmacyAddressesViewModel.listSelectedPharmacyAddresses.value?.forEach {
+        pharmacyAddressesViewModel.mutableListSelectedPharmacyAddresses.value?.forEach {
             if (it.isSelected) counter++
         }
         pharmacyAddressesViewModel.setCounterSelectedItems(counter = counter)
     }
 
-    private fun onClickMenuItem() {
-        if (pharmacyAddressesViewModel.result.value is ErrorResult ||
-            pharmacyAddressesViewModel.result.value is PendingResult
+    // установка списка с наличием товаров в аптеках
+    private fun installSelectedProductAvailability(listProductAvailabilityModel: List<*>) {
+
+        val listAllPharmacyAddressesModel = pharmacyAddressesViewModel.listPharmacyAddresses.value ?: listOf<Any>()
+
+        val mutableListSelectedPharmacyAddressesModel = mutableListOf<SelectedPharmacyAddressesModel>()
+
+        listAllPharmacyAddressesModel.forEach { _pharmacyAddressesModel ->
+
+            val pharmacyAddressesModel = _pharmacyAddressesModel as PharmacyAddressesModel
+
+            listProductAvailabilityModel.forEach { _productAvailabilityModel ->
+
+                val productAvailabilityModel = _productAvailabilityModel as ProductAvailabilityModel
+
+                val isSelected = if (arrayListIdsAddresses.contains(pharmacyAddressesModel.addressId)) true else false
+
+                if (mutableListSelectedPharmacyAddressesModel.none { it.pharmacyAddressesModel.addressId == pharmacyAddressesModel.addressId }) {
+
+                    if (pharmacyAddressesModel.addressId == productAvailabilityModel.addressId) {
+                        if (productAvailabilityModel.numberProducts > 0) {
+                            mutableListSelectedPharmacyAddressesModel.add(
+                                SelectedPharmacyAddressesModel(
+                                    isSelected = isSelected,
+                                    pharmacyAddressesModel = pharmacyAddressesModel,
+                                    productAvailabilityModel = productAvailabilityModel
+                                )
+                            )
+                        }
+                    }
+                }
+
+            }
+        }
+
+        Log.i("TAG","PharmacyAddressesFragment installSelectedProductAvailability mutableListSelectedPharmacyAddressesModel = $mutableListSelectedPharmacyAddressesModel")
+        pharmacyAddressesViewModel.setMutableListSelectedPharmacyAddresses(mutableList = mutableListSelectedPharmacyAddressesModel)
+    }
+
+    private fun clearAddressesSelected() {
+        val mutableListCurrentSelectedAddresses = pharmacyAddressesViewModel.mutableListSelectedPharmacyAddresses.value ?:
+        throw NullPointerException("PharmacyAddressesFragment mutableListCurrentSelectedAddresses = null")
+
+        val mutableListClearedAddresses = mutableListOf<SelectedPharmacyAddressesModel>()
+        mutableListCurrentSelectedAddresses.forEach { selectedPharmacyAddressesModel ->
+            mutableListClearedAddresses.add(SelectedPharmacyAddressesModel(
+                isSelected = false,
+                pharmacyAddressesModel = selectedPharmacyAddressesModel.pharmacyAddressesModel,
+                productAvailabilityModel = selectedPharmacyAddressesModel.productAvailabilityModel
+            ))
+        }
+        pharmacyAddressesViewModel.setCounterSelectedItems(counter = 0)
+        pharmacyAddressesViewModel.setMutableListSelectedPharmacyAddresses(mutableList = mutableListClearedAddresses)
+    }
+
+    private fun onClickSelectAddresses() {
+        if (pharmacyAddressesViewModel.resultGetPharmacyAddresses.value is ErrorResult ||
+            pharmacyAddressesViewModel.resultGetPharmacyAddresses.value is PendingResult ||
+            pharmacyAddressesViewModel.resultGetProductAvailabilityByPath.value is ErrorResult ||
+            pharmacyAddressesViewModel.resultGetProductAvailabilityByPath.value is PendingResult
         ) {
             val errorType = pharmacyAddressesViewModel.errorType.value
             val message = getString(getMessageByErrorType(errorType = errorType))
             getSupportActivity().showToast(message = message)
             return
         }
-        val mutableListSelectedPharmacyAddresses =
-            pharmacyAddressesViewModel.listSelectedPharmacyAddresses.value
+        val mutableListSelectedPharmacyAddresses = pharmacyAddressesViewModel.mutableListSelectedPharmacyAddresses.value
                 ?: throw NullPointerException("PharmacyAddressesFragment mutableListSelectedPharmacyAddresses = null")
 
         val arrayListPharmacyAddressesId = arrayListOf<Int>()
 
         val mutableListOnlySelectedPharmacyAddresses = mutableListOf<PharmacyAddressesModel>()
-        mutableListSelectedPharmacyAddresses.forEach { selectedPharmacyAddressesModel ->
-            if (selectedPharmacyAddressesModel.isSelected) mutableListOnlySelectedPharmacyAddresses.add(
-                selectedPharmacyAddressesModel.pharmacyAddressesModel
-            )
-        }
-        Log.i("TAG","mutableListOnlySelectedPharmacyAddresses = $mutableListOnlySelectedPharmacyAddresses")
 
+        // добваление в mutableListOnlySelectedPharmacyAddresses только только выбранные модели адресов
+        mutableListSelectedPharmacyAddresses.forEach { selectedPharmacyAddressesModel ->
+            if (selectedPharmacyAddressesModel.isSelected) mutableListOnlySelectedPharmacyAddresses.add(selectedPharmacyAddressesModel.pharmacyAddressesModel)
+        }
+        Log.i("TAG","PharmacyAddressesFragment mutableListOnlySelectedPharmacyAddresses = $mutableListOnlySelectedPharmacyAddresses")
+
+        // добавление в arrayListPharmacyAddressesId только id выбранных моделей адресов
         mutableListOnlySelectedPharmacyAddresses.forEach { pharmacyAddressesModel ->
             val addressId = pharmacyAddressesModel.addressId
             arrayListPharmacyAddressesId.add(addressId)
         }
-        Log.i("TAG","arrayListPharmacyAddressesId = $arrayListPharmacyAddressesId")
+        Log.i("TAG","PharmacyAddressesFragment arrayListPharmacyAddressesId = $arrayListPharmacyAddressesId")
 
         val bundle = Bundle()
+
         bundle.putIntegerArrayList(KEY_ARRAY_LIST_SELECTED_ADDRESSES,arrayListPharmacyAddressesId)
-        navControllerCatalog.navigate(R.id.action_pharmacyAddressesFragment_to_filterFragment, bundle, navOptions {
-            popUpTo(R.id.filterFragment) {
-                inclusive = true
-            }
-        })
+        setFragmentResult(KEY_RESULT_ARRAY_LIST_SELECTED_ADDRESSES, bundle)
+
+        navControllerCatalog.popBackStack()
+
     }
 
 }

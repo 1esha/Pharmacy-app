@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.setFragmentResultListener
 import androidx.fragment.app.viewModels
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
@@ -18,16 +19,26 @@ import com.example.domain.OtherError
 import com.example.domain.PendingResult
 import com.example.domain.SuccessResult
 import com.example.domain.catalog.CatalogResult
+import com.example.domain.catalog.models.ProductModel
 import com.example.domain.profile.models.ResponseValueModel
 import com.example.pharmacyapp.FLAG_ERROR_RESULT
 import com.example.pharmacyapp.FLAG_PENDING_RESULT
 import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
+import com.example.pharmacyapp.KEY_ARRAY_LIST_IDS_FILTERED
+import com.example.pharmacyapp.KEY_ARRAY_LIST_SELECTED_ADDRESSES
+import com.example.pharmacyapp.KEY_DEFAULT_PRICE_FROM
+import com.example.pharmacyapp.KEY_DEFAULT_PRICE_UP_TO
+import com.example.pharmacyapp.KEY_IS_CHECKED_DISCOUNT
 import com.example.pharmacyapp.KEY_PATH
+import com.example.pharmacyapp.KEY_PRICE_FROM
+import com.example.pharmacyapp.KEY_PRICE_UP_TO
+import com.example.pharmacyapp.KEY_RESULT_ARRAY_LIST_IDS_FILTERED
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.TYPE_GET_PRODUCTS_BY_PATH
 import com.example.pharmacyapp.ToolbarSettingsModel
 import com.example.pharmacyapp.databinding.FragmentProductsBinding
 import com.example.pharmacyapp.getMessageByErrorType
+import com.example.pharmacyapp.getPrice
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 import com.example.pharmacyapp.tabs.catalog.adapters.ProductsAdapter
@@ -45,6 +56,30 @@ class ProductsFragment : Fragment(), CatalogResult {
     private val productsViewModel: ProductsViewModel by viewModels()
 
     private lateinit var navControllerCatalog: NavController
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        setFragmentResultListener(KEY_RESULT_ARRAY_LIST_IDS_FILTERED) { requestKey, bundle ->
+            val listIdsFiltered = bundle.getIntegerArrayList(KEY_ARRAY_LIST_IDS_FILTERED) ?: arrayListOf<Int>()
+
+            val isChecked = bundle.getBoolean(KEY_IS_CHECKED_DISCOUNT)
+            val priceFrom = bundle.getDouble(KEY_PRICE_FROM)
+            val priceUpTo = bundle.getDouble(KEY_PRICE_UP_TO)
+            val arrayListIdsSelectedAddresses = bundle.getIntegerArrayList(KEY_ARRAY_LIST_SELECTED_ADDRESSES) ?: arrayListOf<Int>()
+
+            arguments?.putBoolean(KEY_IS_CHECKED_DISCOUNT,isChecked)
+            arguments?.putDouble(KEY_PRICE_FROM,priceFrom)
+            arguments?.putDouble(KEY_PRICE_UP_TO,priceUpTo)
+            arguments?.putIntegerArrayList(KEY_ARRAY_LIST_SELECTED_ADDRESSES,arrayListIdsSelectedAddresses)
+
+            Log.i("TAG","ProductsFragment onCreate listIdsFiltered = $listIdsFiltered")
+            Log.i("TAG","ProductsFragment onCreate isChecked = $isChecked")
+            Log.i("TAG","ProductsFragment onCreate priceFrom = $priceFrom")
+            Log.i("TAG","ProductsFragment onCreate priceUpTo = $priceUpTo")
+            Log.i("TAG","ProductsFragment onCreate arrayListIdsSelectedAddresses = $arrayListIdsSelectedAddresses")
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -66,8 +101,11 @@ class ProductsFragment : Fragment(), CatalogResult {
 
         toolbarViewModel.clearMenu()
 
-        val path = arguments?.getString(KEY_PATH)?: throw NullPointerException("ProductsFragment path = null")
-        val isShown = productsViewModel.isShown.value?: throw NullPointerException("ProductsFragment isShown = null")
+        val path = arguments?.getString(KEY_PATH)?:
+        throw NullPointerException("ProductsFragment path = null")
+
+        val isShown = productsViewModel.isShown.value?:
+        throw NullPointerException("ProductsFragment isShown = null")
 
         if (!isShown) {
             with(productsViewModel) {
@@ -87,12 +125,52 @@ class ProductsFragment : Fragment(), CatalogResult {
         }
 
         bFilters.setOnClickListener {
-            navControllerCatalog.navigate(R.id.action_productsFragment_to_filterFragment)
+            val listProducts = productsViewModel.listProducts.value ?:
+            throw NullPointerException("ProductsFragment listProducts = null")
+
+            val listPrices = listProducts.map {
+                val productModel = it as ProductModel
+
+                return@map getPrice(
+                    context = requireContext(),
+                    discount = productModel.discount,
+                    price = productModel.price
+                )
+            }
+
+            val defaultPriceFrom = listPrices.min()
+
+            val defaultPriceUpTo = listPrices.max()
+
+            val bundle = Bundle()
+            bundle.putString(KEY_PATH, path)
+
+            val isChecked = arguments?.getBoolean(KEY_IS_CHECKED_DISCOUNT) ?: false
+            val priceFrom = arguments?.getDouble(KEY_PRICE_FROM) ?: -1.0
+            val priceUpTo = arguments?.getDouble(KEY_PRICE_UP_TO) ?: -1.0
+            val arrayListIdsSelectedAddresses = arguments?.getIntegerArrayList(KEY_ARRAY_LIST_SELECTED_ADDRESSES) ?: arrayListOf<Int>()
+
+            Log.i("TAG","ProductsFragment isCheckedFilter = $isChecked")
+            Log.i("TAG","ProductsFragment priceFromFilter = $priceFrom")
+            Log.i("TAG","ProductsFragment priceUpToFilter = $priceUpTo")
+            Log.i("TAG","ProductsFragment defaultPriceFrom = $defaultPriceFrom")
+            Log.i("TAG","ProductsFragment defaultPriceUpTo = $defaultPriceUpTo")
+            Log.i("TAG","ProductsFragment arrayListIdsSelectedAddressesFilter = $arrayListIdsSelectedAddresses")
+
+            bundle.putBoolean(KEY_IS_CHECKED_DISCOUNT,isChecked)
+            bundle.putDouble(KEY_PRICE_FROM,priceFrom)
+            bundle.putDouble(KEY_PRICE_UP_TO,priceUpTo)
+            bundle.putDouble(KEY_DEFAULT_PRICE_FROM,defaultPriceFrom)
+            bundle.putDouble(KEY_DEFAULT_PRICE_UP_TO,defaultPriceUpTo)
+            bundle.putDouble(KEY_PRICE_UP_TO,priceUpTo)
+            bundle.putIntegerArrayList(KEY_ARRAY_LIST_SELECTED_ADDRESSES,arrayListIdsSelectedAddresses)
+
+            navControllerCatalog.navigate(R.id.action_productsFragment_to_filterFragment, bundle)
         }
 
         productsViewModel.result.observe(viewLifecycleOwner) { result ->
             when(result) {
-                is PendingResult -> { onPendingResult() }
+                is PendingResult -> { onPendingResultListener() }
                 is SuccessResult -> {
                     val value = result.value
                     onSuccessResultListener(
@@ -115,8 +193,8 @@ class ProductsFragment : Fragment(), CatalogResult {
         _binding = null
     }
 
-    override fun onPendingResult() {
-        Log.i("TAG","ProductsFragment onPendingResult")
+    override fun onPendingResultListener() {
+        Log.i("TAG","ProductsFragment onPendingResultListener")
         productsViewModel.clearErrorType()
         updateUI(flag = FLAG_PENDING_RESULT)
     }
@@ -132,12 +210,7 @@ class ProductsFragment : Fragment(), CatalogResult {
 
             val listProducts = responseValueModel.value as List<*>
 
-            val productsAdapter = ProductsAdapter(listProducts = listProducts) { productId ->
-                Log.i("TAG","CLICK")
-            }
-            Log.i("TAG","CHECK $listProducts")
-            rvProducts.adapter = productsAdapter
-            rvProducts.layoutManager = GridLayoutManager(requireContext(),2)
+            productsViewModel.setProductsModel(listProductModel = listProducts)
 
         }
         else {

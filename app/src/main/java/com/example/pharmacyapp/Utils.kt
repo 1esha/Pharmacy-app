@@ -17,15 +17,25 @@ const val KEY_USER_ID = "KEY_USER_ID"
 const val KEY_IS_INIT = "KEY_IS_INIT"
 const val KEY_PATH_MAIN = "KEY_PATH_MAIN"
 const val KEY_PATH = "KEY_PATH"
+const val KEY_IS_CHECKED_DISCOUNT = "KEY_IS_CHECKED_DISCOUNT"
+const val KEY_PRICE_FROM = "KEY_PRICE_FROM"
+const val KEY_DEFAULT_PRICE_FROM = "KEY_DEFAULT_PRICE_FROM"
+const val KEY_PRICE_UP_TO = "KEY_PRICE_UP_TO"
+const val KEY_DEFAULT_PRICE_UP_TO = "KEY_DEFAULT_PRICE_UP_TO"
 const val KEY_ARRAY_LIST_CURRENT_ITEMS = "KEY_ARRAY_LIST_CURRENT_ITEMS"
 const val KEY_ARRAY_LIST_SELECTED_ADDRESSES = "KEY_ARRAY_LIST_SELECTED_ADDRESSES"
+const val KEY_ARRAY_LIST_IDS_FILTERED = "KEY_ARRAY_LIST_IDS_FILTERED"
+const val KEY_RESULT_ARRAY_LIST_SELECTED_ADDRESSES = "KEY_RESULT_ARRAY_LIST_SELECTED_ADDRESSES"
+const val KEY_RESULT_ARRAY_LIST_IDS_FILTERED = "KEY_RESULT_ARRAY_LIST_IDS_FILTERED"
 
+const val TYPE_EMPTY = "TYPE_EMPTY"
 const val TYPE_GET_USER_BY_ID = "TYPE_GET_USER_BY_ID"
 const val TYPE_EDIT_USER = "TYPE_EDIT_USER"
 const val TYPE_DELETE_USER = "TYPE_DELETE_USER"
 const val TYPE_OTHER = "TYPE_OTHER"
 const val TYPE_GET_PRODUCTS_BY_PATH = "TYPE_GET_PRODUCTS_BY_PATH"
 const val TYPE_GET_PHARMACY_ADDRESSES = "TYPE_GET_PHARMACY_ADDRESSES"
+const val TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH = "TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH"
 
 const val FLAG_PENDING_RESULT = "FLAG_PENDING_RESULT"
 const val FLAG_ERROR_RESULT = "FLAG_ERROR_RESULT"
@@ -83,7 +93,7 @@ data class ToolbarSettingsModel(
 
 data class MenuSettingsModel(
     val menu: Int,
-    val onClickMenuItem: () -> Unit
+    val onClickMenuItem: (Int) -> Unit
 )
 
 fun getMessageByErrorType(errorType: ErrorType?): Int {
@@ -95,5 +105,38 @@ fun getMessageByErrorType(errorType: ErrorType?): Int {
     }
 }
 
+fun List<Int>.toArrayListInt(): ArrayList<Int> {
+    val arrayList = arrayListOf<Int>()
+    this.forEach {
+        arrayList.add(it)
+    }
+
+    return arrayList
+}
+
+fun getPrice(context: Context, discount: Double, price: Double): Double {
+    val sharedPreferences = context.getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
+    val userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
+
+    // получение значения клубной скидки
+    val clubDiscount: Double = if (userId == UNAUTHORIZED_USER) 0.0 else 3.0
+
+    val totalPrice = if (discount > 0) {
+        // если есть скидка
+        val sumDiscount = ((discount + clubDiscount) / 100) * price
+        val totalDiscountedPrice = price - sumDiscount
+
+        totalDiscountedPrice
+    }
+    else {
+        // если нет скидки
+        val sumDiscount = (clubDiscount / 100) * price
+        val totalPrice = price - sumDiscount
+
+        totalPrice
+    }
+
+    return totalPrice
+}
 
 

@@ -24,6 +24,9 @@ class ProductsViewModel: ViewModel() {
     private val _isShown = MutableLiveData<Boolean>(false)
     val isShown: LiveData<Boolean> = _isShown
 
+    private val _listProducts = MutableLiveData<List<*>>()
+    val listProducts: LiveData<List<*>> = _listProducts
+
     private val _errorType = MutableLiveData<ErrorType>(OtherError())
     val errorType: LiveData<ErrorType> = _errorType
 
@@ -47,6 +50,10 @@ class ProductsViewModel: ViewModel() {
             _errorType.value = errorType?: throw NullPointerException("ProductsViewModel setResult errorType = null")
         }
         _result.value = result
+    }
+
+    fun setProductsModel(listProductModel: List<*>) {
+        _listProducts.value = listProductModel
     }
 
     fun clearErrorType() {

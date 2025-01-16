@@ -8,7 +8,7 @@ interface CatalogResult {
 
     fun onErrorResultListener(exception: Exception, message: String)
 
-    fun onPendingResult()
+    fun onPendingResultListener()
 
     fun onSuccessfulEvent(type: String, exception: Exception? = null,onSuccessfulEventListener:() -> Unit)
 
