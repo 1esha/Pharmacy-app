@@ -14,12 +14,16 @@ class ToolbarViewModel: ViewModel() {
     private val _menuSettings = MutableLiveData<MenuSettingsModel?>()
     val menuSettings: LiveData<MenuSettingsModel?> = _menuSettings
 
-    fun setToolbarSettings(toolbarSettingsModel: ToolbarSettingsModel) {
+    fun installToolbar(toolbarSettingsModel: ToolbarSettingsModel) {
         _toolbarSettings.value = toolbarSettingsModel
     }
 
-    fun setMenuSettings(menuSettingsModel: MenuSettingsModel? = null) {
+    fun installMenu(menuSettingsModel: MenuSettingsModel) {
         _menuSettings.value = menuSettingsModel
+    }
+
+    fun clearMenu() {
+        _menuSettings.value = null
     }
 
 }
