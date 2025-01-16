@@ -63,8 +63,8 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
 
         val navControllerMain = getSupportActivity().getNavControllerMain()
 
-        toolbarViewModel.setToolbarSettings(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.account)){})
-        toolbarViewModel.setMenuSettings()
+        toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.account)){})
+        toolbarViewModel.clearMenu()
 
         val dialogListener = DialogInterface.OnClickListener { dialogInterface, currentButton ->
             when(currentButton){

@@ -29,8 +29,8 @@ class CardFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
-        toolbarViewModel.setToolbarSettings(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.my_card)){})
-        toolbarViewModel.setMenuSettings()
+        toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.my_card)){})
+        toolbarViewModel.clearMenu()
     }
 
     override fun onDestroyView() {

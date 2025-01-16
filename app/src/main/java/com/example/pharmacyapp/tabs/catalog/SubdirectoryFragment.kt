@@ -42,7 +42,7 @@ class SubdirectoryFragment : Fragment() {
 
         navControllerCatalog = findNavController()
 
-        toolbarViewModel.setToolbarSettings(toolbarSettingsModel = ToolbarSettingsModel(
+        toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(
             title = getString(R.string.catalog),
             icon = R.drawable.ic_back,
             onClickNavigationIcon = {
@@ -50,7 +50,7 @@ class SubdirectoryFragment : Fragment() {
             }
         ))
 
-        toolbarViewModel.setMenuSettings()
+        toolbarViewModel.clearMenu()
 
         val arrayListItems = arguments?.getStringArrayList(KEY_ARRAY_LIST_CURRENT_ITEMS)?: arrayListOf()
         val pathMain = arguments?.getString(KEY_PATH_MAIN)?: EMPTY_STRING

@@ -29,8 +29,8 @@ class BasketFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
-        toolbarViewModel.setToolbarSettings(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.basket)){})
-        toolbarViewModel.setMenuSettings()
+        toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.basket)){})
+        toolbarViewModel.clearMenu()
     }
 
     override fun onDestroyView() {

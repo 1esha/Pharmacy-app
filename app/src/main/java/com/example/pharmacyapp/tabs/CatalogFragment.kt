@@ -41,8 +41,8 @@ class CatalogFragment : Fragment() {
 
         navControllerCatalog = findNavController()
 
-        toolbarViewModel.setToolbarSettings(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.catalog)){})
-        toolbarViewModel.setMenuSettings()
+        toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.catalog)){})
+        toolbarViewModel.clearMenu()
 
         val listItems = listOf(
             CatalogMainModel(image = R.drawable.medicinal_products, title = getString(R.string.medicines_and_dietary_supplements)),

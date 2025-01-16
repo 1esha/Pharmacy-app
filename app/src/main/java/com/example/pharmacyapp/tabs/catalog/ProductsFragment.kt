@@ -59,12 +59,12 @@ class ProductsFragment : Fragment(), CatalogResult {
 
         navControllerCatalog = findNavController()
 
-        toolbarViewModel.setToolbarSettings(toolbarSettingsModel = ToolbarSettingsModel(
+        toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(
             title = getString(R.string.catalog),
             icon = R.drawable.ic_back
         ) { navControllerCatalog.navigateUp()})
 
-        toolbarViewModel.setMenuSettings()
+        toolbarViewModel.clearMenu()
 
         val path = arguments?.getString(KEY_PATH)?: throw NullPointerException("ProductsFragment path = null")
         val isShown = productsViewModel.isShown.value?: throw NullPointerException("ProductsFragment isShown = null")

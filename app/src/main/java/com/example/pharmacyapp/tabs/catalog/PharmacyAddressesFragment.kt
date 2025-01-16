@@ -62,19 +62,25 @@ class PharmacyAddressesFragment : Fragment(), CatalogResult {
         navControllerCatalog = findNavController()
 
         pharmacyAddressesViewModel.counterSelectedItems.observe(viewLifecycleOwner) { counter ->
-            toolbarViewModel.setToolbarSettings(toolbarSettingsModel = ToolbarSettingsModel(
-                title = "Selected $counter",
+            toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(
+                title = getString(R.string.selected, counter.toString()),
                 icon = R.drawable.ic_back
             ) {
                 navControllerCatalog.navigateUp()
             })
-        }
 
-        toolbarViewModel.setMenuSettings(menuSettingsModel = MenuSettingsModel(
-            menu = R.menu.menu_select_pharmacy_addresses
-        ) {
-            onClickMenuItem()
-        })
+            if (counter > 0) {
+                toolbarViewModel.clearMenu()
+                toolbarViewModel.installMenu(menuSettingsModel = MenuSettingsModel(
+                    menu = R.menu.menu_select_pharmacy_addresses
+                ) {
+                    clearAddressesSelected()
+                })
+            }
+            else {
+                toolbarViewModel.clearMenu()
+            }
+        }
 
         val isShown = pharmacyAddressesViewModel.isShown.value
             ?: throw NullPointerException("PharmacyAddressesFragment isShown = null")

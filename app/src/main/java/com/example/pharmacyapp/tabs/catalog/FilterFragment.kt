@@ -47,7 +47,14 @@ class FilterFragment : Fragment() {
         ) {
             navControllerCatalog.navigateUp()
         })
-        toolbarViewModel.setMenuSettings()
+        toolbarViewModel.clearMenu()
+        toolbarViewModel.installMenu(menuSettingsModel = MenuSettingsModel(
+            menu = R.menu.menu_delete_filters
+        ) { menuItemId ->
+            if (menuItemId == R.id.deleteFilters) {
+                clearFilters()
+            }
+        })
 
         layoutAvailabilityInPharmacies.setOnClickListener {
             navControllerCatalog.navigate(R.id.action_filterFragment_to_pharmacyAddressesFragment)

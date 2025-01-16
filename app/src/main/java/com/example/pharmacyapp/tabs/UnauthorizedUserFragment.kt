@@ -36,8 +36,8 @@ class UnauthorizedUserFragment : Fragment() {
 
         val navControllerMain  = getSupportActivity().getNavControllerMain()
 
-        toolbarViewModel.setToolbarSettings(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.log_in)){})
-        toolbarViewModel.setMenuSettings()
+        toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.log_in)){})
+        toolbarViewModel.clearMenu()
 
         bGoToLogInAgain.setOnClickListener {
             navControllerMain.navigate(R.id.nav_graph_log_in, null, navOptions {
