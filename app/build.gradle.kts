@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.devtoolsKsp)
 }
 
 android {
@@ -64,6 +65,11 @@ dependencies {
 
     //Coil
     implementation(libs.coil)
+
+    //Room
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
 
     implementation(project(":domain"))
     implementation(project(":data"))
