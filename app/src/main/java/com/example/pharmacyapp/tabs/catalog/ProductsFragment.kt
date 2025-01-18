@@ -61,23 +61,33 @@ class ProductsFragment : Fragment(), CatalogResult {
         super.onCreate(savedInstanceState)
 
         setFragmentResultListener(KEY_RESULT_ARRAY_LIST_IDS_FILTERED) { requestKey, bundle ->
-            val listIdsFiltered = bundle.getIntegerArrayList(KEY_ARRAY_LIST_IDS_FILTERED) ?: arrayListOf<Int>()
+            val arrayListIdsFiltered = bundle.getIntegerArrayList(KEY_ARRAY_LIST_IDS_FILTERED) ?: arrayListOf<Int>()
 
             val isChecked = bundle.getBoolean(KEY_IS_CHECKED_DISCOUNT)
-            val priceFrom = bundle.getDouble(KEY_PRICE_FROM)
-            val priceUpTo = bundle.getDouble(KEY_PRICE_UP_TO)
+            val priceFrom = bundle.getInt(KEY_PRICE_FROM)
+            val priceUpTo = bundle.getInt(KEY_PRICE_UP_TO)
             val arrayListIdsSelectedAddresses = bundle.getIntegerArrayList(KEY_ARRAY_LIST_SELECTED_ADDRESSES) ?: arrayListOf<Int>()
 
             arguments?.putBoolean(KEY_IS_CHECKED_DISCOUNT,isChecked)
-            arguments?.putDouble(KEY_PRICE_FROM,priceFrom)
-            arguments?.putDouble(KEY_PRICE_UP_TO,priceUpTo)
+            arguments?.putInt(KEY_PRICE_FROM,priceFrom)
+            arguments?.putInt(KEY_PRICE_UP_TO,priceUpTo)
             arguments?.putIntegerArrayList(KEY_ARRAY_LIST_SELECTED_ADDRESSES,arrayListIdsSelectedAddresses)
 
-            Log.i("TAG","ProductsFragment onCreate listIdsFiltered = $listIdsFiltered")
+            Log.i("TAG","ProductsFragment onCreate arrayListIdsFiltered = $arrayListIdsFiltered")
             Log.i("TAG","ProductsFragment onCreate isChecked = $isChecked")
             Log.i("TAG","ProductsFragment onCreate priceFrom = $priceFrom")
             Log.i("TAG","ProductsFragment onCreate priceUpTo = $priceUpTo")
             Log.i("TAG","ProductsFragment onCreate arrayListIdsSelectedAddresses = $arrayListIdsSelectedAddresses")
+
+            val listProduct = productsViewModel.listAllProducts.value ?:
+            throw NullPointerException("ProductsFragment listAllProducts = null")
+
+            val listFilteredProduct = listProduct.filter {
+                val productModel = it as ProductModel
+                arrayListIdsFiltered.contains(productModel.product_id)
+            }
+
+            productsViewModel.setProductsModel(listProductModel = listFilteredProduct)
         }
     }
 
@@ -117,7 +127,6 @@ class ProductsFragment : Fragment(), CatalogResult {
 
         layoutPendingResultProducts.bTryAgain.setOnClickListener {
             with(productsViewModel) {
-                setIsShown(isShown = false)
                 onSuccessfulEvent(type = TYPE_GET_PRODUCTS_BY_PATH) {
                     getProductsByPath(path = path)
                 }
@@ -125,14 +134,13 @@ class ProductsFragment : Fragment(), CatalogResult {
         }
 
         bFilters.setOnClickListener {
-            val listProducts = productsViewModel.listProducts.value ?:
-            throw NullPointerException("ProductsFragment listProducts = null")
+            val listAllProducts = productsViewModel.listAllProducts.value ?:
+            throw NullPointerException("ProductsFragment listAllProducts = null")
 
-            val listPrices = listProducts.map {
+            val listPrices = listAllProducts.map {
                 val productModel = it as ProductModel
 
                 return@map getPrice(
-                    context = requireContext(),
                     discount = productModel.discount,
                     price = productModel.price
                 )
@@ -146,8 +154,8 @@ class ProductsFragment : Fragment(), CatalogResult {
             bundle.putString(KEY_PATH, path)
 
             val isChecked = arguments?.getBoolean(KEY_IS_CHECKED_DISCOUNT) ?: false
-            val priceFrom = arguments?.getDouble(KEY_PRICE_FROM) ?: -1.0
-            val priceUpTo = arguments?.getDouble(KEY_PRICE_UP_TO) ?: -1.0
+            val priceFrom = arguments?.getInt(KEY_PRICE_FROM) ?: -1
+            val priceUpTo = arguments?.getInt(KEY_PRICE_UP_TO) ?: -1
             val arrayListIdsSelectedAddresses = arguments?.getIntegerArrayList(KEY_ARRAY_LIST_SELECTED_ADDRESSES) ?: arrayListOf<Int>()
 
             Log.i("TAG","ProductsFragment isCheckedFilter = $isChecked")
@@ -158,11 +166,10 @@ class ProductsFragment : Fragment(), CatalogResult {
             Log.i("TAG","ProductsFragment arrayListIdsSelectedAddressesFilter = $arrayListIdsSelectedAddresses")
 
             bundle.putBoolean(KEY_IS_CHECKED_DISCOUNT,isChecked)
-            bundle.putDouble(KEY_PRICE_FROM,priceFrom)
-            bundle.putDouble(KEY_PRICE_UP_TO,priceUpTo)
-            bundle.putDouble(KEY_DEFAULT_PRICE_FROM,defaultPriceFrom)
-            bundle.putDouble(KEY_DEFAULT_PRICE_UP_TO,defaultPriceUpTo)
-            bundle.putDouble(KEY_PRICE_UP_TO,priceUpTo)
+            bundle.putInt(KEY_PRICE_FROM,priceFrom)
+            bundle.putInt(KEY_PRICE_UP_TO,priceUpTo)
+            bundle.putInt(KEY_DEFAULT_PRICE_FROM,defaultPriceFrom)
+            bundle.putInt(KEY_DEFAULT_PRICE_UP_TO,defaultPriceUpTo)
             bundle.putIntegerArrayList(KEY_ARRAY_LIST_SELECTED_ADDRESSES,arrayListIdsSelectedAddresses)
 
             navControllerCatalog.navigate(R.id.action_productsFragment_to_filterFragment, bundle)
@@ -186,6 +193,18 @@ class ProductsFragment : Fragment(), CatalogResult {
             }
         }
 
+        productsViewModel.listProducts.observe(viewLifecycleOwner) { listProductsModel ->
+
+            val productsAdapter = ProductsAdapter(listProducts = listProductsModel) { productId ->
+                Log.i("TAG","CLICK")
+            }
+
+            productsAdapter.notifyItemRangeRemoved(0,listProductsModel.size)
+
+            rvProducts.adapter = productsAdapter
+            rvProducts.layoutManager = GridLayoutManager(requireContext(),2)
+        }
+
     }
 
     override fun onDestroyView() {
@@ -199,23 +218,30 @@ class ProductsFragment : Fragment(), CatalogResult {
         updateUI(flag = FLAG_PENDING_RESULT)
     }
 
-    override fun <T> onSuccessResultListener(value: T, type: String?): Unit = with(binding){
+    override fun <T> onSuccessResultListener(value: T, type: String?): Unit {
         Log.i("TAG","ProductsFragment onSuccessResultListener")
         val responseValueModel = value as ResponseValueModel<*>
         val status = responseValueModel.responseModel.status
         val message = responseValueModel.responseModel.message
 
-        if (status in 200..299){
-            updateUI(flag = FLAG_SUCCESS_RESULT)
+        val isShown = productsViewModel.isShown.value ?:
+        throw NullPointerException("ProductsFragment isShown = null")
 
-            val listProducts = responseValueModel.value as List<*>
+        if (!isShown) {
+            if (status in 200..299){
 
-            productsViewModel.setProductsModel(listProductModel = listProducts)
+                val listProducts = responseValueModel.value as List<*>
 
-        }
-        else {
-            productsViewModel.setResult(result = ErrorResult(exception = Exception()), errorType = OtherError())
-            if (message != null) getSupportActivity().showToast(message = message)
+                productsViewModel.setProductsModel(listProductModel = listProducts)
+                productsViewModel.setListAllProductsModel(listProductModel = listProducts)
+
+                updateUI(flag = FLAG_SUCCESS_RESULT)
+
+            }
+            else {
+                productsViewModel.setResult(result = ErrorResult(exception = Exception()), errorType = OtherError())
+                if (message != null) getSupportActivity().showToast(message = message)
+            }
         }
 
         productsViewModel.setIsShown(isShown = true)

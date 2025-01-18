@@ -9,6 +9,7 @@ import com.example.domain.ErrorType
 import com.example.domain.IdentificationError
 import com.google.android.material.appbar.MaterialToolbar
 import io.ktor.util.toLowerCasePreservingASCIIRules
+import kotlin.math.roundToInt
 
 const val UNAUTHORIZED_USER = -1
 const val EMPTY_STRING = ""
@@ -114,29 +115,16 @@ fun List<Int>.toArrayListInt(): ArrayList<Int> {
     return arrayList
 }
 
-fun getPrice(context: Context, discount: Double, price: Double): Double {
-    val sharedPreferences = context.getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
-    val userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
+fun getPrice(discount: Double, price: Double): Int {
 
-    // получение значения клубной скидки
-    val clubDiscount: Double = if (userId == UNAUTHORIZED_USER) 0.0 else 3.0
+    val clubDiscount = 3.0
 
-    val totalPrice = if (discount > 0) {
-        // если есть скидка
-        val sumDiscount = ((discount + clubDiscount) / 100) * price
-        val totalDiscountedPrice = price - sumDiscount
+    val sumDiscount = ((discount) / 100) * price
+    val priceDiscounted = price - sumDiscount
+    val sumClubDiscount = ((clubDiscount) / 100) * priceDiscounted
+    val priceClubDiscounted = priceDiscounted - sumClubDiscount
 
-        totalDiscountedPrice
-    }
-    else {
-        // если нет скидки
-        val sumDiscount = (clubDiscount / 100) * price
-        val totalPrice = price - sumDiscount
-
-        totalPrice
-    }
-
-    return totalPrice
+    return priceClubDiscounted.roundToInt()
 }
 
 

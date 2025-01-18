@@ -1,5 +1,6 @@
 package com.example.pharmacyapp.tabs.catalog
 
+
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
@@ -49,6 +50,7 @@ import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 import com.example.pharmacyapp.tabs.catalog.viewmodels.FilterViewModel
 import com.example.pharmacyapp.toArrayListInt
 import java.lang.Exception
+import kotlin.math.roundToInt
 
 class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
 
@@ -153,8 +155,8 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
             onEnterPrice()
 
             val arrayListIdsSelectedAddresses = arguments?.getIntegerArrayList(KEY_ARRAY_LIST_SELECTED_ADDRESSES)
-            val from = etFrom.text.toString().toDouble()
-            val upTo = etUpTo.text.toString().toDouble()
+            val from = etFrom.text.toString().toInt()
+            val upTo = etUpTo.text.toString().toInt()
             val isChecked = checkBoxDiscountedProduct.isChecked
 
             val arrayListIdsFilteredProducts = getFilteredArrayList(
@@ -171,8 +173,8 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
             bundle.putIntegerArrayList(KEY_ARRAY_LIST_IDS_FILTERED,arrayListIdsFilteredProducts)
 
             bundle.putBoolean(KEY_IS_CHECKED_DISCOUNT,isChecked)
-            bundle.putDouble(KEY_PRICE_FROM,from)
-            bundle.putDouble(KEY_PRICE_UP_TO,upTo)
+            bundle.putInt(KEY_PRICE_FROM,from)
+            bundle.putInt(KEY_PRICE_UP_TO,upTo)
             bundle.putIntegerArrayList(KEY_ARRAY_LIST_SELECTED_ADDRESSES,arrayListIdsSelectedAddresses)
 
             setFragmentResult(KEY_RESULT_ARRAY_LIST_IDS_FILTERED,bundle)
@@ -194,7 +196,6 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
                     filterViewModel.getProductAvailabilityByPath(path = path)
                 }
             }
-
 
         }
 
@@ -245,7 +246,6 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
             if (keyCode == KeyEvent.KEYCODE_ENTER) {
                 onEnterPrice()
             }
-
         }
         return false
     }
@@ -310,7 +310,6 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
                 filterViewModel.setIsShownGetProductsByPath(isShown = true)
             }
         }
-
 
     }
 
@@ -381,10 +380,10 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
     private fun installInitialUI() = with(binding) {
         val isChecked = arguments?.getBoolean(KEY_IS_CHECKED_DISCOUNT) ?: false
         val arrayListIdsSelectedAddresses = arguments?.getIntegerArrayList(KEY_ARRAY_LIST_SELECTED_ADDRESSES) ?: arrayListOf<Int>()
-        val priceFrom = arguments?.getDouble(KEY_PRICE_FROM) ?: -1.0
-        val priceUpTo = arguments?.getDouble(KEY_PRICE_UP_TO) ?: -1.0
-        val defaultPriceUpTo = arguments?.getDouble(KEY_DEFAULT_PRICE_UP_TO)
-        val defaultPriceFrom = arguments?.getDouble(KEY_DEFAULT_PRICE_FROM)
+        val priceFrom = arguments?.getInt(KEY_PRICE_FROM) ?: -1
+        val priceUpTo = arguments?.getInt(KEY_PRICE_UP_TO) ?: -1
+        val defaultPriceUpTo = arguments?.getInt(KEY_DEFAULT_PRICE_UP_TO)
+        val defaultPriceFrom = arguments?.getInt(KEY_DEFAULT_PRICE_FROM)
 
         checkBoxDiscountedProduct.isChecked = isChecked
 
@@ -403,13 +402,13 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
 
         val textPriceUpTo = priceUpTo.toString()
         val textPriceFrom = priceFrom.toString()
-        if (priceFrom <= 0.0) {
+        if (priceFrom <= 0) {
             etFrom.setText(textDefaultPriceFrom)
         } else{
             etFrom.setText(textPriceFrom)
         }
 
-        if (priceUpTo <= 0.0) {
+        if (priceUpTo <= 0) {
             etUpTo.setText(textDefaultPriceUpTo)
         } else{
             etUpTo.setText(textPriceUpTo)
@@ -417,7 +416,7 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
 
     }
 
-    private fun clearFilters() = with(binding) {
+    private fun clearFilters() {
 
         val resultGetProductsByPath = filterViewModel.resultGetProductsByPath.value ?:
         throw NullPointerException("FilterFragment resultGetProductsByPath = null")
@@ -436,8 +435,8 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
         else {
             arguments?.putBoolean(KEY_IS_CHECKED_DISCOUNT, false)
             arguments?.putIntegerArrayList(KEY_ARRAY_LIST_SELECTED_ADDRESSES,arrayListOf<Int>())
-            arguments?.putDouble(KEY_PRICE_FROM, -1.0)
-            arguments?.putDouble(KEY_PRICE_UP_TO, -1.0)
+            arguments?.putInt(KEY_PRICE_FROM, -1)
+            arguments?.putInt(KEY_PRICE_UP_TO, -1)
 
             installInitialUI()
         }
@@ -447,8 +446,8 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
     private fun onEnterPrice() =
         with(binding) {
 
-            val defaultPriceUpTo = arguments?.getDouble(KEY_DEFAULT_PRICE_UP_TO)
-            val defaultPriceFrom = arguments?.getDouble(KEY_DEFAULT_PRICE_FROM)
+            val defaultPriceUpTo = arguments?.getInt(KEY_DEFAULT_PRICE_UP_TO)
+            val defaultPriceFrom = arguments?.getInt(KEY_DEFAULT_PRICE_FROM)
 
             val textDefaultPriceUpTo = defaultPriceUpTo.toString()
             val textDefaultPriceFrom = defaultPriceFrom.toString()
@@ -458,7 +457,7 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
                 defaultPriceFrom
             }
             else {
-                etFrom.text.toString().toDouble()
+                etFrom.text.toString().toDouble().roundToInt()
             }
 
             val currentPriceUpTo = if (etUpTo.text.toString().isEmpty() || etUpTo.text.toString().isBlank()) {
@@ -466,13 +465,19 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
                 defaultPriceUpTo
             }
             else {
-                etUpTo.text.toString().toDouble()
+                etUpTo.text.toString().toDouble().roundToInt()
             }
 
             if (currentPriceFrom!! < defaultPriceFrom!!) {
                 etFrom.setText(textDefaultPriceFrom)
             }
-            if (currentPriceUpTo!! > defaultPriceUpTo!!) {
+            if (currentPriceFrom > defaultPriceUpTo!!) {
+                etFrom.setText(textDefaultPriceFrom)
+            }
+            if (currentPriceUpTo!! > defaultPriceUpTo) {
+                etUpTo.setText(textDefaultPriceUpTo)
+            }
+            if (currentPriceUpTo < defaultPriceFrom) {
                 etUpTo.setText(textDefaultPriceUpTo)
             }
             if (currentPriceFrom > currentPriceUpTo) {
@@ -482,8 +487,8 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
 
     private fun getFilteredArrayList(
         isChecked: Boolean,
-        priceFrom: Double,
-        priceUpTo: Double,
+        priceFrom: Int,
+        priceUpTo: Int,
         arrayListSelectedIdsAddresses: ArrayList<Int>
     ): ArrayList<Int> {
 
@@ -497,8 +502,11 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
 
         val mutableListOnlyIdsProductsAvailability = mutableListOf<Int>()
 
-        Log.i("TAG","FilterFragment filteringByDiscountAndAvailability listAllProducts = $listAllProducts")
-        Log.i("TAG","FilterFragment filteringByDiscountAndAvailability listAllIdsProductsAvailability = $listAllIdsProductsAvailability")
+        Log.i("TAG","FilterFragment getFilteredArrayList isChecked = $isChecked")
+        Log.i("TAG","FilterFragment getFilteredArrayList priceFrom = $priceFrom")
+        Log.i("TAG","FilterFragment getFilteredArrayList priceUpTo = $priceUpTo")
+        Log.i("TAG","FilterFragment getFilteredArrayList arrayListSelectedIdsAddresses = $arrayListSelectedIdsAddresses")
+        Log.i("TAG","FilterFragment getFilteredArrayList listAllIdsProductsAvailability = $listAllIdsProductsAvailability")
 
         // получения списка id товаров которые в наличии в аптеках
         if (arrayListSelectedIdsAddresses.size == 0) {
@@ -515,31 +523,34 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
                 if (arrayListSelectedIdsAddresses.contains(productsAvailabilityModel.addressId)) {
                     if (productsAvailabilityModel.numberProducts > 0) {
                         mutableListOnlyIdsProductsAvailability.add(productsAvailabilityModel.productId)
+                        mutableListOnlyIdsProductsAvailability.distinct()
                     }
                 }
 
             }
         }
 
-        Log.i("TAG","FilterFragment filteringByDiscountAndAvailability mutableListOnlyIdsProductsAvailability = $mutableListOnlyIdsProductsAvailability")
+        Log.i("TAG","FilterFragment getFilteredArrayList mutableListOnlyIdsProductsAvailability = ${mutableListOnlyIdsProductsAvailability.distinct()}")
 
         if (isChecked) {
             // получение списка id товаров со скидкой и в наличии в выбранных аптеках
             listAllProducts.forEach {
                 val productModel = it as ProductModel
                 val price = getPrice(
-                    context = requireContext(),
                     discount = productModel.discount,
                     price = productModel.price
                 )
-                if (price in priceFrom..priceUpTo) {
-                    if (mutableListOnlyIdsProductsAvailability.contains(productModel.product_id)) {
-                        if (productModel.discount != 0.0) {
+                Log.i("TAG","getFilteredArrayList price = $price\npriceFrom = $priceFrom\npriceUpTo = $priceUpTo")
+                if (productModel.discount > 0) {
+                    if (price in priceFrom..priceUpTo) {
+                        if (mutableListOnlyIdsProductsAvailability.distinct().contains(productModel.product_id)) {
                             mutableListIdsProductsFiltered.add(productModel.product_id)
                             // mutableListIdsProductsFiltered содержит только id товаров со скидкой и в наличии в выбранных аптеках
                         }
+
                     }
                 }
+
             }
 
         }
@@ -549,11 +560,12 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
                 val productModel = it as ProductModel
 
                 val price = getPrice(
-                    context = requireContext(),
                     discount = productModel.discount,
                     price = productModel.price
                 )
+                Log.i("TAG","getFilteredArrayList price = $price\npriceFrom = $priceFrom\npriceUpTo = $priceUpTo")
                 if (price in priceFrom..priceUpTo) {
+
                     if (mutableListOnlyIdsProductsAvailability.contains(productModel.product_id)) {
                         mutableListIdsProductsFiltered.add(productModel.product_id)
                     }
@@ -561,7 +573,7 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
             }
 
         }
-        Log.i("TAG","FilterFragment filteringByDiscountAndAvailability isChecked = $isChecked mutableListIdsProductsFiltered = $mutableListIdsProductsFiltered")
+        Log.i("TAG","FilterFragment getFilteredArrayList isChecked = $isChecked mutableListIdsProductsFiltered = ${mutableListIdsProductsFiltered}")
 
         return mutableListIdsProductsFiltered.toArrayListInt()
     }
