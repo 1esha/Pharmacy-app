@@ -12,4 +12,6 @@
     <color name="green700">#388E3C</color>
     <color name="green800">#2E7D32</color>
     <color name="green900">#1B5E20</color>
+
+    <color name="discount">#C6013F</color>
 </resources>

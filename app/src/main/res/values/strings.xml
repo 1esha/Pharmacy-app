@@ -134,4 +134,7 @@
     <string name="clear">Clear</string>
     <string name="apply">Apply</string>
     <string name="addresses_selected">Addresses selected</string>
+    <string name="rubles">rubles</string>
+    <string name="with_a_club_card">With a club card</string>
+    <string name="ruble_sign">₽</string>
 </resources>
