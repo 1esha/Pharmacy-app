@@ -1,4 +1,4 @@
-package com.example.data.catalog.datasource
+package com.example.data.catalog.datasource.remote
 
 import android.util.Log
 import com.example.data.ErrorResultDataSource
@@ -22,8 +22,8 @@ import kotlinx.coroutines.withContext
 
 class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<
         ResponseValueDataSourceModel<List<ProductDataSourceModel>?>,
-        ResponseValueDataSourceModel<List<PharmacyAddressesDataSourceModel>?>,
-        ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>> {
+        ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>,
+        ResponseValueDataSourceModel<List<PharmacyAddressesDataSourceModel>?>> {
 
     private val client = HttpClient(OkHttp) {
         install(ContentNegotiation) {
@@ -61,7 +61,7 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<
         withContext(Dispatchers.IO) {
             try {
                 val response = client.request {
-                    url(GET_PRODUCTS_BY_PATH+path)
+                    url(GET_PRODUCTS_BY_PATH +path)
                     method = HttpMethod.Get
                 }
                 val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<List<ProductDataSourceModel>?>>()
@@ -107,7 +107,7 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<
         withContext(Dispatchers.IO) {
             try {
                 val response = client.request {
-                    url(GET_PRODUCT_AVAILABILITY_BY_PATH+path)
+                    url(GET_PRODUCT_AVAILABILITY_BY_PATH +path)
                     method = HttpMethod.Get
                 }
                 val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>>()

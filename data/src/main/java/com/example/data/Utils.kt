@@ -1,5 +1,6 @@
 package com.example.data
 
+import com.example.data.catalog.datasource.local.entity.FavoriteEntity
 import com.example.data.catalog.datasource.models.PharmacyAddressesDataSourceModel
 import com.example.data.catalog.datasource.models.ProductAvailabilityDataSourceModel
 import com.example.data.catalog.datasource.models.ProductDataSourceModel
@@ -12,6 +13,7 @@ import com.example.domain.ErrorResult
 import com.example.domain.PendingResult
 import com.example.domain.Result
 import com.example.domain.SuccessResult
+import com.example.domain.catalog.models.FavoriteModel
 import com.example.domain.catalog.models.ProductAvailabilityModel
 import com.example.domain.catalog.models.ProductModel
 import com.example.domain.models.PharmacyAddressesModel
@@ -20,6 +22,9 @@ import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.ResponseValueModel
 import com.example.domain.profile.models.UserInfoModel
 import com.example.domain.profile.models.UserModel
+
+const val SUCCESS = "Успешно"
+const val SUCCESS_CODE = 200
 
 fun UserInfoModel.toUserInfoDataSourceModel(): UserInfoDataSourceModel {
 
@@ -172,5 +177,51 @@ fun UserModel.toUserDataSourceModel(): UserDataSourceModel{
     return UserDataSourceModel(
         userId = this.userId,
         userInfoModel = this.userInfoModel.toUserInfoDataSourceModel()
+    )
+}
+
+fun ResponseValueDataSourceModel<List<FavoriteEntity>>.toResponseValueListFavoriteModel(): ResponseValueModel<List<FavoriteModel>> {
+    return ResponseValueModel(
+        value = this.value.toListFavoriteModel(),
+        responseModel = this.responseDataSourceModel.toResponseModel()
+    )
+}
+
+fun List<FavoriteEntity>?.toListFavoriteModel(): List<FavoriteModel> {
+    val mutableListFavoriteModel = mutableListOf<FavoriteModel>()
+    this?.forEach { favoriteEntity ->
+        mutableListFavoriteModel.add(favoriteEntity.toFavoriteModel())
+    }
+    return mutableListFavoriteModel
+}
+
+fun FavoriteEntity.toFavoriteModel(): FavoriteModel {
+    val favoriteEntity = this
+    return FavoriteModel(
+        productId = favoriteEntity.productId,
+        title = favoriteEntity.title,
+        productPath = favoriteEntity.productPath,
+        price = favoriteEntity.price,
+        discount = favoriteEntity.discount,
+        image = favoriteEntity.image
+    )
+}
+
+fun FavoriteModel.toFavoriteEntity() :FavoriteEntity {
+    val favoriteModel = this
+    return FavoriteEntity(
+        productId = favoriteModel.productId,
+        title = favoriteModel.title,
+        productPath = favoriteModel.productPath,
+        price = favoriteModel.price,
+        discount = favoriteModel.discount,
+        image = favoriteModel.image
+    )
+}
+
+fun ResponseValueDataSourceModel<FavoriteEntity>.toResponseValueFavoriteModel(): ResponseValueModel<FavoriteModel> {
+    return ResponseValueModel(
+        value = this.value?.toFavoriteModel(),
+        responseModel = this.responseDataSourceModel.toResponseModel()
     )
 }
