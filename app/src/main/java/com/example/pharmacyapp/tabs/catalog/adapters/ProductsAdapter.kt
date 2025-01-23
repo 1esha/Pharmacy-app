@@ -8,13 +8,25 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView.Adapter
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import coil.load
-import com.example.domain.catalog.models.ProductModel
+import com.example.domain.catalog.models.FavoriteModel
+import com.example.domain.catalog.models.ProductFavoriteModel
+import com.example.pharmacyapp.R
 import com.example.pharmacyapp.databinding.ItemProductsBinding
 import kotlin.math.roundToInt
 
 class ProductsAdapter(
     private val listProducts: List<*>,
-    private val onClick: (Int) -> Unit) : Adapter<ProductsAdapter.ProductsHolder>() {
+    private val onClickProduct: (Int) -> Unit,
+    private val onClickFavorite: (FavoriteModel,Boolean) -> Unit) : Adapter<ProductsAdapter.ProductsHolder>() {
+
+        private val mutableListProductFavorite = mutableListOf<ProductFavoriteModel>()
+
+    init {
+        listProducts.forEach {
+            val productFavoriteModel = it as ProductFavoriteModel
+            mutableListProductFavorite.add(productFavoriteModel)
+        }
+    }
 
     class ProductsHolder(val binding: ItemProductsBinding) : ViewHolder(binding.root)
 
@@ -25,11 +37,14 @@ class ProductsAdapter(
         return ProductsHolder(binding = binding)
     }
 
-    override fun getItemCount(): Int = listProducts.size
+    override fun getItemCount(): Int = mutableListProductFavorite.size
 
     override fun onBindViewHolder(holder: ProductsHolder, position: Int): Unit =
         with(holder.binding) {
-            val product = listProducts[position] as ProductModel
+            val currentProduct = mutableListProductFavorite[position]
+            val product = currentProduct.productModel
+            var isFavorite = currentProduct.isFavorite
+
             val originalPrice = product.price.roundToInt()
             val clubDiscount = 3.0
             val discount = product.discount
@@ -74,8 +89,34 @@ class ProductsAdapter(
 
             }
 
+            ivFavorite.setImageResource(if (isFavorite) R.drawable.ic_favorite else R.drawable.ic_favorite_border)
+
             root.setOnClickListener {
-                onClick(product.product_id)
+                onClickProduct(product.product_id)
+            }
+
+            ivFavorite.setOnClickListener {
+
+                val favoriteModel = FavoriteModel(
+                    productId = product.product_id,
+                    title = product.title,
+                    productPath = product.product_path,
+                    price = product.price,
+                    discount = product.discount,
+                    image = product.image
+                )
+
+                onClickFavorite(favoriteModel,!isFavorite)
+
+                isFavorite = !isFavorite
+                mutableListProductFavorite.removeAt(position)
+                mutableListProductFavorite.add(position,ProductFavoriteModel(
+                    isFavorite = isFavorite,
+                    productModel = product
+                ))
+
+                notifyItemChanged(position)
+
             }
         }
 }

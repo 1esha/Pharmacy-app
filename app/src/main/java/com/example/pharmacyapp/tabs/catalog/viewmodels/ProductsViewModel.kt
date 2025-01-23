@@ -2,29 +2,60 @@ package com.example.pharmacyapp.tabs.catalog.viewmodels
 
 import android.util.Log
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.data.catalog.CatalogRepositoryImpl
 import com.example.domain.ErrorResult
 import com.example.domain.ErrorType
 import com.example.domain.OtherError
-import com.example.domain.PendingResult
 import com.example.domain.Result
+import com.example.domain.catalog.CatalogRepository
+import com.example.domain.catalog.models.FavoriteModel
+import com.example.domain.catalog.models.ProductAvailabilityModel
 import com.example.domain.catalog.models.ProductModel
+import com.example.domain.catalog.usecases.AddFavoriteUseCase
+import com.example.domain.catalog.usecases.DeleteByIdUseCase
+import com.example.domain.catalog.usecases.GetAllFavoritesUseCase
 import com.example.domain.catalog.usecases.GetProductsByPathUseCase
+import com.example.domain.models.MediatorResultsModel
+import com.example.domain.models.PharmacyAddressesModel
+import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.ResponseValueModel
+import com.example.pharmacyapp.TYPE_ADD_FAVORITE
+import com.example.pharmacyapp.TYPE_GET_ALL_FAVORITES
+import com.example.pharmacyapp.TYPE_GET_PRODUCTS_BY_PATH
+import com.example.pharmacyapp.TYPE_REMOVE_FAVORITES
 import kotlinx.coroutines.launch
 
-class ProductsViewModel: ViewModel() {
+class ProductsViewModel(
+    private val catalogRepository: CatalogRepository<
+            ResponseValueModel<List<ProductModel>?>,
+            ResponseValueModel<List<ProductAvailabilityModel>?>,
+            ResponseValueModel<List<PharmacyAddressesModel>?>,
+            ResponseValueModel<FavoriteModel>,
+            ResponseValueModel<List<FavoriteModel>>,
+            ResponseModel>
+): ViewModel() {
 
-    private val catalogRepositoryImpl = CatalogRepositoryImpl()
+    val mediatorProduct = MediatorLiveData<MediatorResultsModel<*>>()
 
-    private val _result = MutableLiveData<Result<ResponseValueModel<List<ProductModel>?>>>(PendingResult())
-    val result: LiveData<Result<ResponseValueModel<List<ProductModel>?>>> = _result
+    private val resultGetProductsByPath = MutableLiveData<MediatorResultsModel<Result<ResponseValueModel<List<ProductModel>?>>>>()
 
-    private val _isShown = MutableLiveData<Boolean>(false)
-    val isShown: LiveData<Boolean> = _isShown
+    private val resultAddFavorite = MutableLiveData<MediatorResultsModel<Result<ResponseModel>>>()
+
+    private val resultGetAllFavorites = MutableLiveData<MediatorResultsModel<Result<ResponseValueModel<List<FavoriteModel>>>>>()
+
+    private val resultRemoveFavorite = MutableLiveData<MediatorResultsModel<Result<ResponseModel>>>()
+
+    private val _listAllFavorites = MutableLiveData<List<*>>(listOf<FavoriteModel>())
+    val listAllFavorites: LiveData<List<*>> = _listAllFavorites
+
+    private val _isShownGetProductsByPath = MutableLiveData<Boolean>(false)
+    val isShownGetProductsByPath: LiveData<Boolean> = _isShownGetProductsByPath
+
+    private val _isShownGetAllFavorites = MutableLiveData<Boolean>(false)
+    val isShownGetAllFavorites: LiveData<Boolean> = _isShownGetAllFavorites
 
     private val _listProducts = MutableLiveData<List<*>>()
     val listProducts: LiveData<List<*>> = _listProducts
@@ -35,29 +66,159 @@ class ProductsViewModel: ViewModel() {
     private val _errorType = MutableLiveData<ErrorType>(OtherError())
     val errorType: LiveData<ErrorType> = _errorType
 
+    init {
+        mediatorProduct.addSource(resultGetProductsByPath) { r ->
+            mediatorProduct.value = r
+        }
+
+        mediatorProduct.addSource(resultAddFavorite) { r ->
+            mediatorProduct.value = r
+        }
+
+        mediatorProduct.addSource(resultGetAllFavorites) { r ->
+            mediatorProduct.value = r
+        }
+
+        mediatorProduct.addSource(resultRemoveFavorite) { r ->
+            mediatorProduct.value = r
+        }
+    }
+
     fun getProductsByPath(path: String) {
         val getProductsByPathUseCase = GetProductsByPathUseCase(
-            catalogRepository = catalogRepositoryImpl,
+            catalogRepository = catalogRepository,
             path = path
         )
         viewModelScope.launch {
             val result = getProductsByPathUseCase.execute()
-            _result.value = result
+            resultGetProductsByPath.value = MediatorResultsModel(
+                type = TYPE_GET_PRODUCTS_BY_PATH,
+                result = result
+            )
         }
+
     }
 
-    fun setIsShown(isShown: Boolean){
-        _isShown.value = isShown
+    fun addFavorite(favoriteModel: FavoriteModel)  {
+        val addFavoriteUseCase = AddFavoriteUseCase(
+            catalogRepository = catalogRepository,
+            favoriteModel = favoriteModel)
+
+        viewModelScope.launch {
+
+            val resultAddFavorite = addFavoriteUseCase.execute()
+            this@ProductsViewModel.resultAddFavorite.value = MediatorResultsModel(
+                type = TYPE_ADD_FAVORITE,
+                result = resultAddFavorite
+            )
+        }
+
+        Log.i("TAG","ProductsViewModel addFavorite")
     }
 
-    fun setResult(result: Result<ResponseValueModel<List<ProductModel>?>>, errorType: ErrorType? = null){
+    fun getAllFavorites() {
+        val getAllFavoritesUseCase = GetAllFavoritesUseCase(catalogRepository = catalogRepository)
+        viewModelScope.launch {
+            val result = getAllFavoritesUseCase.execute()
+            resultGetAllFavorites.value = MediatorResultsModel(
+                type = TYPE_GET_ALL_FAVORITES,
+                result = result
+            )
+        }
+
+        Log.i("TAG","ProductsViewModel getAllFavorites")
+    }
+
+    fun removeFavorite(productId: Int) {
+        val deleteByIdUseCase = DeleteByIdUseCase(
+            catalogRepository = catalogRepository,
+            productId = productId
+        )
+
+        viewModelScope.launch {
+            val result = deleteByIdUseCase.execute()
+            resultRemoveFavorite.value = MediatorResultsModel(
+                type = TYPE_REMOVE_FAVORITES,
+                result = result
+            )
+        }
+
+    }
+
+    fun changeListAllFavorites(favoriteModel: FavoriteModel, isFavorite: Boolean) {
+        val listAllFavorites = _listAllFavorites.value ?:
+        throw NullPointerException("ProductsViewModel listAllFavorites = null")
+
+        val currentListAllFavorites = mutableListOf<FavoriteModel>()
+
+        listAllFavorites.forEach {
+            val currentFavoriteModel = it as FavoriteModel
+            currentListAllFavorites.add(currentFavoriteModel)
+        }
+
+        if (isFavorite) {
+            currentListAllFavorites.add(favoriteModel)
+        }
+        else {
+            currentListAllFavorites.remove(favoriteModel)
+        }
+
+        _listAllFavorites.value = currentListAllFavorites
+    }
+
+    fun setListAllFavorites(listAllFavorites: List<*>) {
+        _listAllFavorites.value = listAllFavorites
+    }
+
+    fun setIsShownGetProductsByPath(isShown: Boolean){
+        _isShownGetProductsByPath.value = isShown
+    }
+
+    fun setIsShownGetAllFavorites(isShown: Boolean){
+        _isShownGetAllFavorites.value = isShown
+    }
+
+    fun setResultGetProductsByPath(result: Result<ResponseValueModel<List<ProductModel>?>>, errorType: ErrorType? = null){
         if (result is ErrorResult && errorType != null){
             _errorType.value = errorType?: throw NullPointerException("ProductsViewModel setResult errorType = null")
         }
-        _result.value = result
+        resultGetProductsByPath.value = MediatorResultsModel(
+            type = TYPE_GET_PRODUCTS_BY_PATH,
+            result = result
+        )
     }
 
-    fun setProductsModel(listProductModel: List<*>) {
+    fun setResultRemoveFavorites(result: Result<ResponseModel>, errorType: ErrorType? = null){
+        if (result is ErrorResult && errorType != null){
+            _errorType.value = errorType?: throw NullPointerException("ProductsViewModel setResult errorType = null")
+        }
+        resultRemoveFavorite.value = MediatorResultsModel(
+            type = TYPE_REMOVE_FAVORITES,
+            result = result
+        )
+    }
+
+    fun setResultGetAllFavorites(result: Result<ResponseValueModel<List<FavoriteModel>>>, errorType: ErrorType? = null){
+        if (result is ErrorResult && errorType != null){
+            _errorType.value = errorType?: throw NullPointerException("ProductsViewModel setResult errorType = null")
+        }
+        resultGetAllFavorites.value = MediatorResultsModel(
+            type = TYPE_GET_ALL_FAVORITES,
+            result = result
+        )
+    }
+
+    fun setResultAddFavorite(result: Result<ResponseModel>, errorType: ErrorType? = null){
+        if (result is ErrorResult && errorType != null){
+            _errorType.value = errorType?: throw NullPointerException("ProductsViewModel setResult errorType = null")
+        }
+        resultAddFavorite.value = MediatorResultsModel(
+            type = TYPE_ADD_FAVORITE,
+            result = result
+        )
+    }
+
+    fun setListProductsModel(listProductModel: List<*>) {
         Log.i("TAG","ProductsViewModel setProductsModel listProductModel size = ${listProductModel.size}")
         _listProducts.value = listProductModel
     }

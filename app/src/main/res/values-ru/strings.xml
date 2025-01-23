@@ -137,4 +137,5 @@
     <string name="rubles">руб</string>
     <string name="with_a_club_card">С клубной картой</string>
     <string name="ruble_sign">₽</string>
+    <string name="the_list_is_empty">Список пуст</string>
 </resources>
