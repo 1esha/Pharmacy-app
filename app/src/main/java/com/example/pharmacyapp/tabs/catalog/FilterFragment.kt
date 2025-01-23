@@ -19,6 +19,7 @@ import com.example.domain.ErrorResult
 import com.example.domain.Network
 import com.example.domain.OtherError
 import com.example.domain.PendingResult
+import com.example.domain.Result
 import com.example.domain.SuccessResult
 import com.example.domain.catalog.CatalogResult
 import com.example.domain.catalog.models.ProductAvailabilityModel
@@ -48,6 +49,7 @@ import com.example.pharmacyapp.getPrice
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 import com.example.pharmacyapp.tabs.catalog.viewmodels.FilterViewModel
+import com.example.pharmacyapp.tabs.catalog.viewmodels.factories.FilterViewModelFactory
 import com.example.pharmacyapp.toArrayListInt
 import java.lang.Exception
 import kotlin.math.roundToInt
@@ -59,7 +61,9 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
 
     private val toolbarViewModel: ToolbarViewModel by activityViewModels()
 
-    private val filterViewModel: FilterViewModel by viewModels()
+    private val filterViewModel: FilterViewModel by viewModels(
+        factoryProducer = { FilterViewModelFactory(requireContext())}
+    )
 
     private lateinit var navControllerCatalog: NavController
 
@@ -203,28 +207,17 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
 
         etFrom.setOnKeyListener(this@FilterFragment)
 
+        filterViewModel.mediatorFilter.observe(viewLifecycleOwner) { mediatorResult ->
+            val type = mediatorResult.type
+            val result = mediatorResult.result as Result<*>
 
-        filterViewModel.resultGetProductAvailabilityByPath.observe(viewLifecycleOwner) { result ->
-            when(result) {
-                is PendingResult -> { onPendingResultListener() }
+            when(result){
+                is PendingResult -> { onPendingResultListener()}
                 is SuccessResult -> {
-                    val value = result.value
-                    onSuccessResultListener(value = value, type = TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH)
-                }
-                is ErrorResult -> {
-                    val errorType = filterViewModel.errorType.value
-                    val message = getString(getMessageByErrorType(errorType = errorType))
-                    onErrorResultListener(exception = result.exception, message = message)
-                }
-            }
-        }
-
-        filterViewModel.resultGetProductsByPath.observe(viewLifecycleOwner) { result ->
-            when(result) {
-                is PendingResult -> { onPendingResultListener() }
-                is SuccessResult -> {
-                    val value = result.value
-                    onSuccessResultListener(value = value, type = TYPE_GET_PRODUCTS_BY_PATH)
+                    onSuccessResultListener(
+                        value = result.value,
+                        type = type
+                    )
                 }
                 is ErrorResult -> {
                     val errorType = filterViewModel.errorType.value
@@ -424,10 +417,10 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
         val resultGetProductAvailabilityByPath = filterViewModel.resultGetProductAvailabilityByPath.value ?:
         throw NullPointerException("FilterFragment resultGetProductAvailabilityByPath = null")
 
-        if (resultGetProductsByPath is ErrorResult ||
-            resultGetProductsByPath is PendingResult ||
-            resultGetProductAvailabilityByPath is ErrorResult ||
-            resultGetProductAvailabilityByPath is PendingResult) {
+        if (resultGetProductsByPath.result is ErrorResult ||
+            resultGetProductsByPath.result is PendingResult ||
+            resultGetProductAvailabilityByPath.result is ErrorResult ||
+            resultGetProductAvailabilityByPath.result is PendingResult) {
             val errorType = filterViewModel.errorType.value
             val message = getString(getMessageByErrorType(errorType = errorType))
             getSupportActivity().showToast(message = message)

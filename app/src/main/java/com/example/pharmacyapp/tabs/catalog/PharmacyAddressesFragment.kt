@@ -17,6 +17,7 @@ import com.example.domain.ErrorResult
 import com.example.domain.Network
 import com.example.domain.OtherError
 import com.example.domain.PendingResult
+import com.example.domain.Result
 import com.example.domain.SuccessResult
 import com.example.domain.catalog.CatalogResult
 import com.example.domain.catalog.models.ProductAvailabilityModel
@@ -40,6 +41,7 @@ import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 import com.example.pharmacyapp.tabs.catalog.adapters.PharmacyAddressesAdapter
 import com.example.pharmacyapp.tabs.catalog.viewmodels.PharmacyAddressesViewModel
+import com.example.pharmacyapp.tabs.catalog.viewmodels.factories.PharmacyAddressesViewModelFactory
 import java.lang.Exception
 import kotlin.properties.Delegates
 
@@ -50,7 +52,9 @@ class PharmacyAddressesFragment : Fragment(), CatalogResult {
 
     private val toolbarViewModel: ToolbarViewModel by activityViewModels()
 
-    private val pharmacyAddressesViewModel: PharmacyAddressesViewModel by viewModels()
+    private val pharmacyAddressesViewModel: PharmacyAddressesViewModel by viewModels(
+        factoryProducer = { PharmacyAddressesViewModelFactory(context = requireContext())}
+    )
 
     private lateinit var arrayListIdsAddresses: ArrayList<Int>
 
@@ -121,61 +125,39 @@ class PharmacyAddressesFragment : Fragment(), CatalogResult {
             }
         }
 
-        pharmacyAddressesViewModel.resultGetPharmacyAddresses.observe(viewLifecycleOwner) { result ->
-            when (result) {
-                is PendingResult -> {
-                    onPendingResultListener()
-                }
+        pharmacyAddressesViewModel.mediatorPharmacyAddresses.observe(viewLifecycleOwner) { mediatorResult ->
 
+            val type = mediatorResult.type
+            val result = mediatorResult.result as Result<*>
+
+            when(result){
+                is PendingResult -> { onPendingResultListener()}
                 is SuccessResult -> {
-                    val value = result.value
                     onSuccessResultListener(
-                        value = value,
-                        type = TYPE_GET_PHARMACY_ADDRESSES
+                        value = result.value,
+                        type = type
                     )
                 }
-
                 is ErrorResult -> {
                     val errorType = pharmacyAddressesViewModel.errorType.value
                     val message = getString(getMessageByErrorType(errorType = errorType))
                     onErrorResultListener(exception = result.exception, message = message)
                 }
             }
+        }
 
-            pharmacyAddressesViewModel.resultGetProductAvailabilityByPath.observe(viewLifecycleOwner) { result ->
-                when (result) {
-                    is PendingResult -> {
-                        onPendingResultListener()
-                    }
+        pharmacyAddressesViewModel.mutableListSelectedPharmacyAddresses.observe(viewLifecycleOwner) { mutableList ->
 
-                    is SuccessResult -> {
-                        val value = result.value
-                        onSuccessResultListener(
-                            value = value,
-                            type = TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH
-                        )
-                    }
+            pharmacyAddressesViewModel.setInitPharmacyAddresses(list = mutableList, counter = arrayListIdsAddresses.size)
 
-                    is ErrorResult -> {
-                        val errorType = pharmacyAddressesViewModel.errorType.value
-                        val message = getString(getMessageByErrorType(errorType = errorType))
-                        onErrorResultListener(exception = result.exception, message = message)
-                    }
-                }
-            }
+            val pharmacyAddressesAdapter = getSetupAdapter(mutableList = mutableList)
 
-            pharmacyAddressesViewModel.mutableListSelectedPharmacyAddresses.observe(viewLifecycleOwner) { mutableList ->
-
-                pharmacyAddressesViewModel.setInitPharmacyAddresses(list = mutableList, counter = arrayListIdsAddresses.size)
-
-                val pharmacyAddressesAdapter = getSetupAdapter(mutableList = mutableList)
-
-                with(binding) {
-                    rvPharmacyAddresses.adapter = pharmacyAddressesAdapter
-                    rvPharmacyAddresses.layoutManager = LinearLayoutManager(requireContext())
-                }
+            with(binding) {
+                rvPharmacyAddresses.adapter = pharmacyAddressesAdapter
+                rvPharmacyAddresses.layoutManager = LinearLayoutManager(requireContext())
             }
         }
+
     }
 
     override fun onDestroyView() {
@@ -411,10 +393,10 @@ class PharmacyAddressesFragment : Fragment(), CatalogResult {
     }
 
     private fun onClickSelectAddresses() {
-        if (pharmacyAddressesViewModel.resultGetPharmacyAddresses.value is ErrorResult ||
-            pharmacyAddressesViewModel.resultGetPharmacyAddresses.value is PendingResult ||
-            pharmacyAddressesViewModel.resultGetProductAvailabilityByPath.value is ErrorResult ||
-            pharmacyAddressesViewModel.resultGetProductAvailabilityByPath.value is PendingResult
+        if (pharmacyAddressesViewModel.resultGetPharmacyAddresses.value?.result is ErrorResult ||
+            pharmacyAddressesViewModel.resultGetPharmacyAddresses.value?.result is PendingResult ||
+            pharmacyAddressesViewModel.resultGetProductAvailabilityByPath.value?.result is ErrorResult ||
+            pharmacyAddressesViewModel.resultGetProductAvailabilityByPath.value?.result is PendingResult
         ) {
             val errorType = pharmacyAddressesViewModel.errorType.value
             val message = getString(getMessageByErrorType(errorType = errorType))

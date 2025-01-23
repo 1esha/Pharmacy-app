@@ -2,31 +2,44 @@ package com.example.pharmacyapp.tabs.catalog.viewmodels
 
 import android.util.Log
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.data.catalog.CatalogRepositoryImpl
 import com.example.domain.ErrorResult
 import com.example.domain.ErrorType
 import com.example.domain.OtherError
 import com.example.domain.Result
+import com.example.domain.catalog.CatalogRepository
+import com.example.domain.catalog.models.FavoriteModel
 import com.example.domain.catalog.models.ProductAvailabilityModel
+import com.example.domain.catalog.models.ProductModel
 import com.example.domain.catalog.usecases.GetPharmacyAddressesUseCase
 import com.example.domain.catalog.usecases.GetProductAvailabilityByPathUseCase
+import com.example.domain.models.MediatorResultsModel
 import com.example.domain.models.PharmacyAddressesModel
 import com.example.domain.models.SelectedPharmacyAddressesModel
+import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.ResponseValueModel
+import com.example.pharmacyapp.TYPE_GET_PHARMACY_ADDRESSES
+import com.example.pharmacyapp.TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH
 import kotlinx.coroutines.launch
 
-class PharmacyAddressesViewModel : ViewModel() {
+class PharmacyAddressesViewModel(
+    private val catalogRepository: CatalogRepository<
+        ResponseValueModel<List<ProductModel>?>,
+        ResponseValueModel<List<ProductAvailabilityModel>?>,
+        ResponseValueModel<List<PharmacyAddressesModel>?>,
+        ResponseValueModel<FavoriteModel>,
+        ResponseValueModel<List<FavoriteModel>>,
+        ResponseModel>
+) : ViewModel() {
 
-    private val catalogRepositoryImpl = CatalogRepositoryImpl()
+    val mediatorPharmacyAddresses = MediatorLiveData<MediatorResultsModel<*>>()
 
-    private val _resultGetPharmacyAddresses = MutableLiveData<Result<ResponseValueModel<List<PharmacyAddressesModel>?>>>()
-    val resultGetPharmacyAddresses: LiveData<Result<ResponseValueModel<List<PharmacyAddressesModel>?>>> = _resultGetPharmacyAddresses
+    val resultGetPharmacyAddresses = MutableLiveData<MediatorResultsModel<Result<ResponseValueModel<List<PharmacyAddressesModel>?>>>>()
 
-    private val _resultGetProductAvailabilityByPath = MutableLiveData<Result<ResponseValueModel<List<ProductAvailabilityModel>?>>>()
-    val resultGetProductAvailabilityByPath: LiveData<Result<ResponseValueModel<List<ProductAvailabilityModel>?>>> = _resultGetProductAvailabilityByPath
+    val resultGetProductAvailabilityByPath = MutableLiveData<MediatorResultsModel<Result<ResponseValueModel<List<ProductAvailabilityModel>?>>>>()
 
     private val _isShownGetPharmacyAddresses = MutableLiveData<Boolean>(false)
     val isShownGetPharmacyAddresses: LiveData<Boolean> = _isShownGetPharmacyAddresses
@@ -48,32 +61,50 @@ class PharmacyAddressesViewModel : ViewModel() {
     private val _counterSelectedItems = MutableLiveData<Int>(0)
     val counterSelectedItems: LiveData<Int> = _counterSelectedItems
 
+    init {
+
+        mediatorPharmacyAddresses.addSource(resultGetPharmacyAddresses) { r ->
+            mediatorPharmacyAddresses.value = r
+        }
+
+        mediatorPharmacyAddresses.addSource(resultGetProductAvailabilityByPath) { r ->
+            mediatorPharmacyAddresses.value = r
+        }
+
+    }
+
     fun getPharmacyAddresses() {
         val getPharmacyAddressesUseCase = GetPharmacyAddressesUseCase(
-            catalogRepository = catalogRepositoryImpl
+            catalogRepository = catalogRepository
         )
 
         viewModelScope.launch {
             val result = getPharmacyAddressesUseCase.execute()
-            _resultGetPharmacyAddresses.value = result
+            resultGetPharmacyAddresses.value = MediatorResultsModel(
+                type = TYPE_GET_PHARMACY_ADDRESSES,
+                result = result
+            )
         }
     }
 
     fun getProductAvailabilityByPath(path: String) {
         val getProductAvailabilityByPathUseCase = GetProductAvailabilityByPathUseCase(
-            catalogRepository = catalogRepositoryImpl,
+            catalogRepository = catalogRepository,
             path = path
         )
 
         viewModelScope.launch {
             val result = getProductAvailabilityByPathUseCase.execute()
 
-            _resultGetProductAvailabilityByPath.value = result
+            resultGetProductAvailabilityByPath.value = MediatorResultsModel(
+                type = TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH,
+                result = result
+            )
         }
     }
 
     fun setCounterSelectedItems(counter: Int?) {
-        _counterSelectedItems.value = counter ?: -2
+        _counterSelectedItems.value = counter ?: -1
     }
 
     fun setListPharmacyAddresses(list: List<*>) {
@@ -120,7 +151,10 @@ class PharmacyAddressesViewModel : ViewModel() {
         if (result is ErrorResult && errorType != null){
             _errorType.value = errorType?: throw NullPointerException("PharmacyAddressesViewModel setResult errorType = null")
         }
-        _resultGetProductAvailabilityByPath.value = result
+        resultGetProductAvailabilityByPath.value = MediatorResultsModel(
+            type = TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH,
+            result = result
+        )
     }
 
     fun setResultGetPharmacyAddresses(
@@ -131,7 +165,10 @@ class PharmacyAddressesViewModel : ViewModel() {
             _errorType.value = errorType
                 ?: throw NullPointerException("PharmacyAddressesViewModel setResult errorType = null")
         }
-        _resultGetPharmacyAddresses.value = result
+        resultGetPharmacyAddresses.value = MediatorResultsModel(
+            type = TYPE_GET_PHARMACY_ADDRESSES,
+            result = result
+        )
     }
 
     fun setIsShownGetPharmacyAddresses(isShown: Boolean) {
