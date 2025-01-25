@@ -60,6 +60,8 @@ interface SupportActivity {
 
     fun getStringById(id: Int): String
 
+    fun getVersionName(): String
+
 }
 
 fun Fragment.getSupportActivity(): SupportActivity {

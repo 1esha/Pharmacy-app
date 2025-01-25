@@ -5,7 +5,6 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -48,6 +47,11 @@ class MainActivity : AppCompatActivity(), SupportActivity {
 
     override fun getStringById(id: Int): String {
         return resources.getString(id)
+    }
+
+    override fun getVersionName(): String {
+        val versionName = this.packageManager.getPackageInfo(this.packageName,0).versionName
+        return versionName ?: throw NullPointerException("MainActivity versionName = null")
     }
 
 }
