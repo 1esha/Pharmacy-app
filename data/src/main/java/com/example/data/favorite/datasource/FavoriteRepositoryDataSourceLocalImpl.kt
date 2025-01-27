@@ -1,4 +1,4 @@
-package com.example.data.catalog.datasource.local
+package com.example.data.favorite.datasource
 
 
 import com.example.data.ErrorResultDataSource
@@ -6,16 +6,17 @@ import com.example.data.ResultDataSource
 import com.example.data.SUCCESS
 import com.example.data.SUCCESS_CODE
 import com.example.data.SuccessResultDataSource
-import com.example.data.catalog.datasource.local.entity.FavoriteEntity
+import com.example.data.favorite.datasource.entity.FavoriteEntity
 import com.example.data.profile.datasource.models.ResponseDataSourceModel
 import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class CatalogRepositoryDataSourceLocalImpl(private val favoriteDao: FavoriteDao): CatalogRepositoryDataSourceLocal<
-        ResponseValueDataSourceModel<FavoriteEntity>,
-        ResponseValueDataSourceModel<List<FavoriteEntity>>,
-        ResponseDataSourceModel> {
+class FavoriteRepositoryDataSourceLocalImpl(private val favoriteDao: FavoriteDao):
+    FavoriteRepositoryDataSourceLocal<
+            ResponseValueDataSourceModel<FavoriteEntity>,
+            ResponseValueDataSourceModel<List<FavoriteEntity>>,
+            ResponseDataSourceModel> {
 
 
     override suspend fun getAllFavorites(): ResultDataSource<ResponseValueDataSourceModel<List<FavoriteEntity>>> = withContext(Dispatchers.IO) {
@@ -69,6 +70,20 @@ class CatalogRepositoryDataSourceLocalImpl(private val favoriteDao: FavoriteDao)
     override suspend fun deleteById(productId: Int): ResultDataSource<ResponseDataSourceModel>  = withContext(Dispatchers.IO){
         try {
             favoriteDao.deleteById(productId = productId)
+            return@withContext SuccessResultDataSource(value = ResponseDataSourceModel(
+                message = SUCCESS,
+                status = SUCCESS_CODE
+            )
+            )
+        }
+        catch (e: Exception) {
+            return@withContext ErrorResultDataSource(exception = e)
+        }
+    }
+
+    override suspend fun deleteAllFavorite(): ResultDataSource<ResponseDataSourceModel> = withContext(Dispatchers.IO){
+        try {
+            favoriteDao.deleteAllFavorite()
             return@withContext SuccessResultDataSource(value = ResponseDataSourceModel(
                 message = SUCCESS,
                 status = SUCCESS_CODE

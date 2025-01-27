@@ -6,7 +6,7 @@ import com.example.domain.models.PharmacyAddressesModel
 import com.example.domain.profile.models.ResponseValueModel
 
 class GetPharmacyAddressesUseCase(
-    private val catalogRepository: CatalogRepository<*,*,ResponseValueModel<List<PharmacyAddressesModel>?>,*,*,*>
+    private val catalogRepository: CatalogRepository<*,*,ResponseValueModel<List<PharmacyAddressesModel>?>>
 ) {
 
     suspend fun execute(): Result<ResponseValueModel<List<PharmacyAddressesModel>?>> {

@@ -1,4 +1,4 @@
-package com.example.data.catalog.datasource.local.entity
+package com.example.data.favorite.datasource.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

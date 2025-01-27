@@ -6,7 +6,7 @@ import com.example.domain.catalog.models.ProductModel
 import com.example.domain.profile.models.ResponseValueModel
 
 class GetProductsByPathUseCase(
-    private val catalogRepository: CatalogRepository<ResponseValueModel<List<ProductModel>?>,*,*,*,*,*>,
+    private val catalogRepository: CatalogRepository<ResponseValueModel<List<ProductModel>?>,*,*>,
     private val path: String
 ) {
 
