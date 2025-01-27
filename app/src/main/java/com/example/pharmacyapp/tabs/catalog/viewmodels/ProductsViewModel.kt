@@ -11,13 +11,14 @@ import com.example.domain.ErrorType
 import com.example.domain.OtherError
 import com.example.domain.Result
 import com.example.domain.catalog.CatalogRepository
-import com.example.domain.catalog.models.FavoriteModel
+import com.example.domain.favorite.models.FavoriteModel
 import com.example.domain.catalog.models.ProductAvailabilityModel
 import com.example.domain.catalog.models.ProductModel
-import com.example.domain.catalog.usecases.AddFavoriteUseCase
-import com.example.domain.catalog.usecases.DeleteByIdUseCase
-import com.example.domain.catalog.usecases.GetAllFavoritesUseCase
+import com.example.domain.favorite.usecases.AddFavoriteUseCase
+import com.example.domain.favorite.usecases.DeleteByIdUseCase
+import com.example.domain.favorite.usecases.GetAllFavoritesUseCase
 import com.example.domain.catalog.usecases.GetProductsByPathUseCase
+import com.example.domain.favorite.FavoriteRepository
 import com.example.domain.models.MediatorResultsModel
 import com.example.domain.models.PharmacyAddressesModel
 import com.example.domain.profile.models.ResponseModel
@@ -32,7 +33,8 @@ class ProductsViewModel(
     private val catalogRepository: CatalogRepository<
             ResponseValueModel<List<ProductModel>?>,
             ResponseValueModel<List<ProductAvailabilityModel>?>,
-            ResponseValueModel<List<PharmacyAddressesModel>?>,
+            ResponseValueModel<List<PharmacyAddressesModel>?>>,
+    private val favoriteRepository: FavoriteRepository<
             ResponseValueModel<FavoriteModel>,
             ResponseValueModel<List<FavoriteModel>>,
             ResponseModel>
@@ -101,7 +103,7 @@ class ProductsViewModel(
 
     fun addFavorite(favoriteModel: FavoriteModel)  {
         val addFavoriteUseCase = AddFavoriteUseCase(
-            catalogRepository = catalogRepository,
+            favoriteRepository = favoriteRepository,
             favoriteModel = favoriteModel)
 
         viewModelScope.launch {
@@ -117,7 +119,7 @@ class ProductsViewModel(
     }
 
     fun getAllFavorites() {
-        val getAllFavoritesUseCase = GetAllFavoritesUseCase(catalogRepository = catalogRepository)
+        val getAllFavoritesUseCase = GetAllFavoritesUseCase(favoriteRepository = favoriteRepository)
         viewModelScope.launch {
             val result = getAllFavoritesUseCase.execute()
             resultGetAllFavorites.value = MediatorResultsModel(
@@ -131,7 +133,7 @@ class ProductsViewModel(
 
     fun removeFavorite(productId: Int) {
         val deleteByIdUseCase = DeleteByIdUseCase(
-            catalogRepository = catalogRepository,
+            favoriteRepository = favoriteRepository,
             productId = productId
         )
 

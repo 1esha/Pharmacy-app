@@ -11,7 +11,6 @@ import com.example.domain.ErrorType
 import com.example.domain.OtherError
 import com.example.domain.Result
 import com.example.domain.catalog.CatalogRepository
-import com.example.domain.catalog.models.FavoriteModel
 import com.example.domain.catalog.models.ProductAvailabilityModel
 import com.example.domain.catalog.models.ProductModel
 import com.example.domain.catalog.usecases.GetPharmacyAddressesUseCase
@@ -19,7 +18,6 @@ import com.example.domain.catalog.usecases.GetProductAvailabilityByPathUseCase
 import com.example.domain.models.MediatorResultsModel
 import com.example.domain.models.PharmacyAddressesModel
 import com.example.domain.models.SelectedPharmacyAddressesModel
-import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.ResponseValueModel
 import com.example.pharmacyapp.TYPE_GET_PHARMACY_ADDRESSES
 import com.example.pharmacyapp.TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH
@@ -29,10 +27,7 @@ class PharmacyAddressesViewModel(
     private val catalogRepository: CatalogRepository<
         ResponseValueModel<List<ProductModel>?>,
         ResponseValueModel<List<ProductAvailabilityModel>?>,
-        ResponseValueModel<List<PharmacyAddressesModel>?>,
-        ResponseValueModel<FavoriteModel>,
-        ResponseValueModel<List<FavoriteModel>>,
-        ResponseModel>
+        ResponseValueModel<List<PharmacyAddressesModel>?>>
 ) : ViewModel() {
 
     val mediatorPharmacyAddresses = MediatorLiveData<MediatorResultsModel<*>>()

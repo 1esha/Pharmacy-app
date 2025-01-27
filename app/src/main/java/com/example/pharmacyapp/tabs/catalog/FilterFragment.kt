@@ -62,7 +62,7 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
     private val toolbarViewModel: ToolbarViewModel by activityViewModels()
 
     private val filterViewModel: FilterViewModel by viewModels(
-        factoryProducer = { FilterViewModelFactory(requireContext())}
+        factoryProducer = { FilterViewModelFactory()}
     )
 
     private lateinit var navControllerCatalog: NavController

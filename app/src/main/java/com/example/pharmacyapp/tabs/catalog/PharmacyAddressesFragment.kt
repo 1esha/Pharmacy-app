@@ -53,7 +53,7 @@ class PharmacyAddressesFragment : Fragment(), CatalogResult {
     private val toolbarViewModel: ToolbarViewModel by activityViewModels()
 
     private val pharmacyAddressesViewModel: PharmacyAddressesViewModel by viewModels(
-        factoryProducer = { PharmacyAddressesViewModelFactory(context = requireContext())}
+        factoryProducer = { PharmacyAddressesViewModelFactory()}
     )
 
     private lateinit var arrayListIdsAddresses: ArrayList<Int>
