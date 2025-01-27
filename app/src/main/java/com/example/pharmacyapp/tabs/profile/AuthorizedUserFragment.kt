@@ -1,4 +1,4 @@
-package com.example.pharmacyapp.tabs
+package com.example.pharmacyapp.tabs.profile
 
 import android.content.Context
 import android.content.DialogInterface
@@ -20,6 +20,9 @@ import com.example.domain.SuccessResult
 import com.example.domain.profile.ProfileResult
 import com.example.domain.profile.models.ResponseValueModel
 import com.example.domain.profile.models.UserModel
+import com.example.pharmacyapp.FLAG_ERROR_RESULT
+import com.example.pharmacyapp.FLAG_PENDING_RESULT
+import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
@@ -31,7 +34,7 @@ import com.example.pharmacyapp.databinding.FragmentAuthorizedUserBinding
 import com.example.pharmacyapp.getMessageByErrorType
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
-import com.example.pharmacyapp.tabs.viewmodels.AuthorizedUserViewModel
+import com.example.pharmacyapp.tabs.profile.viewmodels.AuthorizedUserViewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 
@@ -62,6 +65,7 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
         val isShown: Boolean = authorizedUserViewModel.isShown.value?:throw NullPointerException("AuthorizedUserFragment isShown = null")
 
         val navControllerMain = getSupportActivity().getNavControllerMain()
+        val navControllerProfile = findNavController()
 
         toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.account)){})
         toolbarViewModel.clearMenu()
@@ -92,10 +96,9 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
                     )
                 }
             }
-            authorizedUserViewModel.setIsShown(isShown = true)
         }
 
-        authorizedPendingResult.bTryAgain.setOnClickListener {
+        layoutPendingResultAuthorizedUser.bTryAgain.setOnClickListener {
             onSuccessfulEvent(type = TYPE_GET_USER_BY_ID) {
                 with(authorizedUserViewModel){
                     getUserById(userId = userId)
@@ -116,7 +119,7 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
             val result = mediatorResult.result as Result<*>
 
             when(result){
-                is PendingResult -> { onPendingResult()}
+                is PendingResult -> { onPendingResultListener()}
                 is SuccessResult -> {
                     onSuccessResultListener(
                         userId = userId,
@@ -133,7 +136,9 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
         }
 
         authorizedUserViewModel.userModelLivedata.observe(viewLifecycleOwner){ userModel ->
-            updateUI(userModel = userModel)
+
+            binding.tvFullName.text = userModel.userInfoModel.firstName + " " + userModel.userInfoModel.lastName
+            binding.tvCurrentCity.text = userModel.userInfoModel.city
         }
 
     }
@@ -147,51 +152,41 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
 
         when(type?: TYPE_OTHER){
             TYPE_GET_USER_BY_ID -> {
-                val responseValueModel = value as ResponseValueModel<*>
-                val status = responseValueModel.responseModel.status
-                val message = responseValueModel.responseModel.message
-                if (status in 200..299) {
-                    updatePendingResultUI(
-                        isVisible = false,
-                        isProgressBar = false,
-                        isButton = false,
-                        isMessage = false,
-                        message = null
-                    )
-                    val userModel = responseValueModel.value ?: throw NullPointerException("AuthorizedUserFragment userModel = null")
-                    updateUI(userModel = userModel as UserModel)
-                } else {
-                    authorizedUserViewModel.setResultGetUserById(ErrorResult(exception = Exception()), errorType = OtherError())
-                    if (message != null) getSupportActivity().showToast(message = message)
+                val isShown: Boolean = authorizedUserViewModel.isShown.value?:throw NullPointerException("AuthorizedUserFragment isShown = null")
+                if (!isShown) {
+                    val responseValueModel = value as ResponseValueModel<*>
+                    val status = responseValueModel.responseModel.status
+                    val message = responseValueModel.responseModel.message
+                    if (status in 200..299) {
+
+                        val userModel = responseValueModel.value as UserModel ?: throw NullPointerException("AuthorizedUserFragment userModel = null")
+
+                        authorizedUserViewModel.setUserModel(userModel = userModel)
+                        updateUI(flag = FLAG_SUCCESS_RESULT)
+                    } else {
+                        authorizedUserViewModel.setResultGetUserById(ErrorResult(exception = Exception()), errorType = OtherError())
+                        if (message != null) getSupportActivity().showToast(message = message)
+                    }
                 }
+                authorizedUserViewModel.setIsShown(isShown = true)
             }
         }
 
     }
 
     override fun onErrorResultListener(exception: Exception, message: String) {
-        updatePendingResultUI(
-            isVisible = true,
-            isProgressBar = false,
-            isButton = true,
-            isMessage = true,
-            message = message
-        )
+        updateUI(flag = FLAG_ERROR_RESULT)
+
     }
 
-    override fun onPendingResult() {
+    override fun onPendingResultListener() {
         Log.i("TAG", "AuthorizedUserFragment onPendingResult")
         authorizedUserViewModel.clearErrorType()
-        updatePendingResultUI(
-            isVisible = true,
-            isProgressBar = true,
-            isButton = false,
-            isMessage = false,
-            message = null
-        )
+        updateUI(flag = FLAG_PENDING_RESULT)
+
     }
 
-    private fun onSuccessfulEvent(type: String, exception: Exception? = null,onSuccessfulEventListener:() -> Unit){
+    override fun onSuccessfulEvent(type: String, exception: Exception?,onSuccessfulEventListener:() -> Unit){
         val isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext())
         val network = Network()
 
@@ -214,41 +209,30 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
         )
     }
 
-    private fun updateUI(userModel: UserModel){
-        binding.tvFullName.text = userModel.userInfoModel.firstName + " " + userModel.userInfoModel.lastName
-        binding.tvCurrentCity.text = userModel.userInfoModel.city
-    }
-
-    private fun updatePendingResultUI(
-        isVisible: Boolean,
-        isProgressBar: Boolean,
-        isButton: Boolean,
-        isMessage: Boolean,
-        message: String?
-    ) = with(binding.authorizedPendingResult) {
-        if (isVisible){
-            root.visibility = View.VISIBLE
-        } else{
-            root.visibility = View.GONE
-        }
-
-        if (isProgressBar){
-            progressBar.visibility = View.VISIBLE
-        } else{
-            progressBar.visibility = View.GONE
-        }
-
-        if (isButton){
-            bTryAgain.visibility = View.VISIBLE
-        } else{
-            bTryAgain.visibility = View.GONE
-        }
-
-        if (isMessage){
-            tvErrorMessage.visibility = View.VISIBLE
-            tvErrorMessage.text = message
-        } else{
-            tvErrorMessage.visibility = View.GONE
+    override fun updateUI(flag: String, messageError: String?) = with(binding.layoutPendingResultAuthorizedUser) {
+        when(flag) {
+            FLAG_PENDING_RESULT -> {
+                Log.i("TAG","FLAG_PENDING_RESULT")
+                root.visibility = View.VISIBLE
+                bTryAgain.visibility = View.INVISIBLE
+                tvErrorMessage.visibility = View.INVISIBLE
+                progressBar.visibility = View.VISIBLE
+            }
+            FLAG_SUCCESS_RESULT -> {
+                Log.i("TAG","FLAG_SUCCESS_RESULT")
+                root.visibility = View.GONE
+                bTryAgain.visibility = View.INVISIBLE
+                tvErrorMessage.visibility = View.INVISIBLE
+                progressBar.visibility = View.INVISIBLE
+            }
+            FLAG_ERROR_RESULT -> {
+                Log.i("TAG","FLAG_ERROR_RESULT")
+                root.visibility = View.VISIBLE
+                bTryAgain.visibility = View.VISIBLE
+                tvErrorMessage.visibility = View.VISIBLE
+                tvErrorMessage.text = messageError
+                progressBar.visibility = View.INVISIBLE
+            }
         }
     }
 

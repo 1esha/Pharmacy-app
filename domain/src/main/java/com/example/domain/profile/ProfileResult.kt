@@ -8,5 +8,9 @@ interface ProfileResult {
 
     fun onErrorResultListener(exception: Exception, message: String)
 
-    fun onPendingResult()
+    fun onPendingResultListener()
+
+    fun onSuccessfulEvent(type: String, exception: Exception? = null,onSuccessfulEventListener:() -> Unit)
+
+    fun updateUI(flag: String, messageError: String? = null)
 }

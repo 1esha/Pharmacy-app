@@ -21,10 +21,14 @@ import com.example.domain.SuccessResult
 import com.example.domain.profile.ProfileResult
 import com.example.domain.profile.models.LogInModel
 import com.example.domain.profile.models.ResponseValueModel
+import com.example.pharmacyapp.FLAG_ERROR_RESULT
+import com.example.pharmacyapp.FLAG_PENDING_RESULT
+import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
 import com.example.pharmacyapp.KEY_IS_INIT
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
+import com.example.pharmacyapp.TYPE_EMPTY
 import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.FragmentLoginBinding
 import com.example.pharmacyapp.getMessageByErrorType
@@ -60,30 +64,17 @@ class LoginFragment : Fragment(), ProfileResult {
 
         sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
 
-        val network = Network()
-
         layoutSkip.visibility =  if (!sharedPreferences.getBoolean(KEY_IS_INIT,true)) View.GONE else View.VISIBLE
 
         bLogIn.setOnClickListener {
-
-            loginViewModel.setIsShown(isShown = false)
-
-            val isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext())
-
-            network.checkNetworkStatus(
-                isNetworkStatus = isNetworkStatus,
-                connectionListener = {
-                    loginViewModel.setResult(result = PendingResult())
-                    val logInModel = LogInModel(
-                        login = etLogin.text.toString(),
-                        userPassword = etPassword.text.toString()
-                    )
-                    loginViewModel.setLogInData(logInModel = logInModel)
-                },
-                disconnectionListener = {
-                    loginViewModel.setResult(result = ErrorResult(exception = Exception()), errorType = DisconnectionError())
-                }
-            )
+            onSuccessfulEvent(type = TYPE_EMPTY) {
+                loginViewModel.setIsShown(isShown = false)
+                val logInModel = LogInModel(
+                    login = etLogin.text.toString(),
+                    userPassword = etPassword.text.toString()
+                )
+                loginViewModel.setLogInData(logInModel = logInModel)
+            }
 
         }
         bGoToRegister.setOnClickListener {
@@ -96,7 +87,7 @@ class LoginFragment : Fragment(), ProfileResult {
 
         loginViewModel.result.observe(viewLifecycleOwner){ result ->
             when (result) {
-                is PendingResult -> { onPendingResult() }
+                is PendingResult -> { onPendingResultListener() }
                 is SuccessResult-> {
                     if (result.value != null) {
                         val value = result.value ?: throw NullPointerException("LoginFragment result.value = null")
@@ -127,9 +118,8 @@ class LoginFragment : Fragment(), ProfileResult {
         val message = responseValueModel.responseModel.message
         viewLifecycleOwner.lifecycleScope.launch {
             delay(300)
-            binding.progressBarLogIn.visibility = View.INVISIBLE
-            binding.bLogIn.isEnabled = true
-            setEnable(isEnabled = true)
+
+            updateUI(flag = FLAG_SUCCESS_RESULT)
 
             if (status in 200..299){
                 sharedPreferences.apply {
@@ -164,23 +154,61 @@ class LoginFragment : Fragment(), ProfileResult {
             getSupportActivity().showToast(message = message)
         }
         loginViewModel.setIsShown(isShown = true)
-        binding.progressBarLogIn.visibility = View.INVISIBLE
-        binding.bLogIn.isEnabled = true
-        setEnable(isEnabled = true)
+        updateUI(flag = FLAG_ERROR_RESULT)
+
     }
 
-    override fun onPendingResult() {
+    override fun onPendingResultListener() {
         Log.i("TAG","LoginFragment onPendingResult")
-        binding.progressBarLogIn.visibility = View.VISIBLE
-        binding.bLogIn.isEnabled = false
-        setEnable(isEnabled = false)
+
+        updateUI(flag = FLAG_PENDING_RESULT)
         loginViewModel.clearErrorType()
 
+    }
+
+    override fun onSuccessfulEvent(
+        type: String,
+        exception: java.lang.Exception?,
+        onSuccessfulEventListener: () -> Unit
+    ) {
+        val isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext())
+        val network = Network()
+
+        network.checkNetworkStatus(
+            isNetworkStatus = isNetworkStatus,
+            connectionListener = {
+                loginViewModel.setResult(result = PendingResult())
+                onSuccessfulEventListener()
+            },
+            disconnectionListener = {
+                val currentException = if (exception == null) Exception() else  exception
+                val errorType = DisconnectionError()
+                loginViewModel.setResult(result = ErrorResult(exception = currentException), errorType = errorType)
+            }
+        )
+    }
+
+    override fun updateUI(flag: String, messageError: String?) = with(binding) {
+        when(flag) {
+            FLAG_PENDING_RESULT -> {
+                progressBarLogIn.visibility = View.VISIBLE
+                setEnable(isEnabled = false)
+            }
+            FLAG_SUCCESS_RESULT -> {
+                binding.progressBarLogIn.visibility = View.INVISIBLE
+                setEnable(isEnabled = true)
+            }
+            FLAG_ERROR_RESULT -> {
+                progressBarLogIn.visibility = View.INVISIBLE
+                setEnable(isEnabled = true)
+            }
+        }
     }
 
     private fun setEnable(isEnabled: Boolean) = with(binding){
         etLogin.isEnabled = isEnabled
         etPassword.isEnabled = isEnabled
+        bLogIn.isEnabled = isEnabled
     }
 
     private fun onClickSkipAgain(){

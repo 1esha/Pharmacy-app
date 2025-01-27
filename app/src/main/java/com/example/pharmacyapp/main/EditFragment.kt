@@ -25,6 +25,9 @@ import com.example.domain.profile.ProfileResult
 import com.example.domain.profile.models.ResponseValueModel
 import com.example.domain.profile.models.UserInfoModel
 import com.example.domain.profile.models.UserModel
+import com.example.pharmacyapp.FLAG_ERROR_RESULT
+import com.example.pharmacyapp.FLAG_PENDING_RESULT
+import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
@@ -38,7 +41,7 @@ import com.example.pharmacyapp.databinding.FragmentEditBinding
 import com.example.pharmacyapp.getMessageByErrorType
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.EditViewModel
-import com.example.pharmacyapp.tabs.viewmodels.AuthorizedUserViewModel
+import com.example.pharmacyapp.tabs.profile.viewmodels.AuthorizedUserViewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 
@@ -152,7 +155,7 @@ class EditFragment : Fragment(), ProfileResult {
             val result = mediatorResult.result as Result<*>
 
             when(result){
-                is PendingResult -> { onPendingResult()}
+                is PendingResult -> { onPendingResultListener()}
                 is SuccessResult -> {
                     onSuccessResultListener(
                         userId = userId,
@@ -189,25 +192,15 @@ class EditFragment : Fragment(), ProfileResult {
 
     override fun onErrorResultListener(exception: Exception, message: String) {
         Log.i("TAG","EditFragment onErrorResultListener")
-        updateUI(
-            isVisible = true,
-            isProgressBar = false,
-            isButton = true,
-            isMessage = true,
-            message = message
-        )
+
+        updateUI(flag = FLAG_ERROR_RESULT, messageError = message)
     }
 
-    override fun onPendingResult() {
+    override fun onPendingResultListener() {
         Log.i("TAG","EditFragment onPendingResult")
         editViewModel.clearErrorType()
-        updateUI(
-            isVisible = true,
-            isProgressBar = true,
-            isButton = false,
-            isMessage = false,
-            message = null
-        )
+
+        updateUI(flag = FLAG_PENDING_RESULT)
     }
 
     override fun <T> onSuccessResultListener(userId: Int, value: T, type: String?): Unit = with(binding) {
@@ -219,14 +212,8 @@ class EditFragment : Fragment(), ProfileResult {
                 val status = responseValueModel.responseModel.status
                 val message = responseValueModel.responseModel.message
                 if (status in 200..299){
-                    updateUI(
-                        isVisible = false,
-                        isProgressBar = false,
-                        isButton = false,
-                        isMessage = false,
-                        message = null
-                    )
 
+                    updateUI(flag = FLAG_SUCCESS_RESULT)
                     if (!isShownSuccessResult){
                         val userModel = responseValueModel.value as UserModel? ?: throw NullPointerException("EditFragment userModel = null")
                         etFirstNameForEdit.setText(userModel.userInfoModel.firstName)
@@ -248,13 +235,8 @@ class EditFragment : Fragment(), ProfileResult {
             }
             TYPE_EDIT_USER -> {
                 val isShownSuccessResult = editViewModel.isShownSuccessResultEditUser.value?:throw NullPointerException("EditFragment onSuccessResultListener isShownSuccessResultEditUser = null")
-                updateUI(
-                    isVisible = false,
-                    isProgressBar = false,
-                    isButton = false,
-                    isMessage = false,
-                    message = null
-                )
+
+                updateUI(flag = FLAG_SUCCESS_RESULT)
                 setupCityText()
                 if (!isShownSuccessResult){
 
@@ -269,6 +251,7 @@ class EditFragment : Fragment(), ProfileResult {
                             city = actvCityForEdit.text.toString()
                         )
                     )
+
                     authorizedUserViewModel.setUserModel(userModel = userModel)
                     getSupportActivity().showToast(message = getString(R.string.the_data_has_been_successfully_edited))
                 }
@@ -283,7 +266,7 @@ class EditFragment : Fragment(), ProfileResult {
         }
     }
 
-    private fun onSuccessfulEvent(type: String, exception: Exception? = null,onSuccessfulEventListener:() -> Unit){
+    override fun onSuccessfulEvent(type: String, exception: Exception?,onSuccessfulEventListener:() -> Unit){
         val isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext())
         val network = Network()
 
@@ -311,36 +294,30 @@ class EditFragment : Fragment(), ProfileResult {
         )
     }
 
-    private fun updateUI(
-        isVisible: Boolean,
-        isProgressBar: Boolean,
-        isButton: Boolean,
-        isMessage: Boolean,
-        message: String?
-    ) = with(binding.layoutPendingResultEdit) {
-        if (isVisible){
-            root.visibility = View.VISIBLE
-        } else{
-            root.visibility = View.GONE
-        }
-
-        if (isProgressBar){
-            progressBar.visibility = View.VISIBLE
-        } else{
-            progressBar.visibility = View.GONE
-        }
-
-        if (isButton){
-            bTryAgain.visibility = View.VISIBLE
-        } else{
-            bTryAgain.visibility = View.GONE
-        }
-
-        if (isMessage){
-            tvErrorMessage.visibility = View.VISIBLE
-            tvErrorMessage.text = message
-        } else{
-            tvErrorMessage.visibility = View.GONE
+    override fun updateUI(flag: String, messageError: String?) = with(binding.layoutPendingResultEdit) {
+        when(flag) {
+            FLAG_PENDING_RESULT -> {
+                Log.i("TAG","FLAG_PENDING_RESULT")
+                root.visibility = View.VISIBLE
+                bTryAgain.visibility = View.INVISIBLE
+                tvErrorMessage.visibility = View.INVISIBLE
+                progressBar.visibility = View.VISIBLE
+            }
+            FLAG_SUCCESS_RESULT -> {
+                Log.i("TAG","FLAG_SUCCESS_RESULT")
+                root.visibility = View.GONE
+                bTryAgain.visibility = View.INVISIBLE
+                tvErrorMessage.visibility = View.INVISIBLE
+                progressBar.visibility = View.INVISIBLE
+            }
+            FLAG_ERROR_RESULT -> {
+                Log.i("TAG","FLAG_ERROR_RESULT")
+                root.visibility = View.VISIBLE
+                bTryAgain.visibility = View.VISIBLE
+                tvErrorMessage.visibility = View.VISIBLE
+                tvErrorMessage.text = messageError
+                progressBar.visibility = View.INVISIBLE
+            }
         }
     }
 

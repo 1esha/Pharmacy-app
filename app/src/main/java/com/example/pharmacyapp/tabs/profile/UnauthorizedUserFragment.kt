@@ -1,4 +1,4 @@
-package com.example.pharmacyapp.tabs
+package com.example.pharmacyapp.tabs.profile
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -12,7 +12,7 @@ import com.example.pharmacyapp.ToolbarSettingsModel
 import com.example.pharmacyapp.databinding.FragmentUnauthorizedUserBinding
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
-import com.example.pharmacyapp.tabs.viewmodels.AuthorizedUserViewModel
+import com.example.pharmacyapp.tabs.profile.viewmodels.AuthorizedUserViewModel
 
 class UnauthorizedUserFragment : Fragment() {
 

@@ -22,10 +22,14 @@ import com.example.domain.SuccessResult
 import com.example.domain.profile.ProfileResult
 import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.UserInfoModel
+import com.example.pharmacyapp.FLAG_ERROR_RESULT
+import com.example.pharmacyapp.FLAG_PENDING_RESULT
+import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
 import com.example.pharmacyapp.KEY_IS_INIT
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
+import com.example.pharmacyapp.TYPE_EMPTY
 import com.example.pharmacyapp.ToolbarSettings
 import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.FragmentRegistrationBinding
@@ -58,8 +62,6 @@ class RegistrationFragment() : Fragment(), ProfileResult {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) = with(binding) {
 
-        val network = Network()
-
         val toolbarSettings = ToolbarSettings(toolbar = binding.layoutToolbarMainRegistration.toolbarMain)
 
         navControllerMain = findNavController()
@@ -78,30 +80,18 @@ class RegistrationFragment() : Fragment(), ProfileResult {
 
             registrationViewModel.setIsShown(isShown = false)
 
-            val isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext())
-
-            network.checkNetworkStatus(
-                isNetworkStatus = isNetworkStatus,
-                connectionListener = {
-                    registrationViewModel.setResult(result = PendingResult())
-                    val userInfoModel = UserInfoModel(
-                        firstName = etFirstName.text.toString(),
-                        lastName = etLastName.text.toString(),
-                        email = etEmail.text.toString(),
-                        phoneNumber = etPhoneNumber.text.toString(),
-                        userPassword = etPassword.text.toString(),
-                        city = actvCity.text.toString()
-                    )
-                    Log.i("TAG", "RegistrationFragment userInfoModel = $userInfoModel")
-                    registrationViewModel.createUser(userInfoModel = userInfoModel)
-                },
-                disconnectionListener = {
-                    registrationViewModel.setResult(
-                        result = ErrorResult(exception = Exception()),
-                        errorType = DisconnectionError()
-                    )
-                }
-            )
+            onSuccessfulEvent(type = TYPE_EMPTY) {
+                val userInfoModel = UserInfoModel(
+                    firstName = etFirstName.text.toString(),
+                    lastName = etLastName.text.toString(),
+                    email = etEmail.text.toString(),
+                    phoneNumber = etPhoneNumber.text.toString(),
+                    userPassword = etPassword.text.toString(),
+                    city = actvCity.text.toString()
+                )
+                Log.i("TAG", "RegistrationFragment userInfoModel = $userInfoModel")
+                registrationViewModel.createUser(userInfoModel = userInfoModel)
+            }
 
         }
 
@@ -112,7 +102,7 @@ class RegistrationFragment() : Fragment(), ProfileResult {
         registrationViewModel.resultCreateUser.observe(viewLifecycleOwner) { result ->
 
             when (result) {
-                is PendingResult -> { onPendingResult() }
+                is PendingResult -> { onPendingResultListener() }
                 is SuccessResult -> {
                     val value = result.value?: throw NullPointerException("RegistrationFragment value = null")
                     val userId = registrationViewModel.userId.value?: UNAUTHORIZED_USER
@@ -140,10 +130,8 @@ class RegistrationFragment() : Fragment(), ProfileResult {
             val status = responseModel.status
             val message = responseModel.message
             delay(300)
-            binding.bRegister.isEnabled = true
-            setEnable(isEnabled = true)
-            binding.progressBarRegistration.visibility = View.INVISIBLE
-            if (status in 200..299){
+            updateUI(flag = FLAG_SUCCESS_RESULT)
+            if (status in 200..299) {
                 sharedPreferences.edit().putBoolean(KEY_IS_INIT, false).apply()
                 sharedPreferences.edit().putInt(KEY_USER_ID, userId).apply()
                 Log.i("TAG","RegistrationFragment onSuccessResultListener userId = ${sharedPreferences.getInt(
@@ -168,9 +156,7 @@ class RegistrationFragment() : Fragment(), ProfileResult {
     override fun onErrorResultListener(exception: Exception, message: String) {
         viewLifecycleOwner.lifecycleScope.launch{
             delay(300)
-            binding.bRegister.isEnabled = true
-            setEnable(isEnabled = true)
-            binding.progressBarRegistration.visibility = View.INVISIBLE
+            updateUI(flag = FLAG_ERROR_RESULT)
             val isShown = registrationViewModel.isShown.value?: throw NullPointerException("RegistrationFragment onErrorResultListener isShown = null")
             if (!isShown) getSupportActivity().showToast(message = message)
 
@@ -179,12 +165,50 @@ class RegistrationFragment() : Fragment(), ProfileResult {
 
     }
 
-    override fun onPendingResult() {
-        binding.bRegister.isEnabled = false
-        binding.progressBarRegistration.visibility = View.VISIBLE
-        setEnable(isEnabled = false)
+    override fun onPendingResultListener() {
+        updateUI(flag = FLAG_PENDING_RESULT)
         registrationViewModel.clearErrorType()
         Log.i("TAG","RegistrationFragment onPendingResult")
+    }
+
+    override fun onSuccessfulEvent(
+        type: String,
+        exception: java.lang.Exception?,
+        onSuccessfulEventListener: () -> Unit
+    ) {
+        val isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext())
+        val network = Network()
+
+        network.checkNetworkStatus(
+            isNetworkStatus = isNetworkStatus,
+            connectionListener = {
+                registrationViewModel.setResult(result = PendingResult())
+                onSuccessfulEventListener()
+            },
+            disconnectionListener = {
+                val currentException = if (exception == null) Exception() else  exception
+                val errorType = DisconnectionError()
+
+                registrationViewModel.setResult(result = ErrorResult(exception = currentException), errorType = errorType)
+            }
+        )
+    }
+
+    override fun updateUI(flag: String, messageError: String?) = with(binding){
+        when(flag) {
+            FLAG_PENDING_RESULT -> {
+                progressBarRegistration.visibility = View.VISIBLE
+                setEnable(isEnabled = false)
+            }
+            FLAG_SUCCESS_RESULT -> {
+                binding.progressBarRegistration.visibility = View.INVISIBLE
+                setEnable(isEnabled = true)
+            }
+            FLAG_ERROR_RESULT -> {
+                progressBarRegistration.visibility = View.INVISIBLE
+                setEnable(isEnabled = true)
+            }
+        }
     }
 
     private fun setEnable(isEnabled: Boolean) = with(binding){
@@ -194,6 +218,7 @@ class RegistrationFragment() : Fragment(), ProfileResult {
         etPhoneNumber.isEnabled = isEnabled
         etPassword.isEnabled = isEnabled
         layoutCity.isEnabled = isEnabled
+        bRegister.isEnabled = isEnabled
     }
 
 

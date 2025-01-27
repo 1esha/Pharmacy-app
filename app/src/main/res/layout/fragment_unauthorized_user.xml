@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    tools:context=".tabs.UnauthorizedUserFragment">
+    tools:context=".tabs.profile.UnauthorizedUserFragment">
 
 
     <LinearLayout
