@@ -12,6 +12,7 @@ import io.ktor.util.toLowerCasePreservingASCIIRules
 import kotlin.math.roundToInt
 
 const val UNAUTHORIZED_USER = -1
+const val CLUB_DISCOUNT = 3.0
 const val EMPTY_STRING = ""
 
 const val KEY_USER_ID = "KEY_USER_ID"

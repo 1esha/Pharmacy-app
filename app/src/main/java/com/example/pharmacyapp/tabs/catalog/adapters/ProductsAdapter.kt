@@ -8,23 +8,37 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView.Adapter
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import coil.load
-import com.example.domain.catalog.models.FavoriteModel
+import com.example.domain.favorite.models.FavoriteModel
 import com.example.domain.catalog.models.ProductFavoriteModel
+import com.example.pharmacyapp.CLUB_DISCOUNT
 import com.example.pharmacyapp.R
+import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.ItemProductsBinding
 import kotlin.math.roundToInt
 
 class ProductsAdapter(
-    private val listProducts: List<*>,
+    private val userId: Int,
+    listProducts: List<*>,
     private val onClickProduct: (Int) -> Unit,
-    private val onClickFavorite: (FavoriteModel,Boolean) -> Unit) : Adapter<ProductsAdapter.ProductsHolder>() {
+    private val onClickFavorite: (FavoriteModel, Boolean) -> Unit) : Adapter<ProductsAdapter.ProductsHolder>() {
 
         private val mutableListProductFavorite = mutableListOf<ProductFavoriteModel>()
 
     init {
         listProducts.forEach {
             val productFavoriteModel = it as ProductFavoriteModel
-            mutableListProductFavorite.add(productFavoriteModel)
+
+            mutableListProductFavorite.add(
+                if (userId == UNAUTHORIZED_USER) {
+                    ProductFavoriteModel(
+                        isFavorite = false,
+                        productModel = productFavoriteModel.productModel
+                    )
+                }
+                else {
+                    productFavoriteModel
+                }
+            )
         }
     }
 
@@ -45,23 +59,22 @@ class ProductsAdapter(
             val product = currentProduct.productModel
             var isFavorite = currentProduct.isFavorite
 
-            val originalPrice = product.price.roundToInt()
-            val clubDiscount = 3.0
+            val originalPrice = product.price
             val discount = product.discount
             val sumDiscount = ((discount / 100) * product.price)
-            val price = (product.price - sumDiscount).roundToInt()
-            val sumClubDiscount = ((clubDiscount / 100) * price)
-            val priceClub = ((product.price - sumDiscount) - sumClubDiscount).roundToInt()
+            val price = (originalPrice - sumDiscount)
+            val sumClubDiscount = ((CLUB_DISCOUNT / 100) * price)
+            val priceClub = price - sumClubDiscount
 
             val colorDiscount = Color.rgb(198, 1,63)
 
             ivProduct.load(product.image)
             tvProductName.text = product.title
 
-            val textPrice = price.toString()
+            val textPrice = price.roundToInt().toString()
             tvPrice.text = textPrice
 
-            val textPriceClub = priceClub.toString()
+            val textPriceClub = priceClub.roundToInt().toString()
             tvPriceWithClubCard.text = textPriceClub
 
             if (product.discount > 0.0) {
@@ -74,7 +87,7 @@ class ProductsAdapter(
                 val textDiscount = "-${discount.roundToInt()}%"
                 tvDiscount.text = textDiscount
 
-                val textOriginalPrice = originalPrice.toString()
+                val textOriginalPrice = originalPrice.roundToInt().toString()
                 tvOriginalPrice.text = textOriginalPrice
                 tvOriginalPrice.paintFlags = Paint.STRIKE_THRU_TEXT_FLAG
 
@@ -108,14 +121,17 @@ class ProductsAdapter(
 
                 onClickFavorite(favoriteModel,!isFavorite)
 
-                isFavorite = !isFavorite
-                mutableListProductFavorite.removeAt(position)
-                mutableListProductFavorite.add(position,ProductFavoriteModel(
-                    isFavorite = isFavorite,
-                    productModel = product
-                ))
+                if (userId != UNAUTHORIZED_USER) {
+                    isFavorite = !isFavorite
+                    mutableListProductFavorite.removeAt(position)
+                    mutableListProductFavorite.add(position,ProductFavoriteModel(
+                        isFavorite = isFavorite,
+                        productModel = product
+                    ))
 
-                notifyItemChanged(position)
+                    notifyItemChanged(position)
+                }
+
 
             }
         }

@@ -1,5 +1,6 @@
 package com.example.pharmacyapp.tabs.catalog
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -20,7 +21,7 @@ import com.example.domain.PendingResult
 import com.example.domain.Result
 import com.example.domain.SuccessResult
 import com.example.domain.catalog.CatalogResult
-import com.example.domain.catalog.models.FavoriteModel
+import com.example.domain.favorite.models.FavoriteModel
 import com.example.domain.catalog.models.ProductFavoriteModel
 import com.example.domain.catalog.models.ProductModel
 import com.example.domain.profile.models.ResponseModel
@@ -37,12 +38,15 @@ import com.example.pharmacyapp.KEY_PATH
 import com.example.pharmacyapp.KEY_PRICE_FROM
 import com.example.pharmacyapp.KEY_PRICE_UP_TO
 import com.example.pharmacyapp.KEY_RESULT_ARRAY_LIST_IDS_FILTERED
+import com.example.pharmacyapp.KEY_USER_ID
+import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.TYPE_ADD_FAVORITE
 import com.example.pharmacyapp.TYPE_GET_ALL_FAVORITES
 import com.example.pharmacyapp.TYPE_GET_PRODUCTS_BY_PATH
 import com.example.pharmacyapp.TYPE_REMOVE_FAVORITES
 import com.example.pharmacyapp.ToolbarSettingsModel
+import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.FragmentProductsBinding
 import com.example.pharmacyapp.getMessageByErrorType
 import com.example.pharmacyapp.getPrice
@@ -121,6 +125,10 @@ class ProductsFragment : Fragment(), CatalogResult {
         ) { navControllerCatalog.navigateUp()})
 
         toolbarViewModel.clearMenu()
+
+        val sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
+
+        val userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
 
         val path = arguments?.getString(KEY_PATH)?:
         throw NullPointerException("ProductsFragment path = null")
@@ -207,6 +215,8 @@ class ProductsFragment : Fragment(), CatalogResult {
         }
 
         productsViewModel.listProducts.observe(viewLifecycleOwner) { listProductsModel ->
+            val sizeListAllProducts = productsViewModel.listAllProducts.value?.size ?:
+            throw NullPointerException("ProductsFragment sizeListAllProducts = null")
 
             if (listProductsModel.isEmpty()) {
                 tvEmptyList.visibility = View.VISIBLE
@@ -215,6 +225,13 @@ class ProductsFragment : Fragment(), CatalogResult {
             else {
                 tvEmptyList.visibility = View.GONE
                 rvProducts.visibility = View.VISIBLE
+            }
+
+            if (sizeListAllProducts == 0) {
+                layoutConfigurationPanel.visibility = View.GONE
+            }
+            else {
+                layoutConfigurationPanel.visibility = View.VISIBLE
             }
 
             val listAllFavorites = productsViewModel.listAllFavorites.value ?:
@@ -237,6 +254,7 @@ class ProductsFragment : Fragment(), CatalogResult {
             }
 
             val productsAdapter = ProductsAdapter(
+                userId = userId,
                 listProducts = currentMutableListProductsFavorites,
                 onClickProduct = ::onClickProduct,
                 onClickFavorite = ::onClickFavorite)
@@ -436,10 +454,19 @@ class ProductsFragment : Fragment(), CatalogResult {
 
     private fun onClickProduct(productId: Int) { }
 
-    private fun onClickFavorite(favoriteModel: FavoriteModel,isFavorite: Boolean) {
+    private fun onClickFavorite(favoriteModel: FavoriteModel, isFavorite: Boolean) {
         Log.i("TAG","onClickFavorite favoriteModel = $favoriteModel")
         Log.i("TAG","onClickFavorite isFavorite = $isFavorite")
 
+        val sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
+
+        val userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
+
+        if (userId == UNAUTHORIZED_USER) {
+            val navControllerMain = getSupportActivity().getNavControllerMain()
+            navControllerMain.navigate(R.id.nav_graph_log_in)
+            return
+        }
         if (isFavorite) {
             productsViewModel.addFavorite(favoriteModel = favoriteModel)
             Log.i("TAG","ProductsFragment onClickFavorite add")
