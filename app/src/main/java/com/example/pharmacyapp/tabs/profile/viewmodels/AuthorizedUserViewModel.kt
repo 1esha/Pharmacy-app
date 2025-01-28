@@ -11,7 +11,9 @@ import com.example.domain.ErrorType
 import com.example.domain.OtherError
 import com.example.domain.Result
 import com.example.domain.models.MediatorResultsModel
+import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.ResponseValueModel
+import com.example.domain.profile.models.UserInfoModel
 import com.example.domain.profile.models.UserModel
 import com.example.domain.profile.usecases.GetUserByIdUseCase
 import com.example.pharmacyapp.TYPE_GET_USER_BY_ID
@@ -82,6 +84,27 @@ class AuthorizedUserViewModel: ViewModel() {
 
     fun setIsShown(isShown: Boolean){
         _isShown.value = isShown
+    }
+
+    fun updateUserModel(firstName: String, lastName: String, city: String) {
+        val currentUserModel = _userModelLiveData.value
+
+        if (currentUserModel != null) {
+            val newUserModel = UserModel(
+                userId = currentUserModel.userId,
+                userInfoModel = UserInfoModel(
+                    firstName = firstName,
+                    lastName = lastName,
+                    email = currentUserModel.userInfoModel.email,
+                    phoneNumber = currentUserModel.userInfoModel.phoneNumber,
+                    userPassword = currentUserModel.userInfoModel.userPassword,
+                    city = city
+                )
+            )
+
+            _userModelLiveData.value = newUserModel
+        }
+
     }
 
     fun setUserModel(userModel: UserModel){

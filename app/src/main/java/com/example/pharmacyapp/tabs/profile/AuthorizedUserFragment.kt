@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.example.domain.DisconnectionError
 import com.example.domain.ErrorResult
@@ -23,6 +24,10 @@ import com.example.domain.profile.models.UserModel
 import com.example.pharmacyapp.FLAG_ERROR_RESULT
 import com.example.pharmacyapp.FLAG_PENDING_RESULT
 import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
+import com.example.pharmacyapp.KEY_CITY
+import com.example.pharmacyapp.KEY_FIRST_NAME
+import com.example.pharmacyapp.KEY_LAST_NAME
+import com.example.pharmacyapp.KEY_RESULT_USER_INFO
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
@@ -46,6 +51,29 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
     private val authorizedUserViewModel: AuthorizedUserViewModel by activityViewModels()
 
     private val toolbarViewModel: ToolbarViewModel by activityViewModels()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        getSupportActivity().setFragmentResultListener(KEY_RESULT_USER_INFO) { requestKey, bundle ->
+            with(bundle) {
+                val firstName =  getString(KEY_FIRST_NAME) ?:
+                throw NullPointerException("AuthorizedUserFragment firstName = null")
+
+                val lastName = getString(KEY_LAST_NAME) ?:
+                throw NullPointerException("AuthorizedUserFragment lastName = null")
+
+                val city = getString(KEY_CITY) ?:
+                throw NullPointerException("AuthorizedUserFragment city = null")
+
+                authorizedUserViewModel.updateUserModel(
+                    firstName = firstName,
+                    lastName = lastName,
+                    city = city
+                )
+            }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -152,6 +180,7 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
 
         when(type?: TYPE_OTHER){
             TYPE_GET_USER_BY_ID -> {
+                Log.i("TAG","AuthorizedUserFragment onSuccessResultListener TYPE_GET_USER_BY_ID")
                 val isShown: Boolean = authorizedUserViewModel.isShown.value?:throw NullPointerException("AuthorizedUserFragment isShown = null")
                 if (!isShown) {
                     val responseValueModel = value as ResponseValueModel<*>

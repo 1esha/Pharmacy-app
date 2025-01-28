@@ -10,7 +10,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
@@ -28,6 +27,10 @@ import com.example.domain.profile.models.UserModel
 import com.example.pharmacyapp.FLAG_ERROR_RESULT
 import com.example.pharmacyapp.FLAG_PENDING_RESULT
 import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
+import com.example.pharmacyapp.KEY_CITY
+import com.example.pharmacyapp.KEY_FIRST_NAME
+import com.example.pharmacyapp.KEY_LAST_NAME
+import com.example.pharmacyapp.KEY_RESULT_USER_INFO
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
@@ -41,7 +44,6 @@ import com.example.pharmacyapp.databinding.FragmentEditBinding
 import com.example.pharmacyapp.getMessageByErrorType
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.EditViewModel
-import com.example.pharmacyapp.tabs.profile.viewmodels.AuthorizedUserViewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 
@@ -51,8 +53,6 @@ class EditFragment : Fragment(), ProfileResult {
     private val binding get() = _binding!!
 
     private val editViewModel: EditViewModel by viewModels()
-
-    private val authorizedUserViewModel: AuthorizedUserViewModel by activityViewModels()
 
     private lateinit var navControllerMain: NavController
 
@@ -239,20 +239,19 @@ class EditFragment : Fragment(), ProfileResult {
                 updateUI(flag = FLAG_SUCCESS_RESULT)
                 setupCityText()
                 if (!isShownSuccessResult){
+                    val firstName = etFirstNameForEdit.text.toString()
+                    val lastName = etLastNameForEdit.text.toString()
+                    val city = actvCityForEdit.text.toString()
+                    val result = Bundle()
 
-                    val userModel = UserModel(
-                        userId = userId,
-                        userInfoModel = UserInfoModel(
-                            firstName = etFirstNameForEdit.text.toString(),
-                            lastName = etLastNameForEdit.text.toString(),
-                            email = etEmailForEdit.text.toString(),
-                            phoneNumber = etPhoneNumberForEdit.text.toString(),
-                            userPassword = etPasswordForEdit.text.toString(),
-                            city = actvCityForEdit.text.toString()
-                        )
-                    )
+                    with(result) {
+                        putString(KEY_FIRST_NAME,firstName)
+                        putString(KEY_LAST_NAME,lastName)
+                        putString(KEY_CITY,city)
+                    }
 
-                    authorizedUserViewModel.setUserModel(userModel = userModel)
+                    getSupportActivity().setFragmentResult(KEY_RESULT_USER_INFO,result)
+
                     getSupportActivity().showToast(message = getString(R.string.the_data_has_been_successfully_edited))
                 }
                 editViewModel.setIsShownSuccessResultEditUser(isShown = true)

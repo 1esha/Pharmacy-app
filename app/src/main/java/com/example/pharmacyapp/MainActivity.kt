@@ -54,4 +54,17 @@ class MainActivity : AppCompatActivity(), SupportActivity {
         return versionName ?: throw NullPointerException("MainActivity versionName = null")
     }
 
+    override fun setFragmentResult(requestKey: String, result: Bundle) {
+        supportFragmentManager.setFragmentResult(requestKey, result)
+    }
+
+    override fun setFragmentResultListener(
+        requestKey: String,
+        callback: (String, Bundle) -> Unit
+    ) {
+       supportFragmentManager.setFragmentResultListener(requestKey,this) { key, bundle ->
+           callback(key,bundle)
+       }
+    }
+
 }

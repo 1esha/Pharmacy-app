@@ -1,6 +1,7 @@
 package com.example.pharmacyapp
 
 import android.content.Context
+import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.navigation.NavController
 import com.example.domain.DataEntryError
@@ -24,11 +25,15 @@ const val KEY_PRICE_FROM = "KEY_PRICE_FROM"
 const val KEY_DEFAULT_PRICE_FROM = "KEY_DEFAULT_PRICE_FROM"
 const val KEY_PRICE_UP_TO = "KEY_PRICE_UP_TO"
 const val KEY_DEFAULT_PRICE_UP_TO = "KEY_DEFAULT_PRICE_UP_TO"
+const val KEY_FIRST_NAME = "KEY_FIRST_NAME"
+const val KEY_LAST_NAME = "KEY_LAST_NAME"
+const val KEY_CITY = "KEY_CITY"
 const val KEY_ARRAY_LIST_CURRENT_ITEMS = "KEY_ARRAY_LIST_CURRENT_ITEMS"
 const val KEY_ARRAY_LIST_SELECTED_ADDRESSES = "KEY_ARRAY_LIST_SELECTED_ADDRESSES"
 const val KEY_ARRAY_LIST_IDS_FILTERED = "KEY_ARRAY_LIST_IDS_FILTERED"
 const val KEY_RESULT_ARRAY_LIST_SELECTED_ADDRESSES = "KEY_RESULT_ARRAY_LIST_SELECTED_ADDRESSES"
 const val KEY_RESULT_ARRAY_LIST_IDS_FILTERED = "KEY_RESULT_ARRAY_LIST_IDS_FILTERED"
+const val KEY_RESULT_USER_INFO = "KEY_RESULT_USER_INFO"
 
 const val TYPE_EMPTY = "TYPE_EMPTY"
 const val TYPE_GET_USER_BY_ID = "TYPE_GET_USER_BY_ID"
@@ -62,6 +67,10 @@ interface SupportActivity {
     fun getStringById(id: Int): String
 
     fun getVersionName(): String
+
+    fun setFragmentResult(requestKey: String, result: Bundle)
+
+    fun setFragmentResultListener(requestKey: String, callback: (String,Bundle) -> Unit)
 
 }
 

@@ -12,14 +12,11 @@ import com.example.pharmacyapp.ToolbarSettingsModel
 import com.example.pharmacyapp.databinding.FragmentUnauthorizedUserBinding
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
-import com.example.pharmacyapp.tabs.profile.viewmodels.AuthorizedUserViewModel
 
 class UnauthorizedUserFragment : Fragment() {
 
     private var _binding: FragmentUnauthorizedUserBinding? = null
     private val binding get() = _binding!!
-
-    private val authorizedUserViewModel: AuthorizedUserViewModel by activityViewModels()
 
     private val toolbarViewModel: ToolbarViewModel by activityViewModels()
 
@@ -47,12 +44,13 @@ class UnauthorizedUserFragment : Fragment() {
             })
         }
 
+        tvVersionName.text = getSupportActivity().getVersionName()
+
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-        authorizedUserViewModel.setIsShown(isShown = false)
     }
 
 }
