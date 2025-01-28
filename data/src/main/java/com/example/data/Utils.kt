@@ -1,6 +1,6 @@
 package com.example.data
 
-import com.example.data.catalog.datasource.local.entity.FavoriteEntity
+import com.example.data.favorite.datasource.entity.FavoriteEntity
 import com.example.data.catalog.datasource.models.PharmacyAddressesDataSourceModel
 import com.example.data.catalog.datasource.models.ProductAvailabilityDataSourceModel
 import com.example.data.catalog.datasource.models.ProductDataSourceModel
@@ -13,7 +13,7 @@ import com.example.domain.ErrorResult
 import com.example.domain.PendingResult
 import com.example.domain.Result
 import com.example.domain.SuccessResult
-import com.example.domain.catalog.models.FavoriteModel
+import com.example.domain.favorite.models.FavoriteModel
 import com.example.domain.catalog.models.ProductAvailabilityModel
 import com.example.domain.catalog.models.ProductModel
 import com.example.domain.models.PharmacyAddressesModel
@@ -207,7 +207,7 @@ fun FavoriteEntity.toFavoriteModel(): FavoriteModel {
     )
 }
 
-fun FavoriteModel.toFavoriteEntity() :FavoriteEntity {
+fun FavoriteModel.toFavoriteEntity() : FavoriteEntity {
     val favoriteModel = this
     return FavoriteEntity(
         productId = favoriteModel.productId,

@@ -2,6 +2,7 @@ package com.example.pharmacyapp.tabs.profile
 
 import android.content.Context
 import android.content.DialogInterface
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -10,7 +11,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
+import androidx.navigation.navOptions
 import com.example.domain.DisconnectionError
 import com.example.domain.ErrorResult
 import com.example.domain.Network
@@ -19,6 +22,7 @@ import com.example.domain.PendingResult
 import com.example.domain.Result
 import com.example.domain.SuccessResult
 import com.example.domain.profile.ProfileResult
+import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.ResponseValueModel
 import com.example.domain.profile.models.UserModel
 import com.example.pharmacyapp.FLAG_ERROR_RESULT
@@ -31,6 +35,7 @@ import com.example.pharmacyapp.KEY_RESULT_USER_INFO
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
+import com.example.pharmacyapp.TYPE_DELETE_ALL_FAVORITES
 import com.example.pharmacyapp.TYPE_GET_USER_BY_ID
 import com.example.pharmacyapp.TYPE_OTHER
 import com.example.pharmacyapp.ToolbarSettingsModel
@@ -40,6 +45,7 @@ import com.example.pharmacyapp.getMessageByErrorType
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 import com.example.pharmacyapp.tabs.profile.viewmodels.AuthorizedUserViewModel
+import com.example.pharmacyapp.tabs.profile.viewmodels.factories.AuthorizedUserViewModelFactory
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 
@@ -48,7 +54,13 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
     private var _binding: FragmentAuthorizedUserBinding? = null
     private val binding get() = _binding!!
 
-    private val authorizedUserViewModel: AuthorizedUserViewModel by activityViewModels()
+    private val authorizedUserViewModel: AuthorizedUserViewModel by viewModels(
+        factoryProducer = { AuthorizedUserViewModelFactory(context = requireContext()) }
+    )
+
+    private lateinit var sharedPreferences: SharedPreferences
+
+    private lateinit var navControllerProfile: NavController
 
     private val toolbarViewModel: ToolbarViewModel by activityViewModels()
 
@@ -86,14 +98,15 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?): Unit = with(binding) {
 
-        val sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
+        sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
+
+        navControllerProfile = findNavController()
 
         val userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
 
         val isShown: Boolean = authorizedUserViewModel.isShown.value?:throw NullPointerException("AuthorizedUserFragment isShown = null")
 
         val navControllerMain = getSupportActivity().getNavControllerMain()
-        val navControllerProfile = findNavController()
 
         toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.account)){})
         toolbarViewModel.clearMenu()
@@ -101,8 +114,9 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
         val dialogListener = DialogInterface.OnClickListener { dialogInterface, currentButton ->
             when(currentButton){
                 DialogInterface.BUTTON_POSITIVE -> {
-                    sharedPreferences.edit().putInt(KEY_USER_ID, UNAUTHORIZED_USER).apply()
-                    findNavController().navigate(R.id.unauthorizedUserFragment)
+                    onSuccessfulEvent(type = TYPE_DELETE_ALL_FAVORITES) {
+                        authorizedUserViewModel.deleteAllFavorites()
+                    }
                 }
                 DialogInterface.BUTTON_NEGATIVE -> {
                     dialogInterface.dismiss()
@@ -111,7 +125,8 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
         }
 
         val dialogExit = MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.log_out_of_your_account)
+            .setTitle(R.string.do_you_really_want_to_get_out)
+            .setMessage(R.string.if_you_log_out_of_your_account_all_product_information_from_the_favorites_section_will_be_deleted)
             .setPositiveButton(R.string.log_out, dialogListener)
             .setNegativeButton(R.string.cancel, dialogListener)
             .create()
@@ -142,7 +157,7 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
             dialogExit.show()
         }
 
-        authorizedUserViewModel.mediatorLiveData.observe(viewLifecycleOwner) { mediatorResult ->
+        authorizedUserViewModel.mediatorAuthorizedUser.observe(viewLifecycleOwner) { mediatorResult ->
             val type = mediatorResult.type
             val result = mediatorResult.result as Result<*>
 
@@ -198,6 +213,21 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
                     }
                 }
                 authorizedUserViewModel.setIsShown(isShown = true)
+            }
+            TYPE_DELETE_ALL_FAVORITES -> {
+                val responseModel = value as ResponseModel
+                val status = responseModel.status
+                val message = responseModel.message
+
+                if (status in 200..299) {
+                    sharedPreferences.edit().putInt(KEY_USER_ID, UNAUTHORIZED_USER).apply()
+                    navControllerProfile.navigate(R.id.unauthorizedUserFragment,null, navOptions {
+                        popUpTo(R.id.authorizedUserFragment) {
+                            inclusive = true
+                        }
+                    })
+                }
+
             }
         }
 

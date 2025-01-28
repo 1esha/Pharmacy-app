@@ -10,23 +10,33 @@ import com.example.domain.ErrorResult
 import com.example.domain.ErrorType
 import com.example.domain.OtherError
 import com.example.domain.Result
+import com.example.domain.favorite.FavoriteRepository
+import com.example.domain.favorite.models.FavoriteModel
+import com.example.domain.favorite.usecases.DeleteAllFavoriteUseCase
 import com.example.domain.models.MediatorResultsModel
 import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.ResponseValueModel
 import com.example.domain.profile.models.UserInfoModel
 import com.example.domain.profile.models.UserModel
 import com.example.domain.profile.usecases.GetUserByIdUseCase
+import com.example.pharmacyapp.TYPE_DELETE_ALL_FAVORITES
 import com.example.pharmacyapp.TYPE_GET_USER_BY_ID
 import com.example.pharmacyapp.UNAUTHORIZED_USER
 import kotlinx.coroutines.launch
 
-class AuthorizedUserViewModel: ViewModel() {
+class AuthorizedUserViewModel(
+    private val favoriteRepository: FavoriteRepository<
+        ResponseValueModel<FavoriteModel>,
+        ResponseValueModel<List<FavoriteModel>>,
+        ResponseModel>): ViewModel() {
 
     private val profileRepositoryImpl = ProfileRepositoryImpl()
 
-    val mediatorLiveData = MediatorLiveData<MediatorResultsModel<*>>()
+    val mediatorAuthorizedUser = MediatorLiveData<MediatorResultsModel<*>>()
 
     private val resultGetUserById = MutableLiveData<MediatorResultsModel<Result<ResponseValueModel<UserModel>>>>()
+
+    private val resultDeleteAllFavorites = MutableLiveData<MediatorResultsModel<Result<ResponseModel>>>()
 
     private val _isShown = MutableLiveData(false)
     val isShown: LiveData<Boolean> = _isShown
@@ -38,8 +48,12 @@ class AuthorizedUserViewModel: ViewModel() {
     val userModelLivedata: LiveData<UserModel> = _userModelLiveData
 
     init {
-        mediatorLiveData.addSource(resultGetUserById) { result ->
-            mediatorLiveData.value = result
+        mediatorAuthorizedUser.addSource(resultGetUserById) { result ->
+            mediatorAuthorizedUser.value = result
+        }
+
+        mediatorAuthorizedUser.addSource(resultDeleteAllFavorites) { result ->
+            mediatorAuthorizedUser.value = result
         }
     }
 
@@ -66,6 +80,20 @@ class AuthorizedUserViewModel: ViewModel() {
             )
 
         }
+    }
+
+    fun deleteAllFavorites() {
+        val deleteAllFavoriteUseCase = DeleteAllFavoriteUseCase(favoriteRepository = favoriteRepository)
+
+        viewModelScope.launch {
+            val result = deleteAllFavoriteUseCase.execute()
+
+            resultDeleteAllFavorites.value = MediatorResultsModel(
+                type = TYPE_DELETE_ALL_FAVORITES,
+                result = result
+            )
+        }
+
     }
 
     fun setResultGetUserById(result: Result<ResponseValueModel<UserModel>>, errorType: ErrorType? = null) {

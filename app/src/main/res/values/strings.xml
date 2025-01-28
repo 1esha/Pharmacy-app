@@ -138,4 +138,9 @@
     <string name="with_a_club_card">With a club card</string>
     <string name="ruble_sign">₽</string>
     <string name="the_list_is_empty">The list is empty</string>
+    <string name="application_version">Application version</string>
+    <string name="favourites">Favourites</string>
+    <string name="if_you_log_out_of_your_account_all_product_information_from_the_favorites_section_will_be_deleted">If you log out of your account, all product information from the «Favorites» section will be deleted.</string>
+    <string name="do_you_really_want_to_get_out">Do you really want to get out?</string>
+
 </resources>
