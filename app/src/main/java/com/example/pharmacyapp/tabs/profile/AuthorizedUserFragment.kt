@@ -103,9 +103,7 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
 
         navControllerProfile = findNavController()
 
-        val userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
-
-        val isShown: Boolean = authorizedUserViewModel.isShown.value?:throw NullPointerException("AuthorizedUserFragment isShown = null")
+        val isShownGetUserById: Boolean = authorizedUserViewModel.isShownGetUserById
 
         val navControllerMain = getSupportActivity().getNavControllerMain()
 
@@ -132,7 +130,7 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
             .setNegativeButton(R.string.cancel, dialogListener)
             .create()
 
-        if (!isShown){
+        if (!isShownGetUserById){
             onSuccessfulEvent(type = TYPE_GET_USER_BY_ID) {
                 with(authorizedUserViewModel){
                     getUserById(
@@ -145,6 +143,7 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
         layoutPendingResultAuthorizedUser.bTryAgain.setOnClickListener {
             onSuccessfulEvent(type = TYPE_GET_USER_BY_ID) {
                 with(authorizedUserViewModel){
+                    setIsShownGetUserById(isShown = false)
                     getUserById(userId = userId)
                 }
             }
@@ -197,8 +196,9 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
         when(type?: TYPE_OTHER){
             TYPE_GET_USER_BY_ID -> {
                 Log.i("TAG","AuthorizedUserFragment onSuccessResultListener TYPE_GET_USER_BY_ID")
-                val isShown: Boolean = authorizedUserViewModel.isShown.value?:throw NullPointerException("AuthorizedUserFragment isShown = null")
-                if (!isShown) {
+                val isShownGetUserById: Boolean = authorizedUserViewModel.isShownGetUserById
+
+                if (!isShownGetUserById) {
                     val responseValueModel = value as ResponseValueModel<*>
                     val status = responseValueModel.responseModel.status
                     val message = responseValueModel.responseModel.message
@@ -213,7 +213,7 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
                         if (message != null) getSupportActivity().showToast(message = message)
                     }
                 }
-                authorizedUserViewModel.setIsShown(isShown = true)
+                authorizedUserViewModel.setIsShownGetUserById(isShown = true)
             }
             TYPE_DELETE_ALL_FAVORITES -> {
                 val responseModel = value as ResponseModel
