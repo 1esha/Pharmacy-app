@@ -18,7 +18,6 @@ class ProfileFragment : Fragment() {
     private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
 
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -29,6 +28,7 @@ class ProfileFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+
         val navHostProfile = childFragmentManager.findFragmentById(R.id.navHostFragmentProfile) as NavHostFragment
         val navControllerProfile = navHostProfile.navController
 
@@ -36,21 +36,35 @@ class ProfileFragment : Fragment() {
         val sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
         val userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
 
-        if (userId == UNAUTHORIZED_USER){
-            navGraphProfile.setStartDestination(R.id.unauthorizedUserFragment)
+        val isInit = savedInstanceState?.getBoolean(KEY_IS_INIT) ?: INIT
+
+        if (isInit) {
+
+            if (userId == UNAUTHORIZED_USER){
+                navGraphProfile.setStartDestination(R.id.unauthorizedUserFragment)
+            }
+            else{
+                navGraphProfile.setStartDestination(R.id.authorizedUserFragment)
+            }
+
+            navControllerProfile.graph = navGraphProfile
         }
-        else{
-            navGraphProfile.setStartDestination(R.id.authorizedUserFragment)
-        }
 
-        navControllerProfile.graph = navGraphProfile
+    }
 
-
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_IS_INIT,false)
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    companion object {
+        const val INIT = true
+        const val KEY_IS_INIT = "KEY_IS_INIT"
     }
 
 }
