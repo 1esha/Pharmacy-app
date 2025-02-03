@@ -65,6 +65,9 @@ dependencies {
     //Coil
     implementation(libs.coil)
 
+    //Saved state
+    implementation(libs.androidx.lifecycle.viewmodel.savedstate)
+
     implementation(project(":domain"))
     implementation(project(":data"))
 
