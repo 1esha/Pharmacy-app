@@ -5,6 +5,7 @@ import com.example.data.catalog.datasource.remote.CatalogRepositoryDataSourceRem
 import com.example.data.toResponseValueListPharmacyAddressesModel
 import com.example.data.toResponseValueListProductAvailabilityModel
 import com.example.data.toResponseValueListProductModel
+import com.example.data.toResponseValueProductModel
 import com.example.data.toResult
 import com.example.domain.Result
 import com.example.domain.catalog.CatalogRepository
@@ -16,7 +17,8 @@ import com.example.domain.profile.models.ResponseValueModel
 class CatalogRepositoryImpl() : CatalogRepository<
         ResponseValueModel<List<ProductModel>?>,
         ResponseValueModel<List<ProductAvailabilityModel>?>,
-        ResponseValueModel<List<PharmacyAddressesModel>?>
+        ResponseValueModel<List<PharmacyAddressesModel>?>,
+        ResponseValueModel<ProductModel?>
         >{
 
 
@@ -50,6 +52,16 @@ class CatalogRepositoryImpl() : CatalogRepository<
         val resultDataSource = catalogRepositoryDataSourceRemoteImpl.getProductAvailabilityByPath(path = path)
         val value = resultDataSource.asSuccessResultDataSource()?.value
         val result = resultDataSource.toResult(value = value?.toResponseValueListProductAvailabilityModel())
+
+        return result
+    }
+
+    override suspend fun getProductById(productId: Int): Result<ResponseValueModel<ProductModel?>> {
+        val responseValueModel = catalogRepositoryDataSourceRemoteImpl.getProductById(productId = productId)
+        val value = responseValueModel.asSuccessResultDataSource()?.value
+        val result = responseValueModel.toResult(
+            value = value?.toResponseValueProductModel()
+        )
 
         return result
     }

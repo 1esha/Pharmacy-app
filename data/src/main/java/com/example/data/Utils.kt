@@ -87,21 +87,24 @@ fun ResponseValueDataSourceModel<UserDataSourceModel>.toResponseValueUserModelMo
     )
 }
 
+fun ProductDataSourceModel.toProductModel(): ProductModel {
+    val productDataSourceModel = this
+    return ProductModel(
+        product_id = productDataSourceModel.product_id,
+        title = productDataSourceModel.title,
+        product_path = productDataSourceModel.product_path,
+        price = productDataSourceModel.price,
+        discount = productDataSourceModel.discount,
+        product_basic_info = productDataSourceModel.product_basic_info,
+        product_detailed_info = productDataSourceModel.product_detailed_info,
+        image = productDataSourceModel.image
+    )
+}
+
 fun List<ProductDataSourceModel>.toListProductModel(): List<ProductModel> {
     val listProductModel = mutableListOf<ProductModel>()
     this.forEach { productDataSourceModel ->
-        listProductModel.add(
-            ProductModel(
-                product_id = productDataSourceModel.product_id,
-                title = productDataSourceModel.title,
-                product_path = productDataSourceModel.product_path,
-                price = productDataSourceModel.price,
-                discount = productDataSourceModel.discount,
-                product_basic_info = productDataSourceModel.product_basic_info,
-                product_detailed_info = productDataSourceModel.product_detailed_info,
-                image = productDataSourceModel.image
-            )
-        )
+        listProductModel.add(productDataSourceModel.toProductModel())
     }
 
     return listProductModel
@@ -136,6 +139,13 @@ fun List<ProductAvailabilityDataSourceModel>.toListProductAvailabilityModel(): L
     }
 
     return listProductAvailabilityModel
+}
+
+fun ResponseValueDataSourceModel<ProductDataSourceModel?>.toResponseValueProductModel(): ResponseValueModel<ProductModel?> {
+    return ResponseValueModel(
+        value = this.value?.toProductModel(),
+        responseModel = this.responseDataSourceModel.toResponseModel()
+    )
 }
 
 fun ResponseValueDataSourceModel<List<ProductDataSourceModel>?>.toResponseValueListProductModel(): ResponseValueModel<List<ProductModel>?>{

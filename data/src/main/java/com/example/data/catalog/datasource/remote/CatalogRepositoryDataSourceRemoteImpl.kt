@@ -23,7 +23,9 @@ import kotlinx.coroutines.withContext
 class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<
         ResponseValueDataSourceModel<List<ProductDataSourceModel>?>,
         ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>,
-        ResponseValueDataSourceModel<List<PharmacyAddressesDataSourceModel>?>> {
+        ResponseValueDataSourceModel<List<PharmacyAddressesDataSourceModel>?>,
+        ResponseValueDataSourceModel<ProductDataSourceModel?>
+        > {
 
     private val client = HttpClient(OkHttp) {
         install(ContentNegotiation) {
@@ -126,6 +128,29 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<
             }
         }
 
+    override suspend fun getProductById(productId: Int): ResultDataSource<ResponseValueDataSourceModel<ProductDataSourceModel?>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val response = client.request {
+                    url(GET_PRODUCT_BY_ID+productId)
+                    method = HttpMethod.Get
+                }
+                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<ProductDataSourceModel?>>()
+                val successResultDataSource = SuccessResultDataSource(
+                    value = responseValueDataSourceModel
+                )
+                Log.i("TAG","getProductById successResultDataSource = $successResultDataSource")
+                return@withContext successResultDataSource
+            }
+            catch (e: Exception) {
+                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<ProductDataSourceModel?>>(
+                    exception = e
+                )
+                Log.i("TAG","getProductById errorResultDataSource = ${errorResultDataSource.exception}")
+                return@withContext errorResultDataSource
+            }
+        }
+
     companion object {
         private const val PORT = "4000"
         private const val BASE_URL = "http://192.168.0.114:$PORT"
@@ -133,5 +158,6 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<
         const val GET_PRODUCTS_BY_PATH = "$BASE_URL/products/path?path="
         const val GET_PHARMACY_ADDRESSES = "$BASE_URL/pharmacy/addresses"
         const val GET_PRODUCT_AVAILABILITY_BY_PATH = "$BASE_URL/availability?path="
+        const val GET_PRODUCT_BY_ID = "$BASE_URL/product/id?id="
     }
 }
