@@ -75,11 +75,9 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
         path = arguments?.getString(KEY_PATH) ?:
         throw NullPointerException("FilterFragment path = null")
 
-        val isShownGetProductsByPath = filterViewModel.isShownGetProductsByPath.value?:
-        throw NullPointerException("FilterFragment isShownGetProductsByPath = null")
+        val isShownGetProductsByPath = filterViewModel.isShownGetProductsByPath
 
-        val isShownGetProductAvailabilityByPath = filterViewModel.isShownGetProductAvailabilityByPath.value ?:
-        throw NullPointerException("FilterFragment isShownGetProductAvailabilityByPath = null")
+        val isShownGetProductAvailabilityByPath = filterViewModel.isShownGetProductAvailabilityByPath
 
         if(!isShownGetProductsByPath){
             onSuccessfulEvent(type = TYPE_GET_PRODUCTS_BY_PATH) {
@@ -253,8 +251,7 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
 
         when(type) {
             TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH -> {
-                val isShownGetProductAvailabilityByPath = filterViewModel.isShownGetProductAvailabilityByPath.value
-                    ?: throw NullPointerException("FilterFragment isShownGetProductAvailabilityByPath = null")
+                val isShownGetProductAvailabilityByPath = filterViewModel.isShownGetProductAvailabilityByPath
 
                 if (!isShownGetProductAvailabilityByPath) {
                     Log.i("TAG","FilterFragment onSuccessResultListener TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH")
@@ -281,7 +278,8 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
 
             }
             TYPE_GET_PRODUCTS_BY_PATH -> {
-                val isShownGetProductsByPath = filterViewModel.isShownGetProductsByPath.value?: throw NullPointerException("FilterFragment isShownGetProductsByPath = null")
+                val isShownGetProductsByPath = filterViewModel.isShownGetProductsByPath
+
                 if (!isShownGetProductsByPath) {
                     Log.i("TAG","FilterFragment onSuccessResultListener TYPE_GET_PRODUCTS_BY_PATH")
                     val responseValueModel = value as ResponseValueModel<*>
