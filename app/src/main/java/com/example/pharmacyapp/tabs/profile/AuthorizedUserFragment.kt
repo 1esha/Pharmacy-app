@@ -55,7 +55,8 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
     private val binding get() = _binding!!
 
     private val authorizedUserViewModel: AuthorizedUserViewModel by viewModels(
-        factoryProducer = { AuthorizedUserViewModelFactory(context = requireContext()) }
+        factoryProducer = { AuthorizedUserViewModelFactory(context = requireContext()) },
+        ownerProducer = { requireParentFragment() }
     )
 
     private lateinit var sharedPreferences: SharedPreferences

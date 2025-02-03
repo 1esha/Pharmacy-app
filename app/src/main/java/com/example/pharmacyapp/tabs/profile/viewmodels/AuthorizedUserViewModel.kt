@@ -1,17 +1,19 @@
 package com.example.pharmacyapp.tabs.profile.viewmodels
 
+import android.os.Bundle
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.favorite.FavoriteRepositoryImpl
 import com.example.data.profile.ProfileRepositoryImpl
 import com.example.domain.ErrorResult
 import com.example.domain.ErrorType
 import com.example.domain.OtherError
 import com.example.domain.Result
-import com.example.domain.favorite.FavoriteRepository
-import com.example.domain.favorite.models.FavoriteModel
 import com.example.domain.favorite.usecases.DeleteAllFavoriteUseCase
 import com.example.domain.models.MediatorResultsModel
 import com.example.domain.profile.models.ResponseModel
@@ -25,12 +27,15 @@ import com.example.pharmacyapp.UNAUTHORIZED_USER
 import kotlinx.coroutines.launch
 
 class AuthorizedUserViewModel(
-    private val favoriteRepository: FavoriteRepository<
-        ResponseValueModel<FavoriteModel>,
-        ResponseValueModel<List<FavoriteModel>>,
-        ResponseModel>): ViewModel() {
+    private val savedStateHandle: SavedStateHandle,
+    private val favoriteRepositoryImpl: FavoriteRepositoryImpl,
+    private val profileRepositoryImpl: ProfileRepositoryImpl
+): ViewModel() {
 
-    private val profileRepositoryImpl = ProfileRepositoryImpl()
+    companion object {
+        const val KEY_IS_SHOWN_GET_USER_BY_ID = "KEY_IS_SHOWN_GET_USER_BY_ID"
+        const val KEY_IS_SHOWN_DELETE_ALL_FAVORITES = "KEY_IS_SHOWN_DELETE_ALL_FAVORITES"
+    }
 
     val mediatorAuthorizedUser = MediatorLiveData<MediatorResultsModel<*>>()
 
@@ -38,8 +43,9 @@ class AuthorizedUserViewModel(
 
     private val resultDeleteAllFavorites = MutableLiveData<MediatorResultsModel<Result<ResponseModel>>>()
 
-    private val _isShown = MutableLiveData(false)
-    val isShown: LiveData<Boolean> = _isShown
+    val isShownGetUserById: Boolean get() = savedStateHandle[KEY_IS_SHOWN_GET_USER_BY_ID] ?: false
+
+    val isShownDeleteAllFavorites: Boolean get() = savedStateHandle[KEY_IS_SHOWN_DELETE_ALL_FAVORITES] ?: false
 
     private val _errorType = MutableLiveData<ErrorType>(OtherError())
     val errorType: LiveData<ErrorType> = _errorType
@@ -83,7 +89,7 @@ class AuthorizedUserViewModel(
     }
 
     fun deleteAllFavorites() {
-        val deleteAllFavoriteUseCase = DeleteAllFavoriteUseCase(favoriteRepository = favoriteRepository)
+        val deleteAllFavoriteUseCase = DeleteAllFavoriteUseCase(favoriteRepository = favoriteRepositoryImpl)
 
         viewModelScope.launch {
             val result = deleteAllFavoriteUseCase.execute()
@@ -110,8 +116,12 @@ class AuthorizedUserViewModel(
         _errorType.value = OtherError()
     }
 
-    fun setIsShown(isShown: Boolean){
-        _isShown.value = isShown
+    fun setIsShownGetUserById(isShown: Boolean){
+        savedStateHandle[KEY_IS_SHOWN_GET_USER_BY_ID] = isShown
+    }
+
+    fun setIsShownDeleteAllFavorites(isShown: Boolean){
+        savedStateHandle[KEY_IS_SHOWN_DELETE_ALL_FAVORITES] = isShown
     }
 
     fun updateUserModel(firstName: String, lastName: String, city: String) {
@@ -137,5 +147,10 @@ class AuthorizedUserViewModel(
 
     fun setUserModel(userModel: UserModel){
         _userModelLiveData.value = userModel
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.i("TAG","AuthorizedUserViewModel onCleared")
     }
 }
