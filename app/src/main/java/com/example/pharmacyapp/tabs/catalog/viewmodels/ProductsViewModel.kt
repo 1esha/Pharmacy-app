@@ -4,23 +4,22 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.catalog.CatalogRepositoryImpl
+import com.example.data.favorite.FavoriteRepositoryImpl
 import com.example.domain.ErrorResult
 import com.example.domain.ErrorType
 import com.example.domain.OtherError
 import com.example.domain.Result
-import com.example.domain.catalog.CatalogRepository
 import com.example.domain.favorite.models.FavoriteModel
-import com.example.domain.catalog.models.ProductAvailabilityModel
 import com.example.domain.catalog.models.ProductModel
 import com.example.domain.favorite.usecases.AddFavoriteUseCase
 import com.example.domain.favorite.usecases.DeleteByIdUseCase
 import com.example.domain.favorite.usecases.GetAllFavoritesUseCase
 import com.example.domain.catalog.usecases.GetProductsByPathUseCase
-import com.example.domain.favorite.FavoriteRepository
 import com.example.domain.models.MediatorResultsModel
-import com.example.domain.models.PharmacyAddressesModel
 import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.ResponseValueModel
 import com.example.pharmacyapp.TYPE_ADD_FAVORITE
@@ -30,15 +29,15 @@ import com.example.pharmacyapp.TYPE_REMOVE_FAVORITES
 import kotlinx.coroutines.launch
 
 class ProductsViewModel(
-    private val catalogRepository: CatalogRepository<
-            ResponseValueModel<List<ProductModel>?>,
-            ResponseValueModel<List<ProductAvailabilityModel>?>,
-            ResponseValueModel<List<PharmacyAddressesModel>?>>,
-    private val favoriteRepository: FavoriteRepository<
-            ResponseValueModel<FavoriteModel>,
-            ResponseValueModel<List<FavoriteModel>>,
-            ResponseModel>
+    private val savedStateHandle: SavedStateHandle,
+    private val catalogRepositoryImpl: CatalogRepositoryImpl,
+    private val favoriteRepositoryImpl: FavoriteRepositoryImpl
 ): ViewModel() {
+
+    companion object {
+        const val KEY_IS_SHOWN_GET_PRODUCTS_BY_PATH = "KEY_IS_SHOWN_GET_PRODUCTS_BY_PATH"
+        const val KEY_IS_SHOWN_GET_ALL_FAVORITES = "KEY_IS_SHOWN_GET_ALL_FAVORITES"
+    }
 
     val mediatorProduct = MediatorLiveData<MediatorResultsModel<*>>()
 
@@ -53,11 +52,9 @@ class ProductsViewModel(
     private val _listAllFavorites = MutableLiveData<List<*>>(listOf<FavoriteModel>())
     val listAllFavorites: LiveData<List<*>> = _listAllFavorites
 
-    private val _isShownGetProductsByPath = MutableLiveData<Boolean>(false)
-    val isShownGetProductsByPath: LiveData<Boolean> = _isShownGetProductsByPath
+    val isShownGetProductsByPath: Boolean get() = savedStateHandle[KEY_IS_SHOWN_GET_PRODUCTS_BY_PATH] ?: false
 
-    private val _isShownGetAllFavorites = MutableLiveData<Boolean>(false)
-    val isShownGetAllFavorites: LiveData<Boolean> = _isShownGetAllFavorites
+   val isShownGetAllFavorites: Boolean get() = savedStateHandle[KEY_IS_SHOWN_GET_ALL_FAVORITES] ?: false
 
     private val _listProducts = MutableLiveData<List<*>>()
     val listProducts: LiveData<List<*>> = _listProducts
@@ -88,7 +85,7 @@ class ProductsViewModel(
 
     fun getProductsByPath(path: String) {
         val getProductsByPathUseCase = GetProductsByPathUseCase(
-            catalogRepository = catalogRepository,
+            catalogRepository = catalogRepositoryImpl,
             path = path
         )
         viewModelScope.launch {
@@ -103,7 +100,7 @@ class ProductsViewModel(
 
     fun addFavorite(favoriteModel: FavoriteModel)  {
         val addFavoriteUseCase = AddFavoriteUseCase(
-            favoriteRepository = favoriteRepository,
+            favoriteRepository = favoriteRepositoryImpl,
             favoriteModel = favoriteModel)
 
         viewModelScope.launch {
@@ -119,7 +116,7 @@ class ProductsViewModel(
     }
 
     fun getAllFavorites() {
-        val getAllFavoritesUseCase = GetAllFavoritesUseCase(favoriteRepository = favoriteRepository)
+        val getAllFavoritesUseCase = GetAllFavoritesUseCase(favoriteRepository = favoriteRepositoryImpl)
         viewModelScope.launch {
             val result = getAllFavoritesUseCase.execute()
             resultGetAllFavorites.value = MediatorResultsModel(
@@ -133,7 +130,7 @@ class ProductsViewModel(
 
     fun removeFavorite(productId: Int) {
         val deleteByIdUseCase = DeleteByIdUseCase(
-            favoriteRepository = favoriteRepository,
+            favoriteRepository = favoriteRepositoryImpl,
             productId = productId
         )
 
@@ -173,11 +170,11 @@ class ProductsViewModel(
     }
 
     fun setIsShownGetProductsByPath(isShown: Boolean){
-        _isShownGetProductsByPath.value = isShown
+        savedStateHandle[KEY_IS_SHOWN_GET_PRODUCTS_BY_PATH] = isShown
     }
 
     fun setIsShownGetAllFavorites(isShown: Boolean){
-        _isShownGetAllFavorites.value = isShown
+        savedStateHandle[KEY_IS_SHOWN_GET_ALL_FAVORITES] = isShown
     }
 
     fun setResultGetProductsByPath(result: Result<ResponseValueModel<List<ProductModel>?>>, errorType: ErrorType? = null){

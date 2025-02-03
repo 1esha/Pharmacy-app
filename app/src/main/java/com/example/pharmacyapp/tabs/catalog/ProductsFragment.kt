@@ -7,6 +7,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.os.bundleOf
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.setFragmentResultListener
 import androidx.fragment.app.viewModels
@@ -37,6 +38,7 @@ import com.example.pharmacyapp.KEY_IS_CHECKED_DISCOUNT
 import com.example.pharmacyapp.KEY_PATH
 import com.example.pharmacyapp.KEY_PRICE_FROM
 import com.example.pharmacyapp.KEY_PRICE_UP_TO
+import com.example.pharmacyapp.KEY_PRODUCT_ID
 import com.example.pharmacyapp.KEY_RESULT_ARRAY_LIST_IDS_FILTERED
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
@@ -133,8 +135,7 @@ class ProductsFragment : Fragment(), CatalogResult {
         val path = arguments?.getString(KEY_PATH)?:
         throw NullPointerException("ProductsFragment path = null")
 
-        val isShownGetAllFavorites = productsViewModel.isShownGetAllFavorites.value?:
-        throw NullPointerException("ProductsFragment isShownGetAllFavorites = null")
+        val isShownGetAllFavorites = productsViewModel.isShownGetAllFavorites
 
         if (!isShownGetAllFavorites) {
             onSuccessfulEvent(type = TYPE_GET_ALL_FAVORITES) {
@@ -287,11 +288,11 @@ class ProductsFragment : Fragment(), CatalogResult {
                 val status = responseValueModel.responseModel.status
                 val message = responseValueModel.responseModel.message
 
-                val isShown = productsViewModel.isShownGetProductsByPath.value ?:
-                throw NullPointerException("ProductsFragment isShown = null")
+                val isShownGetProductsByPath = productsViewModel.isShownGetProductsByPath
+
                 Log.i("TAG","responseValueModel = $responseValueModel")
                 Log.i("TAG","status = $status")
-                if (!isShown) {
+                if (!isShownGetProductsByPath) {
                     if (status in 200..299){
 
                         val listAllProducts = responseValueModel.value as List<*>
@@ -350,8 +351,7 @@ class ProductsFragment : Fragment(), CatalogResult {
                 val status = responseValueModel.responseModel.status
                 val message = responseValueModel.responseModel.message
 
-                val isShownGetAllFavorites = productsViewModel.isShownGetAllFavorites.value?:
-                throw NullPointerException("ProductsFragment isShownGetAllFavorites = null")
+                val isShownGetAllFavorites = productsViewModel.isShownGetAllFavorites
 
                 if (!isShownGetAllFavorites) {
                     if (status in 200..299) {
@@ -363,8 +363,7 @@ class ProductsFragment : Fragment(), CatalogResult {
                         val path = arguments?.getString(KEY_PATH)?:
                         throw NullPointerException("ProductsFragment path = null")
 
-                        val isShownGetProductsByPath = productsViewModel.isShownGetProductsByPath.value?:
-                        throw NullPointerException("ProductsFragment isShownGetProductsByPath = null")
+                        val isShownGetProductsByPath = productsViewModel.isShownGetProductsByPath
 
                         if (!isShownGetProductsByPath) {
                             with(productsViewModel) {
