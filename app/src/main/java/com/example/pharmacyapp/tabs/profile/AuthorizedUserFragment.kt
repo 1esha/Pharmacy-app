@@ -47,6 +47,7 @@ import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 import com.example.pharmacyapp.tabs.profile.viewmodels.AuthorizedUserViewModel
 import com.example.pharmacyapp.tabs.profile.viewmodels.factories.AuthorizedUserViewModelFactory
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlin.properties.Delegates
 
 
 class AuthorizedUserFragment : Fragment(), ProfileResult {
@@ -63,10 +64,16 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
 
     private lateinit var navControllerProfile: NavController
 
+    private var userId: Int by Delegates.notNull()
+
     private val toolbarViewModel: ToolbarViewModel by activityViewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
+
+        userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
 
         getSupportActivity().setFragmentResultListener(KEY_RESULT_USER_INFO) { requestKey, bundle ->
             with(bundle) {
@@ -99,8 +106,6 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?): Unit = with(binding) {
 
-        sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
-
         navControllerProfile = findNavController()
 
         val isShownGetUserById: Boolean = authorizedUserViewModel.isShownGetUserById
@@ -113,9 +118,14 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
         val dialogListener = DialogInterface.OnClickListener { dialogInterface, currentButton ->
             when(currentButton){
                 DialogInterface.BUTTON_POSITIVE -> {
+
                     onSuccessfulEvent(type = TYPE_DELETE_ALL_FAVORITES) {
-                        authorizedUserViewModel.deleteAllFavorites()
+                        with(authorizedUserViewModel) {
+                            setIsShownDeleteAllFavorites(isShown = false)
+                            deleteAllFavorites()
+                        }
                     }
+
                 }
                 DialogInterface.BUTTON_NEGATIVE -> {
                     dialogInterface.dismiss()
@@ -216,40 +226,48 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
                 authorizedUserViewModel.setIsShownGetUserById(isShown = true)
             }
             TYPE_DELETE_ALL_FAVORITES -> {
-                val responseModel = value as ResponseModel
-                val status = responseModel.status
-                val message = responseModel.message
+                Log.i("TAG","AuthorizedUserFragment onSuccessResultListener TYPE_DELETE_ALL_FAVORITES")
+                val isShownDeleteAllFavorites = authorizedUserViewModel.isShownDeleteAllFavorites
 
-                if (status in 200..299) {
-                    sharedPreferences.edit().putInt(KEY_USER_ID, UNAUTHORIZED_USER).apply()
-                    navControllerProfile.navigate(R.id.unauthorizedUserFragment,null, navOptions {
-                        popUpTo(R.id.authorizedUserFragment) {
-                            inclusive = true
-                        }
-                    })
+                if (!isShownDeleteAllFavorites) {
+                    val responseModel = value as ResponseModel
+                    val status = responseModel.status
+                    val message = responseModel.message
+
+                    if (status in 200..299) {
+                        sharedPreferences.edit().putInt(KEY_USER_ID, UNAUTHORIZED_USER).apply()
+                        navControllerProfile.navigate(R.id.unauthorizedUserFragment,null, navOptions {
+                            popUpTo(R.id.authorizedUserFragment) {
+                                inclusive = true
+                            }
+                        })
+                    }
                 }
 
+                authorizedUserViewModel.setIsShownDeleteAllFavorites(isShown = true)
             }
         }
 
     }
 
     override fun onErrorResultListener(exception: Exception, message: String) {
-        updateUI(flag = FLAG_ERROR_RESULT)
+        Log.i("TAG", "AuthorizedUserFragment onErrorResultListener")
+        updateUI(flag = FLAG_ERROR_RESULT, messageError = message)
+        authorizedUserViewModel.setIsShownDeleteAllFavorites(isShown = true)
+        authorizedUserViewModel.setIsShownGetUserById(isShown = true)
 
     }
 
     override fun onPendingResultListener() {
         Log.i("TAG", "AuthorizedUserFragment onPendingResult")
-        authorizedUserViewModel.clearErrorType()
         updateUI(flag = FLAG_PENDING_RESULT)
-
+        authorizedUserViewModel.clearErrorType()
     }
 
     override fun onSuccessfulEvent(type: String, exception: Exception?,onSuccessfulEventListener:() -> Unit){
         val isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext())
         val network = Network()
-
+        
         network.checkNetworkStatus(
             isNetworkStatus = isNetworkStatus,
             connectionListener = {
