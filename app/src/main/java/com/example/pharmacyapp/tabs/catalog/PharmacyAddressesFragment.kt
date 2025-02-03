@@ -100,8 +100,7 @@ class PharmacyAddressesFragment : Fragment(), CatalogResult {
             }
         }
 
-        val isShownGetPharmacyAddresses = pharmacyAddressesViewModel.isShownGetPharmacyAddresses.value
-            ?: throw NullPointerException("PharmacyAddressesFragment isShownGetPharmacyAddresses = null")
+        val isShownGetPharmacyAddresses = pharmacyAddressesViewModel.isShownGetPharmacyAddresses
 
         if (!isShownGetPharmacyAddresses) {
 
@@ -170,9 +169,9 @@ class PharmacyAddressesFragment : Fragment(), CatalogResult {
 
         when(type) {
             TYPE_GET_PHARMACY_ADDRESSES -> {
-                val isShown = pharmacyAddressesViewModel.isShownGetPharmacyAddresses.value
-                    ?: throw NullPointerException("PharmacyAddressesFragment isShownGetPharmacyAddresses = null")
-                if (!isShown) {
+                val isShownGetPharmacyAddresses = pharmacyAddressesViewModel.isShownGetPharmacyAddresses
+
+                if (!isShownGetPharmacyAddresses) {
                     Log.i("TAG", "PharmacyAddressesFragment onSuccessResultListener TYPE_GET_PHARMACY_ADDRESSES")
                     val responseValueModel = value as ResponseValueModel<*>
                     val responseModel = responseValueModel.responseModel
@@ -201,9 +200,9 @@ class PharmacyAddressesFragment : Fragment(), CatalogResult {
                 pharmacyAddressesViewModel.setIsShownGetPharmacyAddresses(isShown = true)
             }
             TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH -> {
-                val isShown = pharmacyAddressesViewModel.isShownGetProductAvailabilityByPath.value
-                    ?: throw NullPointerException("PharmacyAddressesFragment isShownGetProductAvailabilityByPath = null")
-                if (!isShown) {
+                val isShownGetProductAvailabilityByPath = pharmacyAddressesViewModel.isShownGetProductAvailabilityByPath
+
+                if (!isShownGetProductAvailabilityByPath) {
                     Log.i("TAG", "PharmacyAddressesFragment onSuccessResultListener TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH")
                     val responseValueModel = value as ResponseValueModel<*>
                     val responseModel = responseValueModel.responseModel

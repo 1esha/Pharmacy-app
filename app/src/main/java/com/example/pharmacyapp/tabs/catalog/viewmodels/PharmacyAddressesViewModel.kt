@@ -4,15 +4,15 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.catalog.CatalogRepositoryImpl
 import com.example.domain.ErrorResult
 import com.example.domain.ErrorType
 import com.example.domain.OtherError
 import com.example.domain.Result
-import com.example.domain.catalog.CatalogRepository
 import com.example.domain.catalog.models.ProductAvailabilityModel
-import com.example.domain.catalog.models.ProductModel
 import com.example.domain.catalog.usecases.GetPharmacyAddressesUseCase
 import com.example.domain.catalog.usecases.GetProductAvailabilityByPathUseCase
 import com.example.domain.models.MediatorResultsModel
@@ -24,11 +24,14 @@ import com.example.pharmacyapp.TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH
 import kotlinx.coroutines.launch
 
 class PharmacyAddressesViewModel(
-    private val catalogRepository: CatalogRepository<
-        ResponseValueModel<List<ProductModel>?>,
-        ResponseValueModel<List<ProductAvailabilityModel>?>,
-        ResponseValueModel<List<PharmacyAddressesModel>?>>
+    private val savedStateHandle: SavedStateHandle,
+    private val catalogRepositoryImpl: CatalogRepositoryImpl
 ) : ViewModel() {
+
+    companion object {
+        const val KEY_IS_SHOWN_GET_PHARMACY_ADDRESSES = "KEY_IS_SHOWN_GET_PHARMACY_ADDRESSES"
+        const val KEY_IS_SHOWN_GET_PRODUCT_AVAILABILITY_BY_PATH = "KEY_IS_SHOWN_GET_PRODUCT_AVAILABILITY_BY_PATH"
+    }
 
     val mediatorPharmacyAddresses = MediatorLiveData<MediatorResultsModel<*>>()
 
@@ -36,11 +39,9 @@ class PharmacyAddressesViewModel(
 
     val resultGetProductAvailabilityByPath = MutableLiveData<MediatorResultsModel<Result<ResponseValueModel<List<ProductAvailabilityModel>?>>>>()
 
-    private val _isShownGetPharmacyAddresses = MutableLiveData<Boolean>(false)
-    val isShownGetPharmacyAddresses: LiveData<Boolean> = _isShownGetPharmacyAddresses
+    val isShownGetPharmacyAddresses: Boolean get() = savedStateHandle[KEY_IS_SHOWN_GET_PHARMACY_ADDRESSES] ?: false
 
-    private val _isShownGetProductAvailabilityByPath = MutableLiveData<Boolean>(false)
-    val isShownGetProductAvailabilityByPath: LiveData<Boolean> = _isShownGetProductAvailabilityByPath
+    val isShownGetProductAvailabilityByPath: Boolean get() = savedStateHandle[KEY_IS_SHOWN_GET_PRODUCT_AVAILABILITY_BY_PATH] ?: false
 
     private val _errorType = MutableLiveData<ErrorType>(OtherError())
     val errorType: LiveData<ErrorType> = _errorType
@@ -70,7 +71,7 @@ class PharmacyAddressesViewModel(
 
     fun getPharmacyAddresses() {
         val getPharmacyAddressesUseCase = GetPharmacyAddressesUseCase(
-            catalogRepository = catalogRepository
+            catalogRepository = catalogRepositoryImpl
         )
 
         viewModelScope.launch {
@@ -84,7 +85,7 @@ class PharmacyAddressesViewModel(
 
     fun getProductAvailabilityByPath(path: String) {
         val getProductAvailabilityByPathUseCase = GetProductAvailabilityByPathUseCase(
-            catalogRepository = catalogRepository,
+            catalogRepository = catalogRepositoryImpl,
             path = path
         )
 
@@ -167,11 +168,11 @@ class PharmacyAddressesViewModel(
     }
 
     fun setIsShownGetPharmacyAddresses(isShown: Boolean) {
-        _isShownGetPharmacyAddresses.value = isShown
+        savedStateHandle[KEY_IS_SHOWN_GET_PHARMACY_ADDRESSES] = isShown
     }
 
     fun setIsShownGetProductAvailabilityByPath(isShown: Boolean) {
-        _isShownGetProductAvailabilityByPath.value = isShown
+        savedStateHandle[KEY_IS_SHOWN_GET_PRODUCT_AVAILABILITY_BY_PATH] = isShown
     }
 
     fun clearErrorType() {
