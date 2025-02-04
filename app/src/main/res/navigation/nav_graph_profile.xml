@@ -7,11 +7,19 @@
 
     <fragment
         android:id="@+id/authorizedUserFragment"
-        android:name="com.example.pharmacyapp.tabs.AuthorizedUserFragment"
-        android:label="AuthorizedUserFragment" />
+        android:name="com.example.pharmacyapp.tabs.profile.AuthorizedUserFragment"
+        android:label="AuthorizedUserFragment" >
+        <action
+            android:id="@+id/action_authorizedUserFragment_to_favoriteFragment"
+            app:destination="@id/favoriteFragment" />
+    </fragment>
     <fragment
         android:id="@+id/unauthorizedUserFragment"
-        android:name="com.example.pharmacyapp.tabs.UnauthorizedUserFragment"
+        android:name="com.example.pharmacyapp.tabs.profile.UnauthorizedUserFragment"
         android:label="fragment_unauthorized_user"
         tools:layout="@layout/fragment_unauthorized_user" />
+    <fragment
+        android:id="@+id/favoriteFragment"
+        android:name="com.example.pharmacyapp.tabs.profile.FavoriteFragment"
+        android:label="FavoriteFragment" />
 </navigation>
