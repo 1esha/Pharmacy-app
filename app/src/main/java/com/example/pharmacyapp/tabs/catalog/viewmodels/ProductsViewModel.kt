@@ -52,6 +52,9 @@ class ProductsViewModel(
     private val _listAllFavorites = MutableLiveData<List<*>>(listOf<FavoriteModel>())
     val listAllFavorites: LiveData<List<*>> = _listAllFavorites
 
+    private val _isCheckFilter = MutableLiveData<Boolean>(false)
+    val isCheckFilter: LiveData<Boolean> = _isCheckFilter
+
     val isShownGetProductsByPath: Boolean get() = savedStateHandle[KEY_IS_SHOWN_GET_PRODUCTS_BY_PATH] ?: false
 
    val isShownGetAllFavorites: Boolean get() = savedStateHandle[KEY_IS_SHOWN_GET_ALL_FAVORITES] ?: false
@@ -225,6 +228,10 @@ class ProductsViewModel(
     fun setListAllProductsModel(listProductModel: List<*>) {
         Log.i("TAG","ProductsViewModel setListAllProductsModel listProductModel size = ${listProductModel.size}")
         _listAllProducts.value = listProductModel
+    }
+
+    fun setIsCheckFilter(isChecked: Boolean) {
+        _isCheckFilter.value = isChecked
     }
 
     fun clearErrorType() {

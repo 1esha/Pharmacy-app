@@ -98,7 +98,13 @@ class ProductsFragment : Fragment(), CatalogResult {
             Log.i("TAG","ProductsFragment onCreate priceUpTo = $priceUpTo")
             Log.i("TAG","ProductsFragment onCreate arrayListIdsSelectedAddresses = $arrayListIdsSelectedAddresses")
 
-            val listProduct = productsViewModel.listAllProducts.value ?:
+            val defaultPriceFrom = arguments?.getInt(KEY_DEFAULT_PRICE_FROM) ?:
+            throw NullPointerException("ProductsFragment defaultPriceFrom = null")
+
+            val defaultPriceUpTo = arguments?.getInt(KEY_DEFAULT_PRICE_UP_TO) ?:
+            throw NullPointerException("ProductsFragment defaultPriceUpTo = null")
+
+            val listAllProducts = productsViewModel.listAllProducts.value ?:
             throw NullPointerException("ProductsFragment listAllProducts = null")
 
             val listFilteredProduct = listAllProducts.filter {
@@ -106,7 +112,26 @@ class ProductsFragment : Fragment(), CatalogResult {
                 arrayListIdsFiltered.contains(productModel.product_id)
             }
 
-            productsViewModel.setListProductsModel(listProductModel = listFilteredProduct)
+            val isCheckedFilter = if (
+                priceFrom == defaultPriceFrom &&
+                priceUpTo == defaultPriceUpTo &&
+                arrayListIdsFiltered.size == listAllProducts.size &&
+                arrayListIdsSelectedAddresses.size == 0 &&
+                !isChecked
+                ) false else true
+
+            productsViewModel.setIsCheckFilter(isChecked = isCheckedFilter)
+
+            with(SortingBottomSheetDialogFragment) {
+                val typeSort = arguments?.getInt(KEY_SORTING_TYPE, SORT_ASCENDING_PRICE)?: SORT_ASCENDING_PRICE
+
+                val sortedListProducts = sortListProducts(
+                    typeSort = typeSort,
+                    listProducts = listFilteredProduct
+                )
+
+                productsViewModel.setListProductsModel(listProductModel = sortedListProducts)
+            }
 
         }
 
@@ -189,6 +214,9 @@ class ProductsFragment : Fragment(), CatalogResult {
 
             val defaultPriceUpTo = listPrices.max()
 
+            arguments?.putInt(KEY_DEFAULT_PRICE_FROM,defaultPriceFrom)
+            arguments?.putInt(KEY_DEFAULT_PRICE_UP_TO,defaultPriceUpTo)
+
             val bundle = Bundle()
             bundle.putString(KEY_PATH, path)
 
@@ -240,6 +268,10 @@ class ProductsFragment : Fragment(), CatalogResult {
                     onErrorResultListener(exception = result.exception, message = message)
                 }
             }
+        }
+
+        productsViewModel.isCheckFilter.observe(viewLifecycleOwner) { isChecked ->
+            ivCheckFilter.visibility = if (isChecked) View.VISIBLE else View.GONE
         }
 
         productsViewModel.listProducts.observe(viewLifecycleOwner) { listProductsModel ->
@@ -530,5 +562,19 @@ class ProductsFragment : Fragment(), CatalogResult {
         }
 
         return sortedListProducts
+    }
+
+    private fun getListPrices(listAllProducts: List<ProductModel>): List<Int> {
+        val listPrices = listAllProducts.map {
+            val productModel = it
+
+            return@map getPrice(
+                discount = productModel.discount,
+                price = productModel.price
+            )
+        }
+
+        return listPrices
+
     }
 }
