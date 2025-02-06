@@ -9,7 +9,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.os.bundleOf
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.setFragmentResultListener
 import androidx.fragment.app.viewModels
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
@@ -54,6 +53,10 @@ import com.example.pharmacyapp.getMessageByErrorType
 import com.example.pharmacyapp.getPrice
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
+import com.example.pharmacyapp.sortingByDiscountAmount
+import com.example.pharmacyapp.tabs.catalog.SortingBottomSheetDialogFragment.Companion.SORT_ASCENDING_PRICE
+import com.example.pharmacyapp.tabs.catalog.SortingBottomSheetDialogFragment.Companion.SORT_DESCENDING_PRICE
+import com.example.pharmacyapp.tabs.catalog.SortingBottomSheetDialogFragment.Companion.SORT_DISCOUNT_AMOUNT
 import com.example.pharmacyapp.tabs.catalog.adapters.ProductsAdapter
 import com.example.pharmacyapp.tabs.catalog.viewmodels.ProductsViewModel
 import com.example.pharmacyapp.tabs.catalog.viewmodels.factories.ProductsViewModelFactory
@@ -76,9 +79,9 @@ class ProductsFragment : Fragment(), CatalogResult {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setFragmentResultListener(KEY_RESULT_ARRAY_LIST_IDS_FILTERED) { requestKey, bundle ->
-            val arrayListIdsFiltered = bundle.getIntegerArrayList(KEY_ARRAY_LIST_IDS_FILTERED) ?: arrayListOf<Int>()
+        getSupportActivity().setFragmentResultListener(KEY_RESULT_ARRAY_LIST_IDS_FILTERED) { requestKey, bundle ->
 
+            val arrayListIdsFiltered = bundle.getIntegerArrayList(KEY_ARRAY_LIST_IDS_FILTERED) ?: arrayListOf<Int>()
             val isChecked = bundle.getBoolean(KEY_IS_CHECKED_DISCOUNT)
             val priceFrom = bundle.getInt(KEY_PRICE_FROM)
             val priceUpTo = bundle.getInt(KEY_PRICE_UP_TO)
@@ -98,7 +101,7 @@ class ProductsFragment : Fragment(), CatalogResult {
             val listProduct = productsViewModel.listAllProducts.value ?:
             throw NullPointerException("ProductsFragment listAllProducts = null")
 
-            val listFilteredProduct = listProduct.filter {
+            val listFilteredProduct = listAllProducts.filter {
                 val productModel = it as ProductModel
                 arrayListIdsFiltered.contains(productModel.product_id)
             }
@@ -106,6 +109,25 @@ class ProductsFragment : Fragment(), CatalogResult {
             productsViewModel.setListProductsModel(listProductModel = listFilteredProduct)
 
         }
+
+        with(SortingBottomSheetDialogFragment) {
+            getSupportActivity().setFragmentResultListener(KEY_RESULT_SORTING_PRODUCTS) { requestKey, bundle ->
+                val type = bundle.getInt(KEY_SORTING_TYPE)
+                arguments?.putInt(KEY_SORTING_TYPE,type)
+
+                val listProducts = productsViewModel.listProducts.value ?:
+                throw NullPointerException("ProductsFragment listProducts = null")
+
+                val sortedListProducts = sortListProducts(
+                    typeSort = type,
+                    listProducts = listProducts
+                )
+
+                productsViewModel.setListProductsModel(listProductModel = sortedListProducts)
+
+            }
+        }
+
     }
 
     override fun onCreateView(
@@ -154,17 +176,14 @@ class ProductsFragment : Fragment(), CatalogResult {
         }
 
         bFilters.setOnClickListener {
-            val listAllProducts = productsViewModel.listAllProducts.value ?:
+            val _listAllProducts = productsViewModel.listAllProducts.value ?:
             throw NullPointerException("ProductsFragment listAllProducts = null")
 
-            val listPrices = listAllProducts.map {
-                val productModel = it as ProductModel
-
-                return@map getPrice(
-                    discount = productModel.discount,
-                    price = productModel.price
-                )
+            val listAllProducts = _listAllProducts.map {
+                return@map it as ProductModel
             }
+
+            val listPrices = getListPrices(listAllProducts = listAllProducts)
 
             val defaultPriceFrom = listPrices.min()
 
@@ -193,6 +212,14 @@ class ProductsFragment : Fragment(), CatalogResult {
             bundle.putIntegerArrayList(KEY_ARRAY_LIST_SELECTED_ADDRESSES,arrayListIdsSelectedAddresses)
 
             navControllerCatalog.navigate(R.id.action_productsFragment_to_filterFragment, bundle)
+        }
+
+        bSorting.setOnClickListener {
+            with(SortingBottomSheetDialogFragment) {
+                val type = arguments?.getInt(KEY_SORTING_TYPE, SORT_ASCENDING_PRICE) ?: SORT_ASCENDING_PRICE
+                val sortingBottomSheetDialogFragment = newInstance(type = type)
+                sortingBottomSheetDialogFragment.show(parentFragmentManager,TAG_SORTING_BOTTOM_SHEET)
+            }
         }
 
         productsViewModel.mediatorProduct.observe(viewLifecycleOwner) { mediatorResult ->
@@ -295,11 +322,15 @@ class ProductsFragment : Fragment(), CatalogResult {
                 if (!isShownGetProductsByPath) {
                     if (status in 200..299){
 
-                        val listAllProducts = responseValueModel.value as List<*>
+                        val _listAllProducts = responseValueModel.value as List<*>
 
-                        productsViewModel.setListAllProductsModel(listProductModel = listAllProducts)
+                        val listAllProducts = _listAllProducts.map {
+                            return@map it as ProductModel
+                        }
 
-                        productsViewModel.setListProductsModel(listProductModel = listAllProducts)
+                        productsViewModel.setListAllProductsModel(listProductModel = listAllProducts.sorted())
+
+                        productsViewModel.setListProductsModel(listProductModel = listAllProducts.sorted())
 
                         updateUI(flag = FLAG_SUCCESS_RESULT)
                     }
@@ -479,4 +510,25 @@ class ProductsFragment : Fragment(), CatalogResult {
 
     }
 
+    private fun sortListProducts(typeSort: Int, listProducts: List<*>): List<ProductModel> {
+
+        val currentListProducts = listProducts.map {
+            return@map it as ProductModel
+        }
+
+        val sortedListProducts: List<ProductModel> = when (typeSort) {
+            SORT_ASCENDING_PRICE -> {
+                currentListProducts.sorted()
+            }
+            SORT_DESCENDING_PRICE -> {
+                currentListProducts.sortedDescending()
+            }
+            SORT_DISCOUNT_AMOUNT -> {
+                currentListProducts.sortingByDiscountAmount()
+            }
+            else -> throw IllegalArgumentException()
+        }
+
+        return sortedListProducts
+    }
 }

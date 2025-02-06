@@ -142,5 +142,9 @@
     <string name="favourites">Favourites</string>
     <string name="if_you_log_out_of_your_account_all_product_information_from_the_favorites_section_will_be_deleted">If you log out of your account, all product information from the «Favorites» section will be deleted.</string>
     <string name="do_you_really_want_to_get_out">Do you really want to get out?</string>
-
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="by_ascending_price">By ascending price</string>
+    <string name="by_descending_price">By descending price</string>
+    <string name="by_discount_amount">By discount amount</string>
 </resources>

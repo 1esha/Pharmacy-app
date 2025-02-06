@@ -142,4 +142,7 @@
     <string name="favourites">Избранное</string>
     <string name="if_you_log_out_of_your_account_all_product_information_from_the_favorites_section_will_be_deleted">Если вы выйдите из учетной записи, то все данные о товарах из раздела «Избранное» будут удалены.</string>
     <string name="do_you_really_want_to_get_out">Вы действительно хотите выйти?</string>
+    <string name="by_ascending_price">По возрастающей цене</string>
+    <string name="by_descending_price">По убывающей цене</string>
+    <string name="by_discount_amount">По величине скидки</string>
 </resources>

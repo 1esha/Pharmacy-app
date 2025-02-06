@@ -179,7 +179,7 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
             bundle.putInt(KEY_PRICE_UP_TO,upTo)
             bundle.putIntegerArrayList(KEY_ARRAY_LIST_SELECTED_ADDRESSES,arrayListIdsSelectedAddresses)
 
-            setFragmentResult(KEY_RESULT_ARRAY_LIST_IDS_FILTERED,bundle)
+            getSupportActivity().setFragmentResult(KEY_RESULT_ARRAY_LIST_IDS_FILTERED,bundle)
 
             navControllerCatalog.popBackStack()
 

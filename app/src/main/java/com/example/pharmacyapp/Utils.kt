@@ -8,6 +8,7 @@ import com.example.domain.DataEntryError
 import com.example.domain.DisconnectionError
 import com.example.domain.ErrorType
 import com.example.domain.IdentificationError
+import com.example.domain.catalog.models.ProductModel
 import com.google.android.material.appbar.MaterialToolbar
 import io.ktor.util.toLowerCasePreservingASCIIRules
 import kotlin.math.roundToInt
@@ -134,7 +135,7 @@ fun List<Int>.toArrayListInt(): ArrayList<Int> {
 
 fun getPrice(discount: Double, price: Double): Int {
 
-    val clubDiscount = 3.0
+    val clubDiscount = CLUB_DISCOUNT
 
     val sumDiscount = ((discount) / 100) * price
     val priceDiscounted = price - sumDiscount
@@ -142,6 +143,12 @@ fun getPrice(discount: Double, price: Double): Int {
     val priceClubDiscounted = priceDiscounted - sumClubDiscount
 
     return priceClubDiscounted.roundToInt()
+}
+
+fun List<ProductModel>.sortingByDiscountAmount(): List<ProductModel> {
+    val sortedListProducts = this.sortedByDescending { it.discount }
+
+    return sortedListProducts
 }
 
 

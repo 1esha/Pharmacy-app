@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RadioGroup
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/radioGroupSort"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <com.google.android.material.radiobutton.MaterialRadioButton
+        android:id="@+id/bAscendingPrice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/by_ascending_price" />
+
+    <com.google.android.material.radiobutton.MaterialRadioButton
+        android:id="@+id/bDescendingPrice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/by_descending_price" />
+
+    <com.google.android.material.radiobutton.MaterialRadioButton
+        android:id="@+id/bDiscountAmount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/by_discount_amount" />
+
+    <Button
+        android:id="@+id/bShowSortedProducts"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/Widget.Material3.Button"
+        android:layout_marginTop="16dp"
+        android:text="@string/apply" />
+
+</RadioGroup>
