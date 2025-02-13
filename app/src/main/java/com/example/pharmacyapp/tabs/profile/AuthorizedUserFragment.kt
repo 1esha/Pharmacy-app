@@ -161,6 +161,10 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
             }
         }
 
+        layoutFavorites.setOnClickListener {
+            navControllerProfile.navigate(R.id.action_authorizedUserFragment_to_favoriteFragment)
+        }
+
         cardUserInfo.setOnClickListener {
             navControllerMain.navigate(R.id.editFragment)
         }
@@ -269,7 +273,7 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
     override fun onSuccessfulEvent(type: String, exception: Exception?,onSuccessfulEventListener:() -> Unit){
         val isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext())
         val network = Network()
-        
+
         network.checkNetworkStatus(
             isNetworkStatus = isNetworkStatus,
             connectionListener = {
