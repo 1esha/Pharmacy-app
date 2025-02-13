@@ -115,6 +115,8 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
         toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.account)){})
         toolbarViewModel.clearMenu()
 
+        tvVersionName.text = getSupportActivity().getVersionName()
+
         val dialogListener = DialogInterface.OnClickListener { dialogInterface, currentButton ->
             when(currentButton){
                 DialogInterface.BUTTON_POSITIVE -> {
