@@ -16,8 +16,11 @@ import com.example.domain.ErrorResult
 import com.example.domain.Network
 import com.example.domain.OtherError
 import com.example.domain.PendingResult
+import com.example.domain.Result
 import com.example.domain.SuccessResult
+import com.example.domain.favorite.models.FavoriteModel
 import com.example.domain.profile.ProfileResult
+import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.ResponseValueModel
 import com.example.pharmacyapp.FLAG_ERROR_RESULT
 import com.example.pharmacyapp.FLAG_PENDING_RESULT
@@ -26,6 +29,7 @@ import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.TYPE_GET_ALL_FAVORITES
+import com.example.pharmacyapp.TYPE_REMOVE_FAVORITES
 import com.example.pharmacyapp.ToolbarSettingsModel
 import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.FragmentFavoriteBinding
@@ -94,7 +98,9 @@ class FavoriteFragment : Fragment(), ProfileResult {
             }
         }
 
-        favoriteViewModel.resultGetAllFavorites.observe(viewLifecycleOwner) { result ->
+        favoriteViewModel.mediatorFavorites.observe(viewLifecycleOwner) { mediatorResult ->
+            val type = mediatorResult.type
+            val result = mediatorResult.result as Result<*>
 
             when(result){
                 is PendingResult -> { onPendingResultListener() }
@@ -102,7 +108,7 @@ class FavoriteFragment : Fragment(), ProfileResult {
                     onSuccessResultListener(
                         userId = userId,
                         value = result.value,
-                        type = TYPE_GET_ALL_FAVORITES)
+                        type = type)
                 }
                 is ErrorResult -> {
                     val errorType = favoriteViewModel.errorType.value
@@ -115,8 +121,21 @@ class FavoriteFragment : Fragment(), ProfileResult {
         favoriteViewModel.listAllFavorite.observe(viewLifecycleOwner) { listAllFavorite ->
             val favoriteAdapter = FavoriteAdapter(listItems = listAllFavorite)
 
-            rvFavorite.adapter = favoriteAdapter
-            rvFavorite.layoutManager = LinearLayoutManager(requireContext())
+            if (listAllFavorite.isEmpty()) {
+                tvEmptyListFavorites.visibility = View.VISIBLE
+            }
+            else {
+                tvEmptyListFavorites.visibility = View.GONE
+
+                val favoriteAdapter = FavoriteAdapter(
+                    listItems = listAllFavorite,
+                    deleteFromFavoritesListener = ::onClickDeleteFromFavorites,
+                )
+
+                rvFavorite.adapter = favoriteAdapter
+                rvFavorite.layoutManager = LinearLayoutManager(requireContext())
+            }
+
         }
 
     }
@@ -152,6 +171,27 @@ class FavoriteFragment : Fragment(), ProfileResult {
 
                 favoriteViewModel.setIsShownGetAllFavorites(isShown = true)
             }
+
+            TYPE_REMOVE_FAVORITES -> {
+                Log.i("TAG","FavoriteFragment onSuccessResultListener TYPE_REMOVE_FAVORITES")
+                val isShownRemoveFavorites = favoriteViewModel.isShownRemoveFavorites
+
+                if (!isShownRemoveFavorites) {
+                    val responseModel = value as ResponseModel
+                    val status = responseModel.status
+                    val message = responseModel.message
+                    if (status in 200..299) {
+                        updateUI(flag = FLAG_SUCCESS_RESULT)
+                        getSupportActivity().showToast(getString(R.string.the_product_was_removed_from_the_favorites_section))
+                    }
+                    else {
+                        favoriteViewModel.setResultGetAllFavorite(result = ErrorResult(exception = Exception()), errorType = OtherError())
+                        if (message != null) getSupportActivity().showToast(message = message)
+                    }
+                }
+
+                favoriteViewModel.setIsShownRemoveFavorites(isShown = true)
+            }
         }
 
     }
@@ -181,6 +221,7 @@ class FavoriteFragment : Fragment(), ProfileResult {
 
                 when(type) {
                     TYPE_GET_ALL_FAVORITES -> favoriteViewModel.setResultGetAllFavorite(result = PendingResult())
+                    TYPE_REMOVE_FAVORITES -> favoriteViewModel.setResultRemoveFavorite(result = PendingResult())
                 }
 
                 onSuccessfulEventListener()
@@ -191,6 +232,7 @@ class FavoriteFragment : Fragment(), ProfileResult {
 
                 when(type) {
                     TYPE_GET_ALL_FAVORITES -> favoriteViewModel.setResultGetAllFavorite(result = ErrorResult(exception = currentException), errorType = errorType)
+                    TYPE_REMOVE_FAVORITES -> favoriteViewModel.setResultRemoveFavorite(result = ErrorResult(exception = currentException), errorType = errorType)
                 }
 
                 getSupportActivity().showToast(message = getString(R.string.check_your_internet_connection))
@@ -224,4 +266,13 @@ class FavoriteFragment : Fragment(), ProfileResult {
             }
         }
     }
+
+    private fun onClickDeleteFromFavorites(productId: Int, listFavorites: List<FavoriteModel>) {
+        onSuccessfulEvent(type = TYPE_REMOVE_FAVORITES) {
+            favoriteViewModel.setIsShownRemoveFavorites(isShown = false)
+            favoriteViewModel.removeFavorite(productId = productId)
+        }
+        favoriteViewModel.setListAllFavorites(list = listFavorites)
+    }
+
 }

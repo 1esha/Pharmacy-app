@@ -1,6 +1,7 @@
 package com.example.pharmacyapp.tabs.profile.adapters
 
 import android.graphics.Paint
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,6 +14,19 @@ import com.example.pharmacyapp.databinding.ItemFavoriteBinding
 import kotlin.math.roundToInt
 
 class FavoriteAdapter(private val listItems: List<*>): RecyclerView.Adapter<FavoriteAdapter.FavoriteHolder>() {
+class FavoriteAdapter(
+    listItems: List<*>,
+    private val deleteFromFavoritesListener: (Int, List<FavoriteModel>) -> Unit,
+    ): RecyclerView.Adapter<FavoriteAdapter.FavoriteHolder>() {
+
+        private val mutableListFavorite = mutableListOf<FavoriteModel>()
+
+    init {
+        listItems.forEach {
+            val favoriteModel = it as FavoriteModel
+            mutableListFavorite.add(favoriteModel)
+        }
+    }
 
     class FavoriteHolder(val binding: ItemFavoriteBinding): ViewHolder(binding.root)
 
@@ -23,10 +37,11 @@ class FavoriteAdapter(private val listItems: List<*>): RecyclerView.Adapter<Favo
         return FavoriteHolder(binding = binding)
     }
 
-    override fun getItemCount(): Int = listItems.size
+    override fun getItemCount(): Int = mutableListFavorite.size
 
     override fun onBindViewHolder(holder: FavoriteHolder, position: Int): Unit = with(holder.binding) {
-        val item = listItems[position] as FavoriteModel
+
+        val item = mutableListFavorite[position]
         val originalPrice = item.price
         val discount = item.discount
         val sumDiscount = ((discount / 100) * originalPrice)
@@ -56,6 +71,16 @@ class FavoriteAdapter(private val listItems: List<*>): RecyclerView.Adapter<Favo
             layoutOriginalPrice.visibility = View.VISIBLE
         }
         ivProductFavorite.load(item.image)
+
+        bDeleteFromFavorites.setOnClickListener {
+            try {
+                mutableListFavorite.remove(item)
+                deleteFromFavoritesListener(item.productId, mutableListFavorite)
+            }
+            catch (e: Exception) {
+                Log.e("TAG",e.stackTraceToString())
+            }
+        }
 
     }
 

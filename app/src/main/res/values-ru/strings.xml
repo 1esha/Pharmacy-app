@@ -145,4 +145,5 @@
     <string name="by_ascending_price">По возрастающей цене</string>
     <string name="by_descending_price">По убывающей цене</string>
     <string name="by_discount_amount">По величине скидки</string>
+    <string name="the_product_was_removed_from_the_favorites_section">Товар удален из раздела «Избранное»</string>
 </resources>
