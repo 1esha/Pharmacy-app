@@ -13,4 +13,6 @@ interface CatalogRepositoryDataSourceRemote<LPr,Av,Ad,Pr> {
     suspend fun getProductAvailabilityByPath(path: String): ResultDataSource<Av>
 
     suspend fun getProductById(productId: Int): ResultDataSource<Pr>
+
+    suspend fun getProductAvailabilityByProductId(productId: Int): ResultDataSource<Av>
 }

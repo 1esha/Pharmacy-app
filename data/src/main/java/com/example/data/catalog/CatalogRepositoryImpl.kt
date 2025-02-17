@@ -66,4 +66,14 @@ class CatalogRepositoryImpl() : CatalogRepository<
         return result
     }
 
+    override suspend fun getProductAvailabilityByProductId(productId: Int): Result<ResponseValueModel<List<ProductAvailabilityModel>?>> {
+        val responseValueModel = catalogRepositoryDataSourceRemoteImpl.getProductAvailabilityByProductId(productId = productId)
+        val value = responseValueModel.asSuccessResultDataSource()?.value
+        val result = responseValueModel.toResult(
+            value = value?.toResponseValueListProductAvailabilityModel()
+        )
+
+        return result
+    }
+
 }

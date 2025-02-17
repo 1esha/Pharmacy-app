@@ -151,6 +151,29 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<
             }
         }
 
+    override suspend fun getProductAvailabilityByProductId(productId: Int): ResultDataSource<ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val response = client.request {
+                    url(GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID+productId)
+                    method = HttpMethod.Get
+                }
+                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>>()
+                val successResultDataSource = SuccessResultDataSource(
+                    value = responseValueDataSourceModel
+                )
+                Log.i("TAG","getProductAvailabilityByProductId successResultDataSource = $successResultDataSource")
+                return@withContext successResultDataSource
+            }
+            catch (e: Exception) {
+                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>>(
+                    exception = e
+                )
+                Log.i("TAG","getProductAvailabilityByProductId errorResultDataSource = ${errorResultDataSource.exception}")
+                return@withContext errorResultDataSource
+            }
+        }
+
     companion object {
         private const val PORT = "4000"
         private const val BASE_URL = "http://192.168.0.114:$PORT"
@@ -159,5 +182,6 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<
         const val GET_PHARMACY_ADDRESSES = "$BASE_URL/pharmacy/addresses"
         const val GET_PRODUCT_AVAILABILITY_BY_PATH = "$BASE_URL/availability?path="
         const val GET_PRODUCT_BY_ID = "$BASE_URL/product/id?id="
+        const val GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID = "$BASE_URL/availability/product_id?id="
     }
 }

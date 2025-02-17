@@ -14,4 +14,6 @@ interface CatalogRepository<LPr,Av,Ad,Pr> {
 
     suspend fun getProductById(productId: Int): Result<Pr>
 
+    suspend fun getProductAvailabilityByProductId(productId: Int): Result<Av>
+
 }
