@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_marginVertical="4dp"
-    android:layout_marginHorizontal="4dp">
+    style="@style/PharmacyApp.CardView.Filled">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -21,7 +21,8 @@
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="120dp"
-                android:layout_height="100dp">
+                android:layout_height="100dp"
+                style="@style/PharmacyApp.CardView.Filled">
 
                 <ImageView
                     android:id="@+id/ivProductFavorite"
@@ -31,8 +32,6 @@
                     app:srcCompat="@drawable/ic_launcher_background" />
 
             </com.google.android.material.card.MaterialCardView>
-
-
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -105,7 +104,7 @@
                         android:textStyle="bold"
                         android:textColor="@color/discount"
                         android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                        android:text="Скидка" />
+                        android:text="@string/discount" />
 
                     <TextView
                         android:id="@+id/tvDiscountFavorite"
@@ -186,6 +185,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     style="?attr/materialIconButtonStyle"
+                    android:contentDescription="@string/delete_from_favorites"
                     app:icon="@drawable/ic_delete"/>
 
                 <Button
@@ -193,6 +193,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     style="?attr/materialIconButtonStyle"
+                    android:contentDescription="@string/add_to_cart"
                     app:icon="@drawable/ic_add_in_basket"/>
 
             </LinearLayout>
