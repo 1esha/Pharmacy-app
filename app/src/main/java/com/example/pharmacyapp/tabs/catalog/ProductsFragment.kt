@@ -1,13 +1,14 @@
 package com.example.pharmacyapp.tabs.catalog
 
 import android.content.Context
+import android.content.SharedPreferences
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.os.bundleOf
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.NavController
@@ -33,12 +34,15 @@ import com.example.pharmacyapp.KEY_ARRAY_LIST_IDS_FILTERED
 import com.example.pharmacyapp.KEY_ARRAY_LIST_SELECTED_ADDRESSES
 import com.example.pharmacyapp.KEY_DEFAULT_PRICE_FROM
 import com.example.pharmacyapp.KEY_DEFAULT_PRICE_UP_TO
+import com.example.pharmacyapp.KEY_FAVORITE_MODEL
 import com.example.pharmacyapp.KEY_IS_CHECKED_DISCOUNT
+import com.example.pharmacyapp.KEY_IS_FAVORITES
 import com.example.pharmacyapp.KEY_PATH
 import com.example.pharmacyapp.KEY_PRICE_FROM
 import com.example.pharmacyapp.KEY_PRICE_UP_TO
 import com.example.pharmacyapp.KEY_PRODUCT_ID
 import com.example.pharmacyapp.KEY_RESULT_ARRAY_LIST_IDS_FILTERED
+import com.example.pharmacyapp.KEY_RESULT_IS_SHOWN_GET_ALL_FAVORITES
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
@@ -61,6 +65,7 @@ import com.example.pharmacyapp.tabs.catalog.adapters.ProductsAdapter
 import com.example.pharmacyapp.tabs.catalog.viewmodels.ProductsViewModel
 import com.example.pharmacyapp.tabs.catalog.viewmodels.factories.ProductsViewModelFactory
 import java.lang.Exception
+import kotlin.properties.Delegates
 
 
 class ProductsFragment : Fragment(), CatalogResult {
@@ -76,10 +81,40 @@ class ProductsFragment : Fragment(), CatalogResult {
 
     private lateinit var navControllerCatalog: NavController
 
+    private lateinit var sharedPreferences: SharedPreferences
+
+    private var userId by Delegates.notNull<Int>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        getSupportActivity().setFragmentResultListener(KEY_RESULT_ARRAY_LIST_IDS_FILTERED) { requestKey, bundle ->
+        sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
+        userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
+
+        getSupportActivity().setFragmentResultListener(requestKey = KEY_RESULT_IS_SHOWN_GET_ALL_FAVORITES) { requestKey, bundle ->
+
+            val isFavorite = bundle.getBoolean(KEY_IS_FAVORITES)
+
+            val favoriteModel = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                 bundle.getSerializable(KEY_FAVORITE_MODEL, FavoriteModel::class.java)
+            }
+            else {
+                bundle.getSerializable(KEY_FAVORITE_MODEL) as FavoriteModel?
+            }
+                ?: throw NullPointerException("ProductsFragment favoriteModel = null")
+
+            productsViewModel.changeListAllFavorites(favoriteModel = favoriteModel, isFavorite = isFavorite)
+            val list = productsViewModel.listProducts.value ?:
+            throw NullPointerException("ProductsFragment listProducts = null")
+
+            val listProducts = list.map {
+                return@map it as ProductModel
+            }
+            productsViewModel.setListProductsModel(listProductModel = listProducts)
+
+        }
+
+        getSupportActivity().setFragmentResultListener(requestKey = KEY_RESULT_ARRAY_LIST_IDS_FILTERED) { requestKey, bundle ->
 
             val arrayListIdsFiltered = bundle.getIntegerArrayList(KEY_ARRAY_LIST_IDS_FILTERED) ?: arrayListOf<Int>()
             val isChecked = bundle.getBoolean(KEY_IS_CHECKED_DISCOUNT)
@@ -136,7 +171,7 @@ class ProductsFragment : Fragment(), CatalogResult {
         }
 
         with(SortingBottomSheetDialogFragment) {
-            getSupportActivity().setFragmentResultListener(KEY_RESULT_SORTING_PRODUCTS) { requestKey, bundle ->
+            getSupportActivity().setFragmentResultListener(requestKey = KEY_RESULT_SORTING_PRODUCTS) { requestKey, bundle ->
                 val type = bundle.getInt(KEY_SORTING_TYPE)
                 arguments?.putInt(KEY_SORTING_TYPE,type)
 
@@ -174,10 +209,6 @@ class ProductsFragment : Fragment(), CatalogResult {
         ) { navControllerCatalog.navigateUp()})
 
         toolbarViewModel.clearMenu()
-
-        val sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
-
-        val userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
 
         val path = arguments?.getString(KEY_PATH)?:
         throw NullPointerException("ProductsFragment path = null")
@@ -274,54 +305,11 @@ class ProductsFragment : Fragment(), CatalogResult {
             ivCheckFilter.visibility = if (isChecked) View.VISIBLE else View.GONE
         }
 
-        productsViewModel.listProducts.observe(viewLifecycleOwner) { listProductsModel ->
-            val sizeListAllProducts = productsViewModel.listAllProducts.value?.size ?:
-            throw NullPointerException("ProductsFragment sizeListAllProducts = null")
-
-            if (listProductsModel.isEmpty()) {
-                tvEmptyList.visibility = View.VISIBLE
-                rvProducts.visibility = View.GONE
+        productsViewModel.listProducts.observe(viewLifecycleOwner) { list ->
+            val listProducts = list.map {
+                return@map it as ProductModel
             }
-            else {
-                tvEmptyList.visibility = View.GONE
-                rvProducts.visibility = View.VISIBLE
-            }
-
-            if (sizeListAllProducts == 0) {
-                layoutConfigurationPanel.visibility = View.GONE
-            }
-            else {
-                layoutConfigurationPanel.visibility = View.VISIBLE
-            }
-
-            val listAllFavorites = productsViewModel.listAllFavorites.value ?:
-            throw NullPointerException("ProductsFragment listAllFavorites = null")
-
-            val currentMutableListProductsFavorites = mutableListOf<ProductFavoriteModel>()
-
-            listProductsModel.forEach {
-                val productModel = it as ProductModel
-                val isFavorite = listAllFavorites.any {
-                    val favoriteModel = it as FavoriteModel
-                    favoriteModel.productId == productModel.product_id
-                }
-                currentMutableListProductsFavorites.add(
-                    ProductFavoriteModel(
-                        isFavorite = isFavorite,
-                        productModel = productModel
-                    )
-                )
-            }
-
-            val productsAdapter = ProductsAdapter(
-                userId = userId,
-                listProducts = currentMutableListProductsFavorites,
-                onClickProduct = ::onClickProduct,
-                onClickFavorite = ::onClickFavorite)
-
-            rvProducts.adapter = productsAdapter
-            rvProducts.layoutManager = GridLayoutManager(requireContext(),2)
-
+            installAdapter(listProducts = listProducts)
         }
 
     }
@@ -404,7 +392,7 @@ class ProductsFragment : Fragment(), CatalogResult {
                     updateUI(flag = FLAG_SUCCESS_RESULT)
                 }
                 else {
-                    productsViewModel.setResultAddFavorite(result = ErrorResult(exception = Exception()), errorType = OtherError())
+                    productsViewModel.setResultRemoveFavorites(result = ErrorResult(exception = Exception()), errorType = OtherError())
                     if (message != null) getSupportActivity().showToast(message = message)
                 }
             }
@@ -438,7 +426,7 @@ class ProductsFragment : Fragment(), CatalogResult {
 
                     }
                     else {
-                        productsViewModel.setResultAddFavorite(result = ErrorResult(exception = Exception()), errorType = OtherError())
+                        productsViewModel.setResultGetAllFavorites(result = ErrorResult(exception = Exception()), errorType = OtherError())
                         if (message != null) getSupportActivity().showToast(message = message)
                     }
                 }
@@ -514,7 +502,12 @@ class ProductsFragment : Fragment(), CatalogResult {
         }
     }
 
-    private fun onClickProduct(productId: Int) { }
+    private fun onClickProduct(productId: Int, isFavorite: Boolean) {
+        val bundle = Bundle()
+        bundle.putInt(KEY_PRODUCT_ID, productId)
+        bundle.putBoolean(KEY_IS_FAVORITES, isFavorite)
+        navControllerCatalog.navigate(R.id.action_productsFragment_to_productInfoFragment, bundle)
+    }
 
     private fun onClickFavorite(favoriteModel: FavoriteModel, isFavorite: Boolean) {
         Log.i("TAG","onClickFavorite favoriteModel = $favoriteModel")
@@ -576,5 +569,53 @@ class ProductsFragment : Fragment(), CatalogResult {
 
         return listPrices
 
+    }
+
+    private fun installAdapter(listProducts: List<ProductModel>) = with(binding) {
+        val sizeListAllProducts = productsViewModel.listAllProducts.value?.size ?:
+        throw NullPointerException("ProductsFragment sizeListAllProducts = null")
+
+        if (listProducts.isEmpty()) {
+            tvEmptyList.visibility = View.VISIBLE
+            rvProducts.visibility = View.GONE
+        }
+        else {
+            tvEmptyList.visibility = View.GONE
+            rvProducts.visibility = View.VISIBLE
+        }
+
+        if (sizeListAllProducts == 0) {
+            layoutConfigurationPanel.visibility = View.GONE
+        }
+        else {
+            layoutConfigurationPanel.visibility = View.VISIBLE
+        }
+
+        val listAllFavorites = productsViewModel.listAllFavorites.value ?:
+        throw NullPointerException("ProductsFragment listAllFavorites = null")
+
+        val currentMutableListProductsFavorites = mutableListOf<ProductFavoriteModel>()
+
+        listProducts.forEach { productModel ->
+            val isFavorite = listAllFavorites.any {
+                val favoriteModel = it as FavoriteModel
+                favoriteModel.productId == productModel.product_id
+            }
+            currentMutableListProductsFavorites.add(
+                ProductFavoriteModel(
+                    isFavorite = isFavorite,
+                    productModel = productModel
+                )
+            )
+        }
+
+        val productsAdapter = ProductsAdapter(
+            userId = userId,
+            listProducts = currentMutableListProductsFavorites,
+            onClickProduct = ::onClickProduct,
+            onClickFavorite = ::onClickFavorite)
+
+        rvProducts.adapter = productsAdapter
+        rvProducts.layoutManager = GridLayoutManager(requireContext(),2)
     }
 }

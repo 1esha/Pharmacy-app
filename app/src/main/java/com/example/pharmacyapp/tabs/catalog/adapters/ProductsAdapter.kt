@@ -19,7 +19,7 @@ import kotlin.math.roundToInt
 class ProductsAdapter(
     private val userId: Int,
     listProducts: List<*>,
-    private val onClickProduct: (Int) -> Unit,
+    private val onClickProduct: (Int,Boolean) -> Unit,
     private val onClickFavorite: (FavoriteModel, Boolean) -> Unit) : Adapter<ProductsAdapter.ProductsHolder>() {
 
         private val mutableListProductFavorite = mutableListOf<ProductFavoriteModel>()
@@ -61,7 +61,7 @@ class ProductsAdapter(
 
             val originalPrice = product.price
             val discount = product.discount
-            val sumDiscount = ((discount / 100) * product.price)
+            val sumDiscount = ((discount / 100) * originalPrice)
             val price = (originalPrice - sumDiscount)
             val sumClubDiscount = ((CLUB_DISCOUNT / 100) * price)
             val priceClub = price - sumClubDiscount
@@ -105,7 +105,7 @@ class ProductsAdapter(
             ivFavorite.setImageResource(if (isFavorite) R.drawable.ic_favorite else R.drawable.ic_favorite_border)
 
             root.setOnClickListener {
-                onClickProduct(product.product_id)
+                onClickProduct(product.product_id,isFavorite)
             }
 
             ivFavorite.setOnClickListener {

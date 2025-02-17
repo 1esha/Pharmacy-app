@@ -31,6 +31,9 @@
         <action
             android:id="@+id/action_productsFragment_to_filterFragment"
             app:destination="@id/filterFragment" />
+        <action
+            android:id="@+id/action_productsFragment_to_productInfoFragment"
+            app:destination="@id/productInfoFragment" />
     </fragment>
     <fragment
         android:id="@+id/filterFragment"
@@ -53,4 +56,9 @@
             android:id="@+id/action_pharmacyAddressesFragment_self"
             app:destination="@id/pharmacyAddressesFragment" />
     </fragment>
+    <fragment
+        android:id="@+id/productInfoFragment"
+        android:name="com.example.pharmacyapp.tabs.catalog.ProductInfoFragment"
+        android:label="fragment_product_info"
+        tools:layout="@layout/fragment_product_info" />
 </navigation>

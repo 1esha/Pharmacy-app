@@ -146,6 +146,12 @@
     <string name="by_descending_price">По убывающей цене</string>
     <string name="by_discount_amount">По величине скидки</string>
     <string name="the_product_was_removed_from_the_favorites_section">Товар удален из раздела «Избранное»</string>
+    <string name="to_favorites">В избранное</string>
+    <string name="availability">Наличие</string>
+    <string name="available_in">В наличии в</string>
+    <string name="pharmacies">аптеках</string>
+    <string name="out_of_stock">Нет в наличии</string>
+    <string name="pharmacy">аптеке</string>
     <string name="delete_from_favorites">Удалить из Избранного</string>
     <string name="add_to_cart">Добавить в корзину</string>
     <string name="discount">Скидка</string>

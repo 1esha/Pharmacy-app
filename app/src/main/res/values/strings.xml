@@ -147,6 +147,12 @@
     <string name="by_discount_amount">By discount amount</string>
 
     <string name="the_product_was_removed_from_the_favorites_section">The product was removed from the «Favorites» section</string>
+    <string name="to_favorites">To favorites</string>
+    <string name="availability">Availability</string>
+    <string name="available_in">Available in</string>
+    <string name="pharmacies">pharmacies</string>
+    <string name="out_of_stock">Out of stock</string>
+    <string name="pharmacy">pharmacy</string>
     <string name="delete_from_favorites">Delete from Favorites</string>
     <string name="add_to_cart">Add to Cart</string>
     <string name="discount">Discount</string>
