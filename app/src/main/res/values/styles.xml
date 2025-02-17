@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+
+    <style name="PharmacyApp.CardView.Filled" parent="Widget.Material3.CardView.Filled">
+
+        <item name="cardCornerRadius">12dp</item>
+        <item name="cardBackgroundColor">@color/white</item>
+
+    </style>
+
+    <style name="PharmacyApp.BottomNavigationView" parent="Widget.MaterialComponents.BottomNavigationView">
+
+        <item name="itemBackground">@color/white</item>
+
+    </style>
+
+    <style name="PharmacyApp.CardView.Filled.ShapeAppearanceOverlay.Corner.Bottom" parent="PharmacyApp.CardView.Filled">
+
+        <item name="background">@drawable/shape_card_corner_bottom</item>
+
+    </style>
+
+</resources>
