@@ -2,12 +2,30 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.PharmacyApp" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+        <item name="colorPrimary">@color/green800</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryDark">@color/green900</item>
+
+        <item name="colorSecondaryContainer">@color/green200</item>
+        <item name="colorOnSecondaryContainer">@color/gray900</item>
+
+        <item name="background">@color/gray200</item>
+
+        <item name="colorAccent">@color/green800</item>
+
+        <item name="android:windowBackground">@color/white</item>
+
+        <item name="colorSurface">@color/white</item>
+        <item name="colorOnSurface">@color/black</item>
+
+        <item name="divider">@color/gray500</item>
+
+        <item name="bottomNavigationStyle">@style/PharmacyApp.BottomNavigationView</item>
 
     </style>
 
     <style name="Theme.PharmacyApp" parent="Base.Theme.PharmacyApp">
-
 
     </style>
 </resources>
