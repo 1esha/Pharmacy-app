@@ -17,6 +17,8 @@ jetbrainsKotlinJvm = "1.9.24"
 room_version = "2.6.1"
 ksp = "1.9.0-1.0.13"
 lifecycle_version = "2.8.7"
+osm_version = "6.1.20"
+osmbonuspack_version = "6.9.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -47,6 +49,10 @@ androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = 
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room_version" }
 
 androidx-lifecycle-viewmodel-savedstate = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-savedstate", version.ref = "lifecycle_version"}
+
+osmdroid-android = { group = "org.osmdroid", name = "osmdroid-android", version.ref = "osm_version"}
+osmbonuspack = { group = "com.github.MKergall", name = "osmbonuspack", version.ref = "osmbonuspack_version"}
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

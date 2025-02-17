@@ -68,6 +68,10 @@ dependencies {
     //Saved state
     implementation(libs.androidx.lifecycle.viewmodel.savedstate)
 
+    //OSM
+    implementation(libs.osmdroid.android)
+    implementation(libs.osmbonuspack)
+
     implementation(project(":domain"))
     implementation(project(":data"))
 
