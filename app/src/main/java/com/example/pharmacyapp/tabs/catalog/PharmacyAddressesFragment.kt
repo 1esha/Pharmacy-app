@@ -30,7 +30,6 @@ import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
 import com.example.pharmacyapp.KEY_ARRAY_LIST_SELECTED_ADDRESSES
 import com.example.pharmacyapp.KEY_PATH
 import com.example.pharmacyapp.KEY_RESULT_ARRAY_LIST_SELECTED_ADDRESSES
-import com.example.pharmacyapp.MenuSettingsModel
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.TYPE_GET_PHARMACY_ADDRESSES
 import com.example.pharmacyapp.TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH
@@ -89,11 +88,10 @@ class PharmacyAddressesFragment : Fragment(), CatalogResult {
 
             if (counter > 0) {
                 toolbarViewModel.clearMenu()
-                toolbarViewModel.installMenu(menuSettingsModel = MenuSettingsModel(
-                    menu = R.menu.menu_select_pharmacy_addresses
-                ) {
+                toolbarViewModel.inflateMenu(menu = R.menu.menu_select_pharmacy_addresses)
+                toolbarViewModel.setMenuClickListener {
                     clearAddressesSelected()
-                })
+                }
             }
             else {
                 toolbarViewModel.clearMenu()

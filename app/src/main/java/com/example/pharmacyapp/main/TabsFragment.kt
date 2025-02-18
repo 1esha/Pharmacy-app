@@ -1,7 +1,6 @@
 package com.example.pharmacyapp.main
 
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -44,25 +43,6 @@ class TabsFragment : Fragment() {
                 toolbarTabs.setNavigationOnClickListener {
                     onClickNavigationIcon()
                 }
-            }
-
-        }
-
-        toolbarViewModel.menuSettings.observe(viewLifecycleOwner) { menuSettingsModel ->
-            with(menuSettingsModel) {
-                if (this == null) {
-                    toolbarTabs.menu.clear()
-                }
-                else {
-                    toolbarTabs.inflateMenu(menu)
-
-                    toolbarTabs.setOnMenuItemClickListener { menuItem ->
-
-                        onClickMenuItem(menuItem.itemId)
-                        true
-                    }
-                }
-
             }
 
         }

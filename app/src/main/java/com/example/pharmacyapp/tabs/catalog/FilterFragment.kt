@@ -9,7 +9,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.setFragmentResult
 import androidx.fragment.app.setFragmentResultListener
 import androidx.fragment.app.viewModels
 import androidx.navigation.NavController
@@ -38,7 +37,6 @@ import com.example.pharmacyapp.KEY_PRICE_FROM
 import com.example.pharmacyapp.KEY_PRICE_UP_TO
 import com.example.pharmacyapp.KEY_RESULT_ARRAY_LIST_IDS_FILTERED
 import com.example.pharmacyapp.KEY_RESULT_ARRAY_LIST_SELECTED_ADDRESSES
-import com.example.pharmacyapp.MenuSettingsModel
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.TYPE_GET_PRODUCTS_BY_PATH
 import com.example.pharmacyapp.TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH
@@ -130,13 +128,12 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
             navControllerCatalog.navigateUp()
         })
         toolbarViewModel.clearMenu()
-        toolbarViewModel.installMenu(menuSettingsModel = MenuSettingsModel(
-            menu = R.menu.menu_delete_filters
-        ) { menuItemId ->
+        toolbarViewModel.inflateMenu(menu = R.menu.menu_delete_filters)
+        toolbarViewModel.setMenuClickListener { menuItemId ->
             if (menuItemId == R.id.deleteFilters) {
                 clearFilters()
             }
-        })
+        }
 
         layoutAvailabilityInPharmacies.setOnClickListener {
 

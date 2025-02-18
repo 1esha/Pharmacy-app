@@ -106,14 +106,14 @@ class AuthorizedUserFragment : Fragment(), ProfileResult {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?): Unit = with(binding) {
 
+        toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.account)){})
+        toolbarViewModel.clearMenu()
+
         navControllerProfile = findNavController()
 
         val isShownGetUserById: Boolean = authorizedUserViewModel.isShownGetUserById
 
         val navControllerMain = getSupportActivity().getNavControllerMain()
-
-        toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.account)){})
-        toolbarViewModel.clearMenu()
 
         tvVersionName.text = getSupportActivity().getVersionName()
 

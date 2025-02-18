@@ -116,11 +116,6 @@ data class ToolbarSettingsModel(
     val onClickNavigationIcon: OnClickNavigationIcon
 )
 
-data class MenuSettingsModel(
-    val menu: Int,
-    val onClickMenuItem: (Int) -> Unit
-)
-
 fun getMessageByErrorType(errorType: ErrorType?): Int {
     return when (errorType) {
         is DisconnectionError -> R.string.check_your_internet_connection

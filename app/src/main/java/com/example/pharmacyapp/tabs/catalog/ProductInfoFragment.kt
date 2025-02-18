@@ -137,7 +137,8 @@ class ProductInfoFragment : Fragment(), CatalogResult {
         })
 
         val isFavorite = arguments?.getBoolean(KEY_IS_FAVORITES) ?: false
-        toolbarViewModel.changeMenu(menu = if (isFavorite) R.menu.menu_favorite else R.menu.menu_favorite_border)
+
+        toolbarViewModel.inflateMenu(menu = if (isFavorite) R.menu.menu_favorite else R.menu.menu_favorite_border)
         toolbarViewModel.setMenuClickListener { itemId ->
             onClickMenuItem(itemId)
         }
@@ -149,6 +150,7 @@ class ProductInfoFragment : Fragment(), CatalogResult {
             when(result){
                 is PendingResult -> { onPendingResultListener()}
                 is SuccessResult -> {
+                    toolbarViewModel.inflateMenu(menu = if (isFavorite) R.menu.menu_favorite else R.menu.menu_favorite_border)
                     onSuccessResultListener(
                         value = result.value,
                         type = type
@@ -344,9 +346,11 @@ class ProductInfoFragment : Fragment(), CatalogResult {
 
     override fun onErrorResultListener(exception: Exception, message: String) {
         updateUI(flag = FLAG_ERROR_RESULT)
+        toolbarViewModel.clearMenu()
     }
 
     override fun onPendingResultListener() {
+        toolbarViewModel.clearMenu()
         updateUI(flag = FLAG_PENDING_RESULT)
     }
 
@@ -422,7 +426,7 @@ class ProductInfoFragment : Fragment(), CatalogResult {
             R.id.favorite -> {
                 onSuccessfulEvent(type = TYPE_REMOVE_FAVORITES) {
                     productInfoViewModel.removeFavorite(productId = productId)
-                    toolbarViewModel.changeMenu(menu = R.menu.menu_favorite_border)
+                    toolbarViewModel.inflateMenu(menu = R.menu.menu_favorite_border)
                     arguments?.putBoolean(KEY_IS_FAVORITES, false)
                 }
             }
@@ -438,7 +442,7 @@ class ProductInfoFragment : Fragment(), CatalogResult {
                         discount = productModel.discount,
                         image = productModel.image
                     ))
-                    toolbarViewModel.changeMenu(menu = R.menu.menu_favorite)
+                    toolbarViewModel.inflateMenu(menu = R.menu.menu_favorite)
                     arguments?.putBoolean(KEY_IS_FAVORITES, true)
                 }
 
