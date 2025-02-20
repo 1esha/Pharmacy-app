@@ -19,7 +19,7 @@
         <item name="colorSurface">@color/white</item>
         <item name="colorOnSurface">@color/black</item>
 
-        <item name="divider">@color/gray500</item>
+        <item name="android:listDivider">@color/gray300</item>
 
         <item name="bottomNavigationStyle">@style/PharmacyApp.BottomNavigationView</item>
 
