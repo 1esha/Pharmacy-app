@@ -498,19 +498,23 @@ class ProductInfoFragment : Fragment(), CatalogResult {
     // добавление в layoutBasicInfo основную инвормацию о товаре
     private fun installBasicInfo(list:List<Map<String,String>>) = with(binding){
 
-        val arrayListKeys = arrayListOf<String>()
-        val arrayListValues = arrayListOf<String>()
+        val mutableListDetailsProduct = mutableListOf<DetailsProductModel>()
 
         list.forEach { map ->
             map.forEach { key, value ->
-                arrayListKeys.add(key)
-                arrayListValues.add(value)
+                val detailsProductModel = DetailsProductModel(
+                    title = key,
+                    body = value
+                )
+                mutableListDetailsProduct.add(detailsProductModel)
             }
         }
 
-        val numberLines = arrayListKeys.size - 1
+        val numberLines = mutableListDetailsProduct.size - 1
 
         for (index in 0..numberLines) {
+
+            val detailsProductModel = mutableListDetailsProduct[index]
 
             // создание LinearLayout с горизонтальной ориентацией, который будет хранить два TextView -
             // заголовок основной информации и содержание основной информации
@@ -537,7 +541,7 @@ class ProductInfoFragment : Fragment(), CatalogResult {
 
             // создание TextView для заголовка
             val newTextViewTitle = TextView(requireContext()).apply {
-                text = arrayListKeys[index]
+                text = detailsProductModel.title
                 layoutParams = LinearLayout.LayoutParams(
                     0,
                     LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -548,7 +552,7 @@ class ProductInfoFragment : Fragment(), CatalogResult {
 
             // создание TextView для содержимого
             val newTextViewBody = TextView(requireContext()).apply {
-                text = arrayListValues[index]
+                text = detailsProductModel.body
 
                 layoutParams = LinearLayout.LayoutParams(
                     0,
