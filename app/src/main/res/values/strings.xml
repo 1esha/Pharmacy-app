@@ -156,4 +156,6 @@
     <string name="delete_from_favorites">Delete from Favorites</string>
     <string name="add_to_cart">Add to Cart</string>
     <string name="discount">Discount</string>
+    <string name="basic_information">Basic information</string>
+    <string name="instruction_manual">Instruction manual</string>
 </resources>

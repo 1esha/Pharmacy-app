@@ -220,62 +220,119 @@
 
                 </FrameLayout>
 
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardAvailability"
+            </LinearLayout>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardAvailability"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="8dp"
+                style="@style/PharmacyApp.CardView.Filled">
+
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginVertical="16dp"
-                    style="@style/PharmacyApp.CardView.Filled">
+                    android:layout_height="match_parent"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="12dp"
+                    android:orientation="horizontal">
 
                     <LinearLayout
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:paddingHorizontal="8dp"
-                        android:paddingVertical="8dp"
-                        android:orientation="horizontal">
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="6dp"
+                            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                            android:text="@string/availability"/>
 
                         <LinearLayout
-                            android:layout_width="0dp"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:orientation="horizontal">
 
                             <TextView
+                                android:id="@+id/tvNumberPharmaciesWithProduct"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                                android:text="@string/availability"/>
-
-                            <LinearLayout
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:id="@+id/tvNumberPharmaciesWithProduct"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                                    tools:text="16"/>
-
-                            </LinearLayout>
+                                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                                tools:text="16"/>
 
                         </LinearLayout>
 
-                        <ImageView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center_vertical"
-                            android:src="@drawable/ic_small_arrow_right" />
-
                     </LinearLayout>
 
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:src="@drawable/ic_small_arrow_right" />
 
+                </LinearLayout>
 
-                </com.google.android.material.card.MaterialCardView>
+            </com.google.android.material.card.MaterialCardView>
 
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@style/PharmacyApp.CardView.Filled">
 
-            </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/layoutBasicInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginVertical="12dp"
+                    android:layout_marginHorizontal="8dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="40dp"
+                        android:gravity="center_vertical"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:text="@string/basic_information"/>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardInstruction"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="8dp"
+                style="@style/PharmacyApp.CardView.Filled">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="12dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:minHeight="40dp"
+                        android:gravity="center_vertical"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:text="@string/instruction_manual"/>
+
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:src="@drawable/ic_small_arrow_right" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
         </LinearLayout>
 
     </androidx.core.widget.NestedScrollView>

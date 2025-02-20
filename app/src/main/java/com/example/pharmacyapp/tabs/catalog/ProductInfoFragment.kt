@@ -8,6 +8,8 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
@@ -54,6 +56,7 @@ import com.example.pharmacyapp.tabs.catalog.viewmodels.factories.ProductInfoView
 import java.lang.Exception
 import kotlin.math.roundToInt
 import kotlin.properties.Delegates
+
 
 class ProductInfoFragment : Fragment(), CatalogResult {
 
@@ -165,6 +168,8 @@ class ProductInfoFragment : Fragment(), CatalogResult {
         }
 
         productInfoViewModel.productModel.observe(viewLifecycleOwner) { productModel ->
+
+            installBasicInfo(list = productModel.product_basic_info)
 
             val originalPrice = productModel.price
             val discount = productModel.discount
@@ -466,4 +471,102 @@ class ProductInfoFragment : Fragment(), CatalogResult {
 
         return favoriteModel
     }
+
+    // проверка на наличие ошибки
+    // возвращаем true если имеется ошибка иначе false
+    private fun errorChecking(): Boolean {
+        val mediatorResult = productInfoViewModel.mediatorProductInfo.value as MediatorResultsModel<*>
+        val result = mediatorResult.result as Result<*>
+
+        return if (result is SuccessResult) false else true
+    }
+
+    private fun onBack(listener: () -> Unit) {
+        if (errorChecking()) {
+            listener()
+            return
+        }
+        val isFavorite = arguments?.getBoolean(KEY_IS_FAVORITES) ?: false
+        val result = Bundle()
+        result.putSerializable(KEY_FAVORITE_MODEL, getFavoriteModel())
+        result.putBoolean(KEY_IS_FAVORITES, isFavorite)
+        getSupportActivity().setFragmentResult(requestKey = KEY_RESULT_IS_SHOWN_GET_ALL_FAVORITES, result = result)
+
+        listener()
+    }
+
+    // добавление в layoutBasicInfo основную инвормацию о товаре
+    private fun installBasicInfo(list:List<Map<String,String>>) = with(binding){
+
+        val arrayListKeys = arrayListOf<String>()
+        val arrayListValues = arrayListOf<String>()
+
+        list.forEach { map ->
+            map.forEach { key, value ->
+                arrayListKeys.add(key)
+                arrayListValues.add(value)
+            }
+        }
+
+        val numberLines = arrayListKeys.size - 1
+
+        for (index in 0..numberLines) {
+
+            // создание LinearLayout с горизонтальной ориентацией, который будет хранить два TextView -
+            // заголовок основной информации и содержание основной информации
+            val newHorizontalLayout = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                (layoutParams as LinearLayout.LayoutParams).setMargins(0, 32, 0, 8)
+
+            }
+
+            // создание разделителя, который будет находиться между элементами информации
+            val divider = View(requireContext()).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    3
+                )
+                val colorDivider = resources.getColor(R.color.gray300, resources.newTheme())
+
+                setBackgroundColor(colorDivider)
+            }
+
+            // создание TextView для заголовка
+            val newTextViewTitle = TextView(requireContext()).apply {
+                text = arrayListKeys[index]
+                layoutParams = LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f
+                )
+                setTextAppearance(android.R.style.TextAppearance_Material_Body2)
+            }
+
+            // создание TextView для содержимого
+            val newTextViewBody = TextView(requireContext()).apply {
+                text = arrayListValues[index]
+
+                layoutParams = LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f
+                )
+
+                setTextAppearance(android.R.style.TextAppearance_Material_Body1)
+            }
+
+            // добавление созданных view в layoutBasicInfo
+            newHorizontalLayout.addView(newTextViewTitle)
+            newHorizontalLayout.addView(newTextViewBody)
+            layoutBasicInfo.addView(newHorizontalLayout)
+            // проверка на последний элемент
+            // последний элемент не должен иметь разделитель
+            if (index < numberLines) layoutBasicInfo.addView(divider)
+        }
+    }
+
 }
