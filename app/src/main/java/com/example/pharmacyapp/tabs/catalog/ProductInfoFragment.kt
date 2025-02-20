@@ -27,6 +27,8 @@ import com.example.domain.catalog.CatalogResult
 import com.example.domain.catalog.models.ProductAvailabilityModel
 import com.example.domain.catalog.models.ProductModel
 import com.example.domain.favorite.models.FavoriteModel
+import com.example.domain.models.DetailsProductModel
+import com.example.domain.models.MediatorResultsModel
 import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.ResponseValueModel
 import com.example.pharmacyapp.CLUB_DISCOUNT
@@ -116,12 +118,9 @@ class ProductInfoFragment : Fragment(), CatalogResult {
         val callback = object : OnBackPressedCallback(true) {
 
             override fun handleOnBackPressed() {
-                val isFavorite = arguments?.getBoolean(KEY_IS_FAVORITES) ?: false
-                val result = Bundle()
-                result.putSerializable(KEY_FAVORITE_MODEL, getFavoriteModel())
-                result.putBoolean(KEY_IS_FAVORITES, isFavorite)
-                getSupportActivity().setFragmentResult(requestKey = KEY_RESULT_IS_SHOWN_GET_ALL_FAVORITES, result = result)
-                navControllerCatalog.popBackStack()
+                onBack {
+                    navControllerCatalog.popBackStack()
+                }
             }
 
         }
@@ -131,12 +130,7 @@ class ProductInfoFragment : Fragment(), CatalogResult {
             title = EMPTY_STRING,
             icon = R.drawable.ic_back
         ) {
-            val isFavorite = arguments?.getBoolean(KEY_IS_FAVORITES) ?: false
-            val result = Bundle()
-            result.putSerializable(KEY_FAVORITE_MODEL, getFavoriteModel())
-            result.putBoolean(KEY_IS_FAVORITES, isFavorite)
-            getSupportActivity().setFragmentResult(requestKey = KEY_RESULT_IS_SHOWN_GET_ALL_FAVORITES, result = result)
-            navControllerCatalog.navigateUp()
+            onBack { navControllerCatalog.navigateUp() }
         })
 
         val isFavorite = arguments?.getBoolean(KEY_IS_FAVORITES) ?: false
@@ -350,11 +344,14 @@ class ProductInfoFragment : Fragment(), CatalogResult {
     }
 
     override fun onErrorResultListener(exception: Exception, message: String) {
-        updateUI(flag = FLAG_ERROR_RESULT)
+        productInfoViewModel.setIsShownGetProductById(isShown = true)
+        productInfoViewModel.setIsShownGetProductAvailabilityByProductId(isShown = true)
         toolbarViewModel.clearMenu()
+        updateUI(flag = FLAG_ERROR_RESULT, messageError = message)
     }
 
     override fun onPendingResultListener() {
+        productInfoViewModel.clearErrorType()
         toolbarViewModel.clearMenu()
         updateUI(flag = FLAG_PENDING_RESULT)
     }
@@ -387,7 +384,6 @@ class ProductInfoFragment : Fragment(), CatalogResult {
                     TYPE_REMOVE_FAVORITES -> productInfoViewModel.setResultRemoveFavorites(result = ErrorResult(exception = currentException), errorType = errorType)
                     TYPE_ADD_FAVORITE -> productInfoViewModel.setResultAddFavorite(result = ErrorResult(exception = currentException), errorType = errorType)
                 }
-                getSupportActivity().showToast(message = getString(R.string.check_your_internet_connection))
             }
         )
     }
@@ -420,6 +416,7 @@ class ProductInfoFragment : Fragment(), CatalogResult {
     }
 
     private fun onClickMenuItem(itemId: Int) {
+
         val sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES,Context.MODE_PRIVATE)
         val userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
         if (userId == UNAUTHORIZED_USER) {
@@ -427,6 +424,7 @@ class ProductInfoFragment : Fragment(), CatalogResult {
             navCallbackMain.navigate(R.id.nav_graph_log_in)
             return
         }
+
         when (itemId) {
             R.id.favorite -> {
                 onSuccessfulEvent(type = TYPE_REMOVE_FAVORITES) {
@@ -455,7 +453,7 @@ class ProductInfoFragment : Fragment(), CatalogResult {
         }
     }
 
-    fun getFavoriteModel(): FavoriteModel {
+    private fun getFavoriteModel(): FavoriteModel {
 
         val productModel = productInfoViewModel.productModel.value ?:
         throw NullPointerException("ProductInfoFragment productModel = null")
@@ -481,6 +479,7 @@ class ProductInfoFragment : Fragment(), CatalogResult {
         return if (result is SuccessResult) false else true
     }
 
+    // обработка безопасного возвращения на экран ProductFragment
     private fun onBack(listener: () -> Unit) {
         if (errorChecking()) {
             listener()
