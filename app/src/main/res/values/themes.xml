@@ -6,6 +6,8 @@
         <item name="colorPrimary">@color/green800</item>
         <item name="colorOnPrimary">@color/white</item>
         <item name="colorPrimaryDark">@color/green900</item>
+        <item name="colorPrimaryContainer">@color/green200</item>
+        <item name="colorOnPrimaryContainer">@color/gray900</item>
 
         <item name="colorSecondaryContainer">@color/green200</item>
         <item name="colorOnSecondaryContainer">@color/gray900</item>
