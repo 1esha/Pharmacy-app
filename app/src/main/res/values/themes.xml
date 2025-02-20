@@ -23,6 +23,8 @@
 
         <item name="bottomNavigationStyle">@style/PharmacyApp.BottomNavigationView</item>
 
+        <item name="bottomSheetDialogTheme">@style/PharmacyApp.BottomSheetDialog</item>
+
     </style>
 
     <style name="Theme.PharmacyApp" parent="Base.Theme.PharmacyApp">

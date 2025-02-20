@@ -21,4 +21,14 @@
 
     </style>
 
+    <style name="PharmacyApp.BottomSheetDialog" parent="Theme.Material3.Light.BottomSheetDialog">
+
+        <item name="colorPrimary">@color/green800</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryDark">@color/green900</item>
+
+        <item name="colorSurfaceContainerLow">@color/white</item>
+
+    </style>
+
 </resources>
