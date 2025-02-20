@@ -36,6 +36,8 @@ import com.example.pharmacyapp.EMPTY_STRING
 import com.example.pharmacyapp.FLAG_ERROR_RESULT
 import com.example.pharmacyapp.FLAG_PENDING_RESULT
 import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
+import com.example.pharmacyapp.KEY_ARRAY_LIST_BODY_INSTRUCTION
+import com.example.pharmacyapp.KEY_ARRAY_LIST_TITLES_INSTRUCTION
 import com.example.pharmacyapp.KEY_FAVORITE_MODEL
 import com.example.pharmacyapp.KEY_IS_FAVORITES
 import com.example.pharmacyapp.KEY_PRODUCT_ID
@@ -140,6 +142,24 @@ class ProductInfoFragment : Fragment(), CatalogResult {
             onClickMenuItem(itemId)
         }
 
+
+        cardInstruction.setOnClickListener {
+
+            val arrayListTitles = arguments?.getStringArrayList(KEY_ARRAY_LIST_TITLES_INSTRUCTION) ?:
+            throw NullPointerException("ProductInfoFragment arrayListTitles = null")
+
+            val arrayListBody = arguments?.getStringArrayList(KEY_ARRAY_LIST_BODY_INSTRUCTION) ?:
+            throw NullPointerException("ProductInfoFragment arrayListBody = null")
+
+            val bundle = Bundle()
+            bundle.apply {
+                putStringArrayList(KEY_ARRAY_LIST_TITLES_INSTRUCTION, arrayListTitles)
+                putStringArrayList(KEY_ARRAY_LIST_BODY_INSTRUCTION, arrayListBody)
+            }
+
+            navControllerCatalog.navigate(R.id.action_productInfoFragment_to_instructionManualFragment, bundle)
+        }
+
         productInfoViewModel.mediatorProductInfo.observe(viewLifecycleOwner) { mediatorResult ->
             val type = mediatorResult.type
             val result = mediatorResult.result as Result<*>
@@ -164,6 +184,8 @@ class ProductInfoFragment : Fragment(), CatalogResult {
         productInfoViewModel.productModel.observe(viewLifecycleOwner) { productModel ->
 
             installBasicInfo(list = productModel.product_basic_info)
+
+            fillingInstructions(list = productModel.product_detailed_info)
 
             val originalPrice = productModel.price
             val discount = productModel.discount
@@ -570,6 +592,23 @@ class ProductInfoFragment : Fragment(), CatalogResult {
             // последний элемент не должен иметь разделитель
             if (index < numberLines) layoutBasicInfo.addView(divider)
         }
+    }
+
+    // заполнение списков инструкциями для передачи на InstructionManualFragment
+    private fun fillingInstructions(list:List<Map<String,String>>) {
+
+        val arrayListTitles = arrayListOf<String>()
+        val arrayListBody = arrayListOf<String>()
+
+        list.forEach { map ->
+            map.forEach { key, value ->
+                arrayListTitles.add(key)
+                arrayListBody.add(value)
+            }
+        }
+
+        arguments?.putStringArrayList(KEY_ARRAY_LIST_TITLES_INSTRUCTION, arrayListTitles)
+        arguments?.putStringArrayList(KEY_ARRAY_LIST_BODY_INSTRUCTION, arrayListBody)
     }
 
 }

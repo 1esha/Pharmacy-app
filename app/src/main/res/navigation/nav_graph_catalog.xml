@@ -60,5 +60,13 @@
         android:id="@+id/productInfoFragment"
         android:name="com.example.pharmacyapp.tabs.catalog.ProductInfoFragment"
         android:label="fragment_product_info"
-        tools:layout="@layout/fragment_product_info" />
+        tools:layout="@layout/fragment_product_info" >
+        <action
+            android:id="@+id/action_productInfoFragment_to_instructionManualFragment"
+            app:destination="@id/instructionManualFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/instructionManualFragment"
+        android:name="com.example.pharmacyapp.tabs.catalog.InstructionManualFragment"
+        android:label="InstructionManualFragment" />
 </navigation>
