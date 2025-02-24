@@ -5,7 +5,7 @@ import com.example.domain.profile.models.LogInModel
 import com.example.domain.profile.models.UserInfoModel
 import com.example.domain.profile.models.UserModel
 
-interface ProfileRepository<R,V,I> {
+interface ProfileRepository<R,V,I,S> {
 
     suspend fun createUser(userInfoModel: UserInfoModel): Result<R>
 
@@ -18,4 +18,6 @@ interface ProfileRepository<R,V,I> {
     suspend fun editUser(userModel: UserModel): Result<R>
 
     suspend fun deleteUser(userId: Int): Result<R>
+
+    suspend fun getCityByUserId(userId: Int): Result<S>
 }

@@ -25,6 +25,7 @@ import com.example.domain.profile.models.UserModel
 
 const val SUCCESS = "Успешно"
 const val SUCCESS_CODE = 200
+const val NOT_SELECTED = "NOT_SELECTED"
 
 fun UserInfoModel.toUserInfoDataSourceModel(): UserInfoDataSourceModel {
 
@@ -65,6 +66,13 @@ fun ResponseDataSourceModel.toResponseModel():ResponseModel{
     return ResponseModel(
         message = this.message,
         status = this.status
+    )
+}
+
+fun ResponseValueDataSourceModel<String>.toResponseValueStringModel(): ResponseValueModel<String> {
+    return ResponseValueModel(
+        value = this.value,
+        responseModel = this.responseDataSourceModel.toResponseModel()
     )
 }
 

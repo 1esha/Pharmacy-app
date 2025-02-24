@@ -7,7 +7,7 @@ import com.example.domain.profile.models.ResponseValueModel
 import com.example.domain.profile.models.UserModel
 
 class EditUserUseCase(
-    private val profileRepository: ProfileRepository<ResponseModel, ResponseValueModel<UserModel>, ResponseValueModel<Int>>,
+    private val profileRepository: ProfileRepository<ResponseModel, ResponseValueModel<UserModel>,ResponseValueModel<Int>,ResponseValueModel<String>>,
     private val userModel: UserModel
 ) {
 

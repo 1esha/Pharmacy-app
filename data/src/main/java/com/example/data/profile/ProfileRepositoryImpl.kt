@@ -8,6 +8,7 @@ import com.example.data.profile.datasource.remote.ProfileRepositoryDataSourceRem
 import com.example.data.toLogInDataSourceModel
 import com.example.data.toResponseModel
 import com.example.data.toResponseValueIntModel
+import com.example.data.toResponseValueStringModel
 import com.example.data.toResponseValueUserModelModel
 import com.example.data.toResult
 import com.example.data.toUserDataSourceModel
@@ -20,7 +21,11 @@ import com.example.domain.profile.models.ResponseValueModel
 import com.example.domain.profile.models.UserInfoModel
 import com.example.domain.profile.models.UserModel
 
-class ProfileRepositoryImpl : ProfileRepository<ResponseModel, ResponseValueModel<UserModel>,ResponseValueModel<Int>> {
+class ProfileRepositoryImpl : ProfileRepository<
+        ResponseModel,
+        ResponseValueModel<UserModel>,
+        ResponseValueModel<Int>,
+        ResponseValueModel<String>> {
 
     private val profileRepositoryDataSourceRemote = ProfileRepositoryDataSourceRemoteImpl()
 
@@ -91,6 +96,16 @@ class ProfileRepositoryImpl : ProfileRepository<ResponseModel, ResponseValueMode
         val value = resultDataSourceModel.asSuccessResultDataSource()?.value
         val result = resultDataSourceModel.toResult(
             value = value?.toResponseModel()
+        )
+
+        return result
+    }
+
+    override suspend fun getCityByUserId(userId: Int): Result<ResponseValueModel<String>> {
+        val responseValueDataSourceModel = profileRepositoryDataSourceRemote.getCityByUserId(userId = userId)
+        val value = responseValueDataSourceModel.asSuccessResultDataSource()?.value
+        val result = responseValueDataSourceModel.toResult(
+            value = value?.toResponseValueStringModel()
         )
 
         return result

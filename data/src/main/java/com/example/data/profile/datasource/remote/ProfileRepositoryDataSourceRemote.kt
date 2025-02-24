@@ -5,7 +5,7 @@ import com.example.data.profile.datasource.models.LogInDataSourceModel
 import com.example.data.profile.datasource.models.UserDataSourceModel
 import com.example.data.profile.datasource.models.UserInfoDataSourceModel
 
-interface ProfileRepositoryDataSourceRemote<R,V,I> {
+interface ProfileRepositoryDataSourceRemote<R,V,I,S> {
 
     suspend fun createUser(userInfoDataSourceModel: UserInfoDataSourceModel): ResultDataSource<R>
 
@@ -18,4 +18,6 @@ interface ProfileRepositoryDataSourceRemote<R,V,I> {
     suspend fun editUser(userDataSourceModel: UserDataSourceModel): ResultDataSource<R>
 
     suspend fun deleteUser(userId: Int): ResultDataSource<R>
+
+    suspend fun getCityByUserId(userId: Int): ResultDataSource<S>
 }

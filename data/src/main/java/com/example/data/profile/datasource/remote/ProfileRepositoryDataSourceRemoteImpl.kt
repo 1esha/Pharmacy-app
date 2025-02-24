@@ -24,7 +24,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class ProfileRepositoryDataSourceRemoteImpl :
-    ProfileRepositoryDataSourceRemote<ResponseDataSourceModel, ResponseValueDataSourceModel<UserDataSourceModel>,ResponseValueDataSourceModel<Int>> {
+    ProfileRepositoryDataSourceRemote<
+            ResponseDataSourceModel,
+            ResponseValueDataSourceModel<UserDataSourceModel>,
+            ResponseValueDataSourceModel<Int>,
+            ResponseValueDataSourceModel<String>> {
 
     private val client = HttpClient(OkHttp) {
         install(ContentNegotiation) {
@@ -181,7 +185,53 @@ class ProfileRepositoryDataSourceRemoteImpl :
             }
         }
 
+    override suspend fun getCityByUserId(userId: Int): ResultDataSource<ResponseValueDataSourceModel<String>> =
+        withContext(Dispatchers.IO) {
+            try {
+                // если пользователь не авторизован
+                if (userId <= 0) {
+                    return@withContext SuccessResultDataSource(
+                        value = ResponseValueDataSourceModel(
+                            value = NOT_SELECTED,
+                            responseDataSourceModel = ResponseDataSourceModel(
+                                message = SUCCESS,
+                                status = SUCCESS_CODE
+                            )
+                        )
+                    )
+                }
+                val response = client.request {
+                    url(GET_CITY_BY_USER_ID+"$userId")
+                    method = HttpMethod.Get
+                }
+                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<Map<String,String>>>()
+
+                val city = responseValueDataSourceModel.value?.values?.first() ?:
+                throw NullPointerException("getCityByUserId city = null")
+
+                val successResultDataSource = SuccessResultDataSource(
+                    value = ResponseValueDataSourceModel(
+                        value = city,
+                        responseDataSourceModel = responseValueDataSourceModel.responseDataSourceModel
+                    )
+                )
+                Log.i("TAG", "getCityByUserId successResultDataSource ${successResultDataSource.value}")
+                return@withContext successResultDataSource
+            } catch (e: Exception) {
+                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<String>>(
+                    exception = e
+                )
+                Log.i("TAG", "getCityByUserId errorResultDataSource ${errorResultDataSource.exception}")
+                return@withContext errorResultDataSource
+            }
+        }
+
     companion object {
+
+        const val SUCCESS = "Успешно"
+        const val SUCCESS_CODE = 200
+        const val NOT_SELECTED = "NOT_SELECTED"
+
         private const val PORT = "4000"
         private const val BASE_URL = "http://192.168.0.114:$PORT"
         const val CREATE_USER_URL = "$BASE_URL/create/user"
@@ -190,6 +240,7 @@ class ProfileRepositoryDataSourceRemoteImpl :
         const val GET_USER_BY_ID_URL = "$BASE_URL/user_by_id?id="
         const val EDIT_USER_URL ="$BASE_URL/user/edit"
         const val DELETE_USER_URL = "$BASE_URL/user/delete?id="
+        const val GET_CITY_BY_USER_ID = "$BASE_URL/city/user_id?id="
     }
 
 
