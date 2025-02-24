@@ -1,4 +1,4 @@
-package com.example.domain.models
+package com.example.domain.catalog.models
 
 data class PharmacyAddressesModel(
     val addressId: Int,

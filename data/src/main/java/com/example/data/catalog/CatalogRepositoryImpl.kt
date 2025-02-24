@@ -11,7 +11,7 @@ import com.example.domain.Result
 import com.example.domain.catalog.CatalogRepository
 import com.example.domain.catalog.models.ProductAvailabilityModel
 import com.example.domain.catalog.models.ProductModel
-import com.example.domain.models.PharmacyAddressesModel
+import com.example.domain.catalog.models.PharmacyAddressesModel
 import com.example.domain.profile.models.ResponseValueModel
 
 class CatalogRepositoryImpl() : CatalogRepository<

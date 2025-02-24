@@ -21,7 +21,7 @@ import com.example.domain.Result
 import com.example.domain.SuccessResult
 import com.example.domain.catalog.CatalogResult
 import com.example.domain.catalog.models.ProductAvailabilityModel
-import com.example.domain.models.PharmacyAddressesModel
+import com.example.domain.catalog.models.PharmacyAddressesModel
 import com.example.domain.models.SelectedPharmacyAddressesModel
 import com.example.domain.profile.models.ResponseValueModel
 import com.example.pharmacyapp.FLAG_ERROR_RESULT

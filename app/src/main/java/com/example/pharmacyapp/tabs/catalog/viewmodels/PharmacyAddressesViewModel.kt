@@ -16,7 +16,7 @@ import com.example.domain.catalog.models.ProductAvailabilityModel
 import com.example.domain.catalog.usecases.GetPharmacyAddressesUseCase
 import com.example.domain.catalog.usecases.GetProductAvailabilityByPathUseCase
 import com.example.domain.models.MediatorResultsModel
-import com.example.domain.models.PharmacyAddressesModel
+import com.example.domain.catalog.models.PharmacyAddressesModel
 import com.example.domain.models.SelectedPharmacyAddressesModel
 import com.example.domain.profile.models.ResponseValueModel
 import com.example.pharmacyapp.TYPE_GET_PHARMACY_ADDRESSES
