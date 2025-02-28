@@ -2,7 +2,7 @@ package com.example.data.catalog.datasource.remote
 
 import com.example.data.ResultDataSource
 
-interface CatalogRepositoryDataSourceRemote<LPr,Av,Ad,Pr> {
+interface CatalogRepositoryDataSourceRemote<LPr,Av,Ad,Pr,AdD,Op> {
 
     suspend fun getAllProducts(): ResultDataSource<LPr>
 
@@ -15,4 +15,8 @@ interface CatalogRepositoryDataSourceRemote<LPr,Av,Ad,Pr> {
     suspend fun getProductById(productId: Int): ResultDataSource<Pr>
 
     suspend fun getProductAvailabilityByProductId(productId: Int): ResultDataSource<Av>
+
+    suspend fun getPharmacyAddressesDetails(): ResultDataSource<AdD>
+
+    suspend fun getOperatingMode(): ResultDataSource<Op>
 }

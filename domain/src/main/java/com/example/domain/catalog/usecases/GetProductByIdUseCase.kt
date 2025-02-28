@@ -6,7 +6,7 @@ import com.example.domain.catalog.models.ProductModel
 import com.example.domain.profile.models.ResponseValueModel
 
 class GetProductByIdUseCase(
-    private val catalogRepository: CatalogRepository<*, *, *, ResponseValueModel<ProductModel?>>,
+    private val catalogRepository: CatalogRepository<*, *, *, ResponseValueModel<ProductModel?>,*,*>,
     private val productId: Int
 ) {
 

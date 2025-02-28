@@ -4,7 +4,9 @@ import android.util.Log
 import com.example.data.ErrorResultDataSource
 import com.example.data.ResultDataSource
 import com.example.data.SuccessResultDataSource
+import com.example.data.catalog.datasource.models.OperatingModeDataSourceModel
 import com.example.data.catalog.datasource.models.PharmacyAddressesDataSourceModel
+import com.example.data.catalog.datasource.models.PharmacyAddressesDetailsDataSourceModel
 import com.example.data.catalog.datasource.models.ProductAvailabilityDataSourceModel
 import com.example.data.catalog.datasource.models.ProductDataSourceModel
 import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
@@ -24,7 +26,9 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<
         ResponseValueDataSourceModel<List<ProductDataSourceModel>?>,
         ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>,
         ResponseValueDataSourceModel<List<PharmacyAddressesDataSourceModel>?>,
-        ResponseValueDataSourceModel<ProductDataSourceModel?>
+        ResponseValueDataSourceModel<ProductDataSourceModel?>,
+        ResponseValueDataSourceModel<List<PharmacyAddressesDetailsDataSourceModel>?>,
+        ResponseValueDataSourceModel<List<OperatingModeDataSourceModel>?>
         > {
 
     private val client = HttpClient(OkHttp) {
@@ -174,14 +178,62 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<
             }
         }
 
+    override suspend fun getPharmacyAddressesDetails(): ResultDataSource<ResponseValueDataSourceModel<List<PharmacyAddressesDetailsDataSourceModel>?>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val response = client.request {
+                    url(GET_PHARMACY_ADDRESSES_DETAILS)
+                    method = HttpMethod.Get
+                }
+                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<List<PharmacyAddressesDetailsDataSourceModel>?>>()
+                val successResultDataSource = SuccessResultDataSource(
+                    value = responseValueDataSourceModel
+                )
+                Log.i("TAG","getPharmacyAddressesDetails successResultDataSource = $successResultDataSource")
+                return@withContext successResultDataSource
+            }
+            catch (e: Exception) {
+                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<List<PharmacyAddressesDetailsDataSourceModel>?>>(
+                    exception = e
+                )
+                Log.i("TAG","getPharmacyAddressesDetails errorResultDataSource = ${errorResultDataSource.exception}")
+                return@withContext errorResultDataSource
+            }
+        }
+
+    override suspend fun getOperatingMode(): ResultDataSource<ResponseValueDataSourceModel<List<OperatingModeDataSourceModel>?>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val response = client.request {
+                    url(GET_OPERATING_MODE)
+                    method = HttpMethod.Get
+                }
+                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<List<OperatingModeDataSourceModel>?>>()
+                val successResultDataSource = SuccessResultDataSource(
+                    value = responseValueDataSourceModel
+                )
+                Log.i("TAG","getOperatingMode successResultDataSource = $successResultDataSource")
+                return@withContext successResultDataSource
+            }
+            catch (e: Exception) {
+                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<List<OperatingModeDataSourceModel>?>>(
+                    exception = e
+                )
+                Log.i("TAG","getOperatingMode errorResultDataSource = ${errorResultDataSource.exception}")
+                return@withContext errorResultDataSource
+            }
+        }
+
     companion object {
         private const val PORT = "4000"
         private const val BASE_URL = "http://192.168.0.114:$PORT"
         const val GET_ALL_PRODUCTS_URL = "$BASE_URL/products"
         const val GET_PRODUCTS_BY_PATH = "$BASE_URL/products/path?path="
         const val GET_PHARMACY_ADDRESSES = "$BASE_URL/pharmacy/addresses"
+        const val GET_PHARMACY_ADDRESSES_DETAILS = "$BASE_URL/pharmacy/addresses_details"
         const val GET_PRODUCT_AVAILABILITY_BY_PATH = "$BASE_URL/availability?path="
         const val GET_PRODUCT_BY_ID = "$BASE_URL/product/id?id="
         const val GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID = "$BASE_URL/availability/product_id?id="
+        const val GET_OPERATING_MODE = "$BASE_URL/operating_mode"
     }
 }

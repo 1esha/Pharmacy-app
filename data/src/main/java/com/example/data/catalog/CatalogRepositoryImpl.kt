@@ -2,6 +2,8 @@ package com.example.data.catalog
 
 import com.example.data.asSuccessResultDataSource
 import com.example.data.catalog.datasource.remote.CatalogRepositoryDataSourceRemoteImpl
+import com.example.data.toResponseValueListOperatingModeModel
+import com.example.data.toResponseValueListPharmacyAddressesDetailsDataSourceModel
 import com.example.data.toResponseValueListPharmacyAddressesModel
 import com.example.data.toResponseValueListProductAvailabilityModel
 import com.example.data.toResponseValueListProductModel
@@ -9,16 +11,20 @@ import com.example.data.toResponseValueProductModel
 import com.example.data.toResult
 import com.example.domain.Result
 import com.example.domain.catalog.CatalogRepository
+import com.example.domain.catalog.models.PharmacyAddressesDetailsModel
 import com.example.domain.catalog.models.ProductAvailabilityModel
 import com.example.domain.catalog.models.ProductModel
 import com.example.domain.catalog.models.PharmacyAddressesModel
+import com.example.domain.models.OperatingModeModel
 import com.example.domain.profile.models.ResponseValueModel
 
 class CatalogRepositoryImpl() : CatalogRepository<
         ResponseValueModel<List<ProductModel>?>,
         ResponseValueModel<List<ProductAvailabilityModel>?>,
         ResponseValueModel<List<PharmacyAddressesModel>?>,
-        ResponseValueModel<ProductModel?>
+        ResponseValueModel<ProductModel?>,
+        ResponseValueModel<List<PharmacyAddressesDetailsModel>?>,
+        ResponseValueModel<List<OperatingModeModel>?>
         >{
 
 
@@ -71,6 +77,26 @@ class CatalogRepositoryImpl() : CatalogRepository<
         val value = responseValueModel.asSuccessResultDataSource()?.value
         val result = responseValueModel.toResult(
             value = value?.toResponseValueListProductAvailabilityModel()
+        )
+
+        return result
+    }
+
+    override suspend fun getPharmacyAddressesDetails(): Result<ResponseValueModel<List<PharmacyAddressesDetailsModel>?>> {
+        val responseValueModel = catalogRepositoryDataSourceRemoteImpl.getPharmacyAddressesDetails()
+        val value = responseValueModel.asSuccessResultDataSource()?.value
+        val result = responseValueModel.toResult(
+            value = value?.toResponseValueListPharmacyAddressesDetailsDataSourceModel()
+        )
+
+        return result
+    }
+
+    override suspend fun getOperatingMode(): Result<ResponseValueModel<List<OperatingModeModel>?>> {
+        val resultValueModel = catalogRepositoryDataSourceRemoteImpl.getOperatingMode()
+        val value = resultValueModel.asSuccessResultDataSource()?.value
+        val result = resultValueModel.toResult(
+            value = value?.toResponseValueListOperatingModeModel()
         )
 
         return result
