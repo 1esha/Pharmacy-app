@@ -40,4 +40,8 @@
         android:label="fragment_edit"
         tools:layout="@layout/fragment_edit" />
     <include app:graph="@navigation/nav_graph_log_in" />
+    <fragment
+        android:id="@+id/fullImageProductFragment"
+        android:name="com.example.pharmacyapp.tabs.catalog.FullImageProductFragment"
+        android:label="FullImageProductFragment" />
 </navigation>

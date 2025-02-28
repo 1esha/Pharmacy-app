@@ -142,6 +142,14 @@ class ProductInfoFragment : Fragment(), CatalogResult {
             onClickMenuItem(itemId)
         }
 
+        // открытие экрана с полным изображением товара
+        ivProductInfo.setOnClickListener {
+            val bundle = Bundle()
+            bundle.putString(FullImageProductFragment.KEY_FULL_IMAGE_PRODUCT,image)
+            val navControllerMain = getSupportActivity().getNavControllerMain()
+            navControllerMain.navigate(R.id.fullImageProductFragment, bundle)
+        }
+
 
         cardInstruction.setOnClickListener {
 
