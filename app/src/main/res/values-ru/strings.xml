@@ -157,4 +157,15 @@
     <string name="discount">Скидка</string>
     <string name="basic_information">Основная информация</string>
     <string name="instruction_manual">Инструкция по применению</string>
+    <string name="try_again_later">Попробуйте позже</string>
+
+    <string name="mo">Пн</string>
+    <string name="tu">Вт</string>
+    <string name="we">Ср</string>
+    <string name="th">Чт</string>
+    <string name="fr">Пт</string>
+    <string name="sa">Сб</string>
+    <string name="su">Вс</string>
+
+    <string name="in_stock">В наличии</string>
 </resources>
