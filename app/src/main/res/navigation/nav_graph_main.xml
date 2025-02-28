@@ -44,4 +44,8 @@
         android:id="@+id/fullImageProductFragment"
         android:name="com.example.pharmacyapp.tabs.catalog.FullImageProductFragment"
         android:label="FullImageProductFragment" />
+    <fragment
+        android:id="@+id/mapFragment"
+        android:name="com.example.pharmacyapp.main.MapFragment"
+        android:label="MapFragment" />
 </navigation>
