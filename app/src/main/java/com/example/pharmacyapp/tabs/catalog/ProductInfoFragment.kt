@@ -32,13 +32,15 @@ import com.example.domain.models.MediatorResultsModel
 import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.ResponseValueModel
 import com.example.pharmacyapp.CLUB_DISCOUNT
-import com.example.pharmacyapp.EMPTY_STRING
+import com.example.pharmacyapp.FLAG_CURRENT_PRODUCT
 import com.example.pharmacyapp.FLAG_ERROR_RESULT
 import com.example.pharmacyapp.FLAG_PENDING_RESULT
 import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
 import com.example.pharmacyapp.KEY_ARRAY_LIST_BODY_INSTRUCTION
+import com.example.pharmacyapp.KEY_ARRAY_LIST_IDS_AVAILABILITY_PHARMACY_ADDRESSES_DETAILS
 import com.example.pharmacyapp.KEY_ARRAY_LIST_TITLES_INSTRUCTION
 import com.example.pharmacyapp.KEY_FAVORITE_MODEL
+import com.example.pharmacyapp.KEY_FLAGS_FOR_MAP
 import com.example.pharmacyapp.KEY_IS_FAVORITES
 import com.example.pharmacyapp.KEY_PRODUCT_ID
 import com.example.pharmacyapp.KEY_RESULT_IS_SHOWN_GET_ALL_FAVORITES
@@ -57,11 +59,15 @@ import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 import com.example.pharmacyapp.tabs.catalog.viewmodels.ProductInfoViewModel
 import com.example.pharmacyapp.tabs.catalog.viewmodels.factories.ProductInfoViewModelFactory
+import com.example.pharmacyapp.toArrayListInt
 import java.lang.Exception
 import kotlin.math.roundToInt
 import kotlin.properties.Delegates
 
 
+/**
+ * Класс [ProductInfoFragment] отвечает за отрисовку и работу экрана подробной информации о товаре.
+ */
 class ProductInfoFragment : Fragment(), CatalogResult {
 
     private var _binding: FragmentProductInfoBinding? = null
@@ -77,10 +83,21 @@ class ProductInfoFragment : Fragment(), CatalogResult {
 
     private var productId by Delegates.notNull<Int>()
 
+    private val arrayListTitles = arrayListOf<String>()
+    private val arrayListBody = arrayListOf<String>()
+
+    private var image: String by Delegates.notNull()
+
+    private var arrayListIdsAvailabilityPharmacyAddresses: ArrayList<Int>? = null
+
+    private lateinit var navControllerMain: NavController
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         navControllerCatalog = findNavController()
+
+        navControllerMain = getSupportActivity().getNavControllerMain()
 
         productId = arguments?.getInt(KEY_PRODUCT_ID) ?:
         throw NullPointerException("ProductInfoFragment productId = null")
@@ -117,6 +134,7 @@ class ProductInfoFragment : Fragment(), CatalogResult {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) = with(binding){
 
+        // Создание callback отвечающий за обработку системной кнопки "Назад"
         val callback = object : OnBackPressedCallback(true) {
 
             override fun handleOnBackPressed() {
@@ -128,36 +146,71 @@ class ProductInfoFragment : Fragment(), CatalogResult {
         }
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner,callback)
 
+        // Установка toolbar
         toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(
-            title = EMPTY_STRING,
             icon = R.drawable.ic_back
         ) {
             onBack { navControllerCatalog.navigateUp() }
         })
 
         val isFavorite = arguments?.getBoolean(KEY_IS_FAVORITES) ?: false
-
+        // Установка меню
         toolbarViewModel.inflateMenu(menu = if (isFavorite) R.menu.menu_favorite else R.menu.menu_favorite_border)
         toolbarViewModel.setMenuClickListener { itemId ->
             onClickMenuItem(itemId)
         }
 
-        // открытие экрана с полным изображением товара
+        // Открытие экрана с полным изображением товара
         ivProductInfo.setOnClickListener {
             val bundle = Bundle()
+
             bundle.putString(FullImageProductFragment.KEY_FULL_IMAGE_PRODUCT,image)
-            val navControllerMain = getSupportActivity().getNavControllerMain()
+
             navControllerMain.navigate(R.id.fullImageProductFragment, bundle)
         }
 
+        // Открытие экрана карты с аптеками
+        cardAvailability.setOnClickListener {
 
+            /*
+             Если на момент нажатия список идентификаторов аптек с наличием товара не пустной
+             т.е результат запроса уже получен.
+             */
+            if (arrayListIdsAvailabilityPharmacyAddresses != null) {
+                val bundle = Bundle()
+
+                bundle.putIntegerArrayList(
+                    KEY_ARRAY_LIST_IDS_AVAILABILITY_PHARMACY_ADDRESSES_DETAILS,
+                    arrayListIdsAvailabilityPharmacyAddresses
+                )
+
+                // Передача флага для отрисовки разметки карты
+                bundle.putString(KEY_FLAGS_FOR_MAP, FLAG_CURRENT_PRODUCT)
+
+                navControllerMain.navigate(R.id.mapFragment, bundle)
+            }
+            else {
+                getSupportActivity().showToast(getString(R.string.try_again_later))
+            }
+
+        }
+        // Обработка кнопки "Прпробовать снова"
+        layoutPendingResultProductInfo.bTryAgain.setOnClickListener {
+            // Повторный вызов всех запросов
+            productInfoViewModel.setIsShownGetProductById(isShown = false)
+            productInfoViewModel.setIsShownGetProductAvailabilityByProductId(isShown = false)
+
+            onSuccessfulEvent(type = TYPE_GET_PRODUCT_BY_ID) {
+                productInfoViewModel.getProductById(productId = productId)
+            }
+
+            onSuccessfulEvent(type = TYPE_GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID) {
+                productInfoViewModel.getProductAvailabilityByProductId(productId = productId)
+            }
+        }
+
+        // Открытие экрана с инструкцие по применению
         cardInstruction.setOnClickListener {
-
-            val arrayListTitles = arguments?.getStringArrayList(KEY_ARRAY_LIST_TITLES_INSTRUCTION) ?:
-            throw NullPointerException("ProductInfoFragment arrayListTitles = null")
-
-            val arrayListBody = arguments?.getStringArrayList(KEY_ARRAY_LIST_BODY_INSTRUCTION) ?:
-            throw NullPointerException("ProductInfoFragment arrayListBody = null")
 
             val bundle = Bundle()
             bundle.apply {
@@ -168,32 +221,15 @@ class ProductInfoFragment : Fragment(), CatalogResult {
             navControllerCatalog.navigate(R.id.action_productInfoFragment_to_instructionManualFragment, bundle)
         }
 
-        productInfoViewModel.mediatorProductInfo.observe(viewLifecycleOwner) { mediatorResult ->
-            val type = mediatorResult.type
-            val result = mediatorResult.result as Result<*>
-
-            when(result){
-                is PendingResult -> { onPendingResultListener()}
-                is SuccessResult -> {
-                    toolbarViewModel.inflateMenu(menu = if (isFavorite) R.menu.menu_favorite else R.menu.menu_favorite_border)
-                    onSuccessResultListener(
-                        value = result.value,
-                        type = type
-                    )
-                }
-                is ErrorResult -> {
-                    val errorType = productInfoViewModel.errorType.value
-                    val message = getString(getMessageByErrorType(errorType = errorType))
-                    onErrorResultListener(exception = result.exception, message = message)
-                }
-            }
-        }
-
+        // Получение информации о товаре и обновление интерфейса
         productInfoViewModel.productModel.observe(viewLifecycleOwner) { productModel ->
 
+            // Заполнените блока базовой информацие о товаре
             installBasicInfo(list = productModel.product_basic_info)
 
             fillingInstructions(list = productModel.product_detailed_info)
+
+            image = productModel.image
 
             val originalPrice = productModel.price
             val discount = productModel.discount
@@ -231,22 +267,27 @@ class ProductInfoFragment : Fragment(), CatalogResult {
             }
         }
 
+        // Получение списка наличия товаров и заполнение layout, отвечающего за отображение количесттва доступных аптек
         productInfoViewModel.listProductAvailability.observe(viewLifecycleOwner) { listProductAvailability ->
 
-            // получаем список наличия товаров с количеством товаров в аптеках больше 0
+            // Получаем список наличия товаров с количеством товаров в аптеках больше 0
             val listOnlyProductAvailability = listProductAvailability?.filter { productAvailabilityModel ->
                 productAvailabilityModel.numberProducts > 0
             }
 
-            // получаем список id аптек в которых количество товара больше 0
+            // Получаем список id аптек в которых количество товара больше 0
             val listPharmacy = listOnlyProductAvailability?.map { productAvailabilityModel ->
                 return@map productAvailabilityModel.addressId
-            }
+            } ?: emptyList()
 
-            // получаем количевто аптек с количеством товара больше 0
-            val numberPharmaciesWithProduct = listPharmacy?.size ?: 0
+            // Установка списка идентификаторов аптек с наличием товара для передачи на экран MapFragment
+            arrayListIdsAvailabilityPharmacyAddresses = listPharmacy.toArrayListInt()
 
-            // получаем сторку количества аптек в которых есть выбранный товар. В зависимости от количества аптек меняется текст строки
+            // Получаем количевто аптек с количеством товара больше 0
+            val numberPharmaciesWithProduct = listPharmacy.size
+
+            // Получаем строку количества аптек в которых есть выбранный товар.
+            // В зависимости от количества аптек меняется текст строки
             val textNumberPharmaciesWithProduct = when(numberPharmaciesWithProduct) {
                 0 -> {
                     getString(R.string.out_of_stock)
@@ -265,6 +306,28 @@ class ProductInfoFragment : Fragment(), CatalogResult {
 
             tvNumberPharmaciesWithProduct.text = textNumberPharmaciesWithProduct
             Log.i("TAG","listPharmacy = $listPharmacy")
+        }
+
+        productInfoViewModel.mediatorProductInfo.observe(viewLifecycleOwner) { mediatorResult ->
+
+            val type = mediatorResult.type
+            val result = mediatorResult.result as Result<*>
+
+            when(result){
+                is PendingResult -> { onPendingResultListener()}
+                is SuccessResult -> {
+                    toolbarViewModel.inflateMenu(menu = if (isFavorite) R.menu.menu_favorite else R.menu.menu_favorite_border)
+                    onSuccessResultListener(
+                        value = result.value,
+                        type = type
+                    )
+                }
+                is ErrorResult -> {
+                    val errorType = productInfoViewModel.errorType.value
+                    val message = getString(getMessageByErrorType(errorType = errorType))
+                    onErrorResultListener(exception = result.exception, message = message)
+                }
+            }
         }
     }
 
@@ -445,28 +508,42 @@ class ProductInfoFragment : Fragment(), CatalogResult {
         }
     }
 
+    /**
+     * Обработка нажатия на кнопку на меню.
+     * Добавление и удаление из "Избранного".
+     *
+     * Параметры:
+     * [itemId] - идентификатор, нажатого элемента.
+     */
     private fun onClickMenuItem(itemId: Int) {
 
         val sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES,Context.MODE_PRIVATE)
         val userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
+
+        // Если пользователь не авторизован, то открывается экране авторизации
         if (userId == UNAUTHORIZED_USER) {
-            val navCallbackMain = getSupportActivity().getNavControllerMain()
-            navCallbackMain.navigate(R.id.nav_graph_log_in)
+
+            navControllerMain.navigate(R.id.nav_graph_log_in)
             return
         }
 
+        // Добавление и удаление из "Избранного"
         when (itemId) {
+            // Удаление
             R.id.favorite -> {
                 onSuccessfulEvent(type = TYPE_REMOVE_FAVORITES) {
                     productInfoViewModel.removeFavorite(productId = productId)
+
                     toolbarViewModel.inflateMenu(menu = R.menu.menu_favorite_border)
                     arguments?.putBoolean(KEY_IS_FAVORITES, false)
                 }
             }
+            // Добавление
             R.id.favorite_border -> {
                 onSuccessfulEvent(type = TYPE_ADD_FAVORITE) {
                     val productModel = productInfoViewModel.productModel.value ?:
                     throw NullPointerException("ProductInfoFragment productModel = null")
+
                     productInfoViewModel.addFavorite(favoriteModel = FavoriteModel(
                         productId = productModel.product_id,
                         title = productModel.title,
@@ -475,6 +552,7 @@ class ProductInfoFragment : Fragment(), CatalogResult {
                         discount = productModel.discount,
                         image = productModel.image
                     ))
+
                     toolbarViewModel.inflateMenu(menu = R.menu.menu_favorite)
                     arguments?.putBoolean(KEY_IS_FAVORITES, true)
                 }
@@ -483,6 +561,9 @@ class ProductInfoFragment : Fragment(), CatalogResult {
         }
     }
 
+    /**
+     * Получение FavoriteModel текущего товара.
+     */
     private fun getFavoriteModel(): FavoriteModel {
 
         val productModel = productInfoViewModel.productModel.value ?:
@@ -500,8 +581,10 @@ class ProductInfoFragment : Fragment(), CatalogResult {
         return favoriteModel
     }
 
-    // проверка на наличие ошибки
-    // возвращаем true если имеется ошибка иначе false
+    /**
+     * Проверка на наличие ошибки.
+     * Возвращает true если имеется ошибка иначе false.
+     */
     private fun errorChecking(): Boolean {
         val mediatorResult = productInfoViewModel.mediatorProductInfo.value as MediatorResultsModel<*>
         val result = mediatorResult.result as Result<*>
@@ -509,12 +592,20 @@ class ProductInfoFragment : Fragment(), CatalogResult {
         return if (result is SuccessResult) false else true
     }
 
-    // обработка безопасного возвращения на экран ProductFragment
+    /**
+     * Обработка безопасного возвращения на экран ProductFragment.
+     *
+     * Параметры:
+     * [listener] - слушатель отвечающий за возращение на экран ProductFragment.
+     */
     private fun onBack(listener: () -> Unit) {
+        // Если ошибка, то просто возвращаемся
         if (errorChecking()) {
             listener()
             return
         }
+
+        // Если ошибки нет,то передаем значение isFavorite на экарн ProductFragment
         val isFavorite = arguments?.getBoolean(KEY_IS_FAVORITES) ?: false
         val result = Bundle()
         result.putSerializable(KEY_FAVORITE_MODEL, getFavoriteModel())
@@ -524,7 +615,12 @@ class ProductInfoFragment : Fragment(), CatalogResult {
         listener()
     }
 
-    // добавление в layoutBasicInfo основную инвормацию о товаре
+    /**
+     * Заполнение layoutBasicInfo основной информацией о товаре.
+     *
+     * Параметры:
+     * [list] - список из пар ключ-значение, где ключ это заголовок, а значение это информация по этому заголовку.
+     */
     private fun installBasicInfo(list:List<Map<String,String>>) = with(binding){
 
         val mutableListDetailsProduct = mutableListOf<DetailsProductModel>()
@@ -545,8 +641,10 @@ class ProductInfoFragment : Fragment(), CatalogResult {
 
             val detailsProductModel = mutableListDetailsProduct[index]
 
-            // создание LinearLayout с горизонтальной ориентацией, который будет хранить два TextView -
-            // заголовок основной информации и содержание основной информации
+            /*
+            Создание LinearLayout с горизонтальной ориентацией, который будет хранить два TextView -
+            заголовок основной информации и содержание основной информации
+             */
             val newHorizontalLayout = LinearLayout(requireContext()).apply {
                 orientation = LinearLayout.HORIZONTAL
                 layoutParams = LinearLayout.LayoutParams(
@@ -557,7 +655,7 @@ class ProductInfoFragment : Fragment(), CatalogResult {
 
             }
 
-            // создание разделителя, который будет находиться между элементами информации
+            // Создание разделителя, который будет находиться между элементами информации
             val divider = View(requireContext()).apply {
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -568,7 +666,7 @@ class ProductInfoFragment : Fragment(), CatalogResult {
                 setBackgroundColor(colorDivider)
             }
 
-            // создание TextView для заголовка
+            // Создание TextView для заголовка
             val newTextViewTitle = TextView(requireContext()).apply {
                 text = detailsProductModel.title
                 layoutParams = LinearLayout.LayoutParams(
@@ -579,7 +677,7 @@ class ProductInfoFragment : Fragment(), CatalogResult {
                 setTextAppearance(android.R.style.TextAppearance_Material_Body2)
             }
 
-            // создание TextView для содержимого
+            // Создание TextView для содержимого
             val newTextViewBody = TextView(requireContext()).apply {
                 text = detailsProductModel.body
 
@@ -592,21 +690,24 @@ class ProductInfoFragment : Fragment(), CatalogResult {
                 setTextAppearance(android.R.style.TextAppearance_Material_Body1)
             }
 
-            // добавление созданных view в layoutBasicInfo
+            // Добавление созданных view в layoutBasicInfo
             newHorizontalLayout.addView(newTextViewTitle)
             newHorizontalLayout.addView(newTextViewBody)
             layoutBasicInfo.addView(newHorizontalLayout)
-            // проверка на последний элемент
-            // последний элемент не должен иметь разделитель
+
+            // Проверка на последний элемент. Последний элемент не должен иметь разделитель
             if (index < numberLines) layoutBasicInfo.addView(divider)
         }
     }
 
-    // заполнение списков инструкциями для передачи на InstructionManualFragment
+    /**
+     * Заполнение списка [arrayListTitles] заголовками, а списка [arrayListBody] самими инстркукциями,
+     * для передачи на InstructionManualFragment.
+     *
+     * Параметры:
+     * [list] - список из пар ключ-значение, где ключ это заголовок, а значение это информация по этому заголовку.
+     */
     private fun fillingInstructions(list:List<Map<String,String>>) {
-
-        val arrayListTitles = arrayListOf<String>()
-        val arrayListBody = arrayListOf<String>()
 
         list.forEach { map ->
             map.forEach { key, value ->
@@ -615,8 +716,6 @@ class ProductInfoFragment : Fragment(), CatalogResult {
             }
         }
 
-        arguments?.putStringArrayList(KEY_ARRAY_LIST_TITLES_INSTRUCTION, arrayListTitles)
-        arguments?.putStringArrayList(KEY_ARRAY_LIST_BODY_INSTRUCTION, arrayListBody)
     }
 
 }
