@@ -133,13 +133,13 @@ fun UserModel.toUserDataSourceModel(): UserDataSourceModel{
 fun ProductDataSourceModel.toProductModel(): ProductModel {
     val productDataSourceModel = this
     return ProductModel(
-        product_id = productDataSourceModel.product_id,
+        productId = productDataSourceModel.productId,
         title = productDataSourceModel.title,
-        product_path = productDataSourceModel.product_path,
+        productPath = productDataSourceModel.productPath,
         price = productDataSourceModel.price,
         discount = productDataSourceModel.discount,
-        product_basic_info = productDataSourceModel.product_basic_info,
-        product_detailed_info = productDataSourceModel.product_detailed_info,
+        productBasicInfo = productDataSourceModel.productBasicInfo,
+        productDetailedInfo = productDataSourceModel.productDetailedInfo,
         image = productDataSourceModel.image
     )
 }

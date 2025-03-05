@@ -531,8 +531,8 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
                 Log.i("TAG","getFilteredArrayList price = $price\npriceFrom = $priceFrom\npriceUpTo = $priceUpTo")
                 if (productModel.discount > 0) {
                     if (price in priceFrom..priceUpTo) {
-                        if (mutableListOnlyIdsProductsAvailability.distinct().contains(productModel.product_id)) {
-                            mutableListIdsProductsFiltered.add(productModel.product_id)
+                        if (mutableListOnlyIdsProductsAvailability.distinct().contains(productModel.productId)) {
+                            mutableListIdsProductsFiltered.add(productModel.productId)
                             // mutableListIdsProductsFiltered содержит только id товаров со скидкой и в наличии в выбранных аптеках
                         }
 
@@ -554,8 +554,8 @@ class FilterFragment : Fragment(), CatalogResult, View.OnKeyListener {
                 Log.i("TAG","getFilteredArrayList price = $price\npriceFrom = $priceFrom\npriceUpTo = $priceUpTo")
                 if (price in priceFrom..priceUpTo) {
 
-                    if (mutableListOnlyIdsProductsAvailability.contains(productModel.product_id)) {
-                        mutableListIdsProductsFiltered.add(productModel.product_id)
+                    if (mutableListOnlyIdsProductsAvailability.contains(productModel.productId)) {
+                        mutableListIdsProductsFiltered.add(productModel.productId)
                     }
                 }
             }
