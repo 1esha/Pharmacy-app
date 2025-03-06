@@ -25,12 +25,15 @@ import com.example.domain.catalog.CatalogResult
 import com.example.domain.favorite.models.FavoriteModel
 import com.example.domain.catalog.models.ProductFavoriteModel
 import com.example.domain.catalog.models.ProductModel
+import com.example.domain.models.ButtonModel
 import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.ResponseValueModel
+import com.example.pharmacyapp.ColorUtils
 import com.example.pharmacyapp.FLAG_ERROR_RESULT
 import com.example.pharmacyapp.FLAG_PENDING_RESULT
 import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
 import com.example.pharmacyapp.KEY_ARRAY_LIST_IDS_FILTERED
+import com.example.pharmacyapp.KEY_ARRAY_LIST_IDS_PRODUCTS_FROM_BASKET
 import com.example.pharmacyapp.KEY_ARRAY_LIST_SELECTED_ADDRESSES
 import com.example.pharmacyapp.KEY_DEFAULT_PRICE_FROM
 import com.example.pharmacyapp.KEY_DEFAULT_PRICE_UP_TO
@@ -42,12 +45,15 @@ import com.example.pharmacyapp.KEY_PRICE_FROM
 import com.example.pharmacyapp.KEY_PRICE_UP_TO
 import com.example.pharmacyapp.KEY_PRODUCT_ID
 import com.example.pharmacyapp.KEY_RESULT_ARRAY_LIST_IDS_FILTERED
-import com.example.pharmacyapp.KEY_RESULT_IS_SHOWN_GET_ALL_FAVORITES
+import com.example.pharmacyapp.KEY_RESULT_FROM_PRODUCT_INFO
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.TYPE_ADD_FAVORITE
+import com.example.pharmacyapp.TYPE_ADD_PRODUCT_IN_BASKET
+import com.example.pharmacyapp.TYPE_DELETE_PRODUCT_FROM_BASKET
 import com.example.pharmacyapp.TYPE_GET_ALL_FAVORITES
+import com.example.pharmacyapp.TYPE_GET_IDS_PRODUCTS_FROM_BASKET
 import com.example.pharmacyapp.TYPE_GET_PRODUCTS_BY_PATH
 import com.example.pharmacyapp.TYPE_REMOVE_FAVORITES
 import com.example.pharmacyapp.ToolbarSettingsModel
@@ -64,10 +70,14 @@ import com.example.pharmacyapp.tabs.catalog.SortingBottomSheetDialogFragment.Com
 import com.example.pharmacyapp.tabs.catalog.adapters.ProductsAdapter
 import com.example.pharmacyapp.tabs.catalog.viewmodels.ProductsViewModel
 import com.example.pharmacyapp.tabs.catalog.viewmodels.factories.ProductsViewModelFactory
-import java.lang.Exception
 import kotlin.properties.Delegates
 
 
+/**
+ * Класс [ProductsFragment] является экраном со списокм товаров по категориям.
+ * Список товаров может быть отфильтрованным и отсортированным по определенным значениям.
+ * Также нажимая на товар на соответствующие кнопки можно добавить (или удалить) его в список избранного или в корзину.
+ */
 class ProductsFragment : Fragment(), CatalogResult {
 
     private var _binding: FragmentProductsBinding? = null
@@ -80,18 +90,42 @@ class ProductsFragment : Fragment(), CatalogResult {
     )
 
     private lateinit var navControllerCatalog: NavController
+    private lateinit var navControllerMain: NavController
 
     private lateinit var sharedPreferences: SharedPreferences
 
     private var userId by Delegates.notNull<Int>()
 
+    private var path by Delegates.notNull<String>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
+
+        // Получение id пользователя
         userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
 
-        getSupportActivity().setFragmentResultListener(requestKey = KEY_RESULT_IS_SHOWN_GET_ALL_FAVORITES) { requestKey, bundle ->
+        // Получение пути по которому будет получен список товаров
+        path = arguments?.getString(KEY_PATH)?:
+        throw NullPointerException("ProductsFragment path = null")
+
+        // Отправка всех начальных запросов
+        sendingRequests()
+
+        /*
+          Получение результата с экрана ProductInfoFragment.
+          Результат:
+          isFavorite - значение того в "Избранном" товар или нет;
+          favoriteModel - данные товара в виде модели избранного для изменения списка избранных товаров;
+          arrayListIdsProductsFromBasket - список идентификаторов товаров, находящихся в корзину.
+          Нужен для того чтобы корректно отображать элемент списка товаров.
+         */
+        getSupportActivity().setFragmentResultListener(requestKey = KEY_RESULT_FROM_PRODUCT_INFO) { requestKey, bundle ->
+
+            // Установка значения для отрисовки адаптера.
+            // При изменении определенных значений адаптер перерисуется заново.
+            productsViewModel.setIsShownProductsAdapter(isShown = false)
 
             val isFavorite = bundle.getBoolean(KEY_IS_FAVORITES)
 
@@ -103,18 +137,29 @@ class ProductsFragment : Fragment(), CatalogResult {
             }
                 ?: throw NullPointerException("ProductsFragment favoriteModel = null")
 
-            productsViewModel.changeListAllFavorites(favoriteModel = favoriteModel, isFavorite = isFavorite)
-            val list = productsViewModel.listProducts.value ?:
-            throw NullPointerException("ProductsFragment listProducts = null")
+            val arrayListIdsProductsFromBasket = bundle.getIntegerArrayList(KEY_ARRAY_LIST_IDS_PRODUCTS_FROM_BASKET)?:
+            throw NullPointerException("ProductsFragment arrayListIdsProductsFromBasket = null")
 
-            val listProducts = list.map {
-                return@map it as ProductModel
-            }
-            productsViewModel.setListProductsModel(listProductModel = listProducts)
+            // Установка нового списка идентификаторов товаров из корзины пользователя
+            productsViewModel.setListIdsProductsFromBasket(listIdsProductsFromBasket = arrayListIdsProductsFromBasket.toList())
+
+            // Изменение списка "Избранного"
+            productsViewModel.changeListAllFavorites(favoriteModel = favoriteModel, isFavorite = isFavorite)
 
         }
 
+        /*
+          Получение результата с экрана FilterFragment.
+          Результат:
+          arrayListIdsFiltered - список отфильтрованных идентификаторов товаров;
+          isChecked - значение для фильтрование товары со скидкой;
+          priceFrom - цена от;
+          priceUpTo - цена до;
+          arrayListIdsSelectedAddresses - выбранные адреса аптек.
+         */
         getSupportActivity().setFragmentResultListener(requestKey = KEY_RESULT_ARRAY_LIST_IDS_FILTERED) { requestKey, bundle ->
+
+            productsViewModel.setIsShownProductsAdapter(isShown = false)
 
             val arrayListIdsFiltered = bundle.getIntegerArrayList(KEY_ARRAY_LIST_IDS_FILTERED) ?: arrayListOf<Int>()
             val isChecked = bundle.getBoolean(KEY_IS_CHECKED_DISCOUNT)
@@ -142,11 +187,11 @@ class ProductsFragment : Fragment(), CatalogResult {
             val listAllProducts = productsViewModel.listAllProducts.value ?:
             throw NullPointerException("ProductsFragment listAllProducts = null")
 
-            val listFilteredProduct = listAllProducts.filter {
-                val productModel = it as ProductModel
-                arrayListIdsFiltered.contains(productModel.product_id)
+            val listFilteredProduct = listAllProducts.filter { productModel ->
+                arrayListIdsFiltered.contains(productModel.productId)
             }
 
+            // Проверка применены ли фильтры
             val isCheckedFilter = if (
                 priceFrom == defaultPriceFrom &&
                 priceUpTo == defaultPriceUpTo &&
@@ -155,23 +200,35 @@ class ProductsFragment : Fragment(), CatalogResult {
                 !isChecked
                 ) false else true
 
+            // Установка значения - применены фильтры или нет
             productsViewModel.setIsCheckFilter(isChecked = isCheckedFilter)
 
             with(SortingBottomSheetDialogFragment) {
+                // Получаени типы сортировка
                 val typeSort = arguments?.getInt(KEY_SORTING_TYPE, SORT_ASCENDING_PRICE)?: SORT_ASCENDING_PRICE
 
+                // Получение отсортированного по типу списка
                 val sortedListProducts = sortListProducts(
                     typeSort = typeSort,
                     listProducts = listFilteredProduct
                 )
 
+                // Изменение списка товаров
                 productsViewModel.setListProductsModel(listProductModel = sortedListProducts)
             }
 
         }
 
+        /*
+          Получение результата с экрана SortingBottomSheetDialogFragment.
+          Результат:
+          type - тип сортировки.
+         */
         with(SortingBottomSheetDialogFragment) {
             getSupportActivity().setFragmentResultListener(requestKey = KEY_RESULT_SORTING_PRODUCTS) { requestKey, bundle ->
+
+                productsViewModel.setIsShownProductsAdapter(isShown = false)
+
                 val type = bundle.getInt(KEY_SORTING_TYPE)
                 arguments?.putInt(KEY_SORTING_TYPE,type)
 
@@ -183,6 +240,7 @@ class ProductsFragment : Fragment(), CatalogResult {
                     listProducts = listProducts
                 )
 
+                // Установка отсортированного списка
                 productsViewModel.setListProductsModel(listProductModel = sortedListProducts)
 
             }
@@ -202,55 +260,56 @@ class ProductsFragment : Fragment(), CatalogResult {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?): Unit = with(binding) {
 
         navControllerCatalog = findNavController()
+        navControllerMain = getSupportActivity().getNavControllerMain()
 
+            // Установка toolbar
         toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(
             title = getString(R.string.catalog),
             icon = R.drawable.ic_back
         ) { navControllerCatalog.navigateUp()})
-
+        // Отчистка меню
         toolbarViewModel.clearMenu()
 
-        val path = arguments?.getString(KEY_PATH)?:
-        throw NullPointerException("ProductsFragment path = null")
-
-        val isShownGetAllFavorites = productsViewModel.isShownGetAllFavorites
-
-        if (!isShownGetAllFavorites) {
-            onSuccessfulEvent(type = TYPE_GET_ALL_FAVORITES) {
-                productsViewModel.getAllFavorites()
-            }
-        }
-
+        // Обработка кнопки "Прпробовать снова"
         layoutPendingResultProducts.bTryAgain.setOnClickListener {
             with(productsViewModel) {
+
+                // Установка значение "не показано" для всех запросов
                 setIsShownGetProductsByPath(isShown = false)
                 setIsShownGetAllFavorites(isShown = false)
-                onSuccessfulEvent(type = TYPE_GET_PRODUCTS_BY_PATH) {
-                    getProductsByPath(path = path)
-                }
+                setIsShownGetIdsProductsFromBasket(isShown = false)
+                setIsShownProductsAdapter(isShown = false)
+
+                // Повторный вызов всех запросов
+                sendingRequests()
             }
         }
 
+        // Обработка кнопки "Фильтры"
         bFilters.setOnClickListener {
-            val _listAllProducts = productsViewModel.listAllProducts.value ?:
+
+            // Получение списка всех товаров
+            val listAllProducts = productsViewModel.listAllProducts.value ?:
             throw NullPointerException("ProductsFragment listAllProducts = null")
 
-            val listAllProducts = _listAllProducts.map {
-                return@map it as ProductModel
-            }
-
+            // Получение списка цен товаров
             val listPrices = getListPrices(listAllProducts = listAllProducts)
 
+            // Минимальная цена
             val defaultPriceFrom = listPrices.min()
 
+            // Максимиальная цена
             val defaultPriceUpTo = listPrices.max()
 
+            // Установка минимальной и максимальной цены
             arguments?.putInt(KEY_DEFAULT_PRICE_FROM,defaultPriceFrom)
             arguments?.putInt(KEY_DEFAULT_PRICE_UP_TO,defaultPriceUpTo)
 
-            val bundle = Bundle()
-            bundle.putString(KEY_PATH, path)
-
+            /*
+              Поучаение значений фильтров на тот случай если
+              они уже были применены и их надо снова передать на экран FilterFragment.
+              Если это первый переход  на экран FilterFragment, то будут переданы значения по умолчанию.
+             */
             val isChecked = arguments?.getBoolean(KEY_IS_CHECKED_DISCOUNT) ?: false
             val priceFrom = arguments?.getInt(KEY_PRICE_FROM) ?: -1
             val priceUpTo = arguments?.getInt(KEY_PRICE_UP_TO) ?: -1
@@ -263,24 +322,63 @@ class ProductsFragment : Fragment(), CatalogResult {
             Log.i("TAG","ProductsFragment defaultPriceUpTo = $defaultPriceUpTo")
             Log.i("TAG","ProductsFragment arrayListIdsSelectedAddressesFilter = $arrayListIdsSelectedAddresses")
 
-            bundle.putBoolean(KEY_IS_CHECKED_DISCOUNT,isChecked)
-            bundle.putInt(KEY_PRICE_FROM,priceFrom)
-            bundle.putInt(KEY_PRICE_UP_TO,priceUpTo)
-            bundle.putInt(KEY_DEFAULT_PRICE_FROM,defaultPriceFrom)
-            bundle.putInt(KEY_DEFAULT_PRICE_UP_TO,defaultPriceUpTo)
-            bundle.putIntegerArrayList(KEY_ARRAY_LIST_SELECTED_ADDRESSES,arrayListIdsSelectedAddresses)
+            // Заполнение значениями для передачи на другой экран
+            val bundle = Bundle().apply {
+                putString(KEY_PATH, path)
+                putBoolean(KEY_IS_CHECKED_DISCOUNT,isChecked)
+                putInt(KEY_PRICE_FROM,priceFrom)
+                putInt(KEY_PRICE_UP_TO,priceUpTo)
+                putInt(KEY_DEFAULT_PRICE_FROM,defaultPriceFrom)
+                putInt(KEY_DEFAULT_PRICE_UP_TO,defaultPriceUpTo)
+                putIntegerArrayList(KEY_ARRAY_LIST_SELECTED_ADDRESSES,arrayListIdsSelectedAddresses)
+            }
 
+            // Переход на экран FilterFragment
             navControllerCatalog.navigate(R.id.action_productsFragment_to_filterFragment, bundle)
         }
 
+        // Обработка кнопки "Сортировка"
         bSorting.setOnClickListener {
             with(SortingBottomSheetDialogFragment) {
+                // Открытие нижней панели для сортировки и передача туда текущего типа сортировки
                 val type = arguments?.getInt(KEY_SORTING_TYPE, SORT_ASCENDING_PRICE) ?: SORT_ASCENDING_PRICE
                 val sortingBottomSheetDialogFragment = newInstance(type = type)
                 sortingBottomSheetDialogFragment.show(parentFragmentManager,TAG_SORTING_BOTTOM_SHEET)
             }
         }
 
+        // Наблюдение за изменениями listProducts, listAllFavorites, listIdsProductsFromBasket
+        productsViewModel.mediatorIsAllRequests.observe(viewLifecycleOwner) {
+            // Получение списка товаров, списка всех товаров из "Избранного"
+            // и списка идентификаторов товаров из корзины пользователя
+            val listProducts = productsViewModel.listProducts.value
+            val listAllFavorites = productsViewModel.listAllFavorites.value
+            val listIdsProductsFromBasket = productsViewModel.listIdsProductsFromBasket.value
+
+            // Если результаты по всем запросам пришли
+            if (
+                listProducts != null &&
+                listAllFavorites != null &&
+                listIdsProductsFromBasket != null
+                ) {
+
+                // Установка списка товаров
+                installListProducts(
+                    listProducts = listProducts,
+                    listAllFavorites = listAllFavorites,
+                    listIdsProductsFromBasket = listIdsProductsFromBasket
+                )
+
+            }
+        }
+
+        // Наблюдение за изменение наличия фильтров
+        productsViewModel.isCheckFilter.observe(viewLifecycleOwner) { isChecked ->
+            // Если фильтры есть то будет отображена точка над кнопкой, если нет, то не будет
+            ivCheckFilter.visibility = if (isChecked) View.VISIBLE else View.GONE
+        }
+
+        // Наблюдение за получением результатов запросов
         productsViewModel.mediatorProduct.observe(viewLifecycleOwner) { mediatorResult ->
             val type = mediatorResult.type
             val result = mediatorResult.result as Result<*>
@@ -301,26 +399,20 @@ class ProductsFragment : Fragment(), CatalogResult {
             }
         }
 
-        productsViewModel.isCheckFilter.observe(viewLifecycleOwner) { isChecked ->
-            ivCheckFilter.visibility = if (isChecked) View.VISIBLE else View.GONE
-        }
-
-        productsViewModel.listProducts.observe(viewLifecycleOwner) { list ->
-            val listProducts = list.map {
-                return@map it as ProductModel
-            }
-            installAdapter(listProducts = listProducts)
-        }
-
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+
+        // Установка значения для отрисовки адаптера.
+        // При изменении определенных значений адаптер перерисуется заново.
+        productsViewModel.setIsShownProductsAdapter(isShown = false)
     }
 
     override fun onPendingResultListener() {
         Log.i("TAG","ProductsFragment onPendingResultListener")
+        // Отчистка типа ошибки
         productsViewModel.clearErrorType()
         updateUI(flag = FLAG_PENDING_RESULT)
     }
@@ -343,7 +435,6 @@ class ProductsFragment : Fragment(), CatalogResult {
                     if (status in 200..299){
 
                         val _listAllProducts = responseValueModel.value as List<*>
-
                         val listAllProducts = _listAllProducts.map {
                             return@map it as ProductModel
                         }
@@ -352,7 +443,6 @@ class ProductsFragment : Fragment(), CatalogResult {
 
                         productsViewModel.setListProductsModel(listProductModel = listAllProducts.sorted())
 
-                        updateUI(flag = FLAG_SUCCESS_RESULT)
                     }
                     else {
                         productsViewModel.setResultGetProductsByPath(result = ErrorResult(exception = Exception()), errorType = OtherError())
@@ -370,9 +460,8 @@ class ProductsFragment : Fragment(), CatalogResult {
 
                 if (status in 200..299) {
 
-                    Log.i("TAG","ProductsFragment onSuccessResultListener Add OK")
-
                     updateUI(flag = FLAG_SUCCESS_RESULT)
+
                 }
                 else {
                     productsViewModel.setResultAddFavorite(result = ErrorResult(exception = Exception()), errorType = OtherError())
@@ -386,8 +475,6 @@ class ProductsFragment : Fragment(), CatalogResult {
                 val message = responseModel.message
 
                 if (status in 200..299) {
-
-                    Log.i("TAG","ProductsFragment onSuccessResultListener Remove OK")
 
                     updateUI(flag = FLAG_SUCCESS_RESULT)
                 }
@@ -406,23 +493,14 @@ class ProductsFragment : Fragment(), CatalogResult {
 
                 if (!isShownGetAllFavorites) {
                     if (status in 200..299) {
-                        val listAllFavorites = responseValueModel.value as List<*>
+
+                        val _listAllFavorites = responseValueModel.value as List<*>
+                        val listAllFavorites = _listAllFavorites.map {
+                            return@map it as FavoriteModel
+                        }
 
                         Log.i("TAG","ProductsFragment listAllFavorites = $listAllFavorites")
                         productsViewModel.setListAllFavorites(listAllFavorites = listAllFavorites)
-
-                        val path = arguments?.getString(KEY_PATH)?:
-                        throw NullPointerException("ProductsFragment path = null")
-
-                        val isShownGetProductsByPath = productsViewModel.isShownGetProductsByPath
-
-                        if (!isShownGetProductsByPath) {
-                            with(productsViewModel) {
-                                onSuccessfulEvent(type = TYPE_GET_PRODUCTS_BY_PATH) {
-                                    getProductsByPath(path = path)
-                                }
-                            }
-                        }
 
                     }
                     else {
@@ -434,6 +512,89 @@ class ProductsFragment : Fragment(), CatalogResult {
                 productsViewModel.setIsShownGetAllFavorites(isShown = true)
 
             }
+            TYPE_GET_IDS_PRODUCTS_FROM_BASKET -> {
+                Log.i("TAG","ProductsFragment onSuccessResultListener TYPE_GET_IDS_PRODUCTS_FROM_BASKET")
+                val isShownGetIdsProductsFromBasket = productsViewModel.isShownGetIdsProductsFromBasket
+
+                if (!isShownGetIdsProductsFromBasket) {
+                    val responseValueModel = value as ResponseValueModel<*>
+                    val status = responseValueModel.responseModel.status
+                    val message = responseValueModel.responseModel.message
+
+                    if (status in 200..299) {
+
+                        val _listIdsProductsFromBasket = responseValueModel.value as List<*>
+                        val listIdsProductsFromBasket = _listIdsProductsFromBasket.map {
+                            return@map it as Int
+                        }
+
+                        productsViewModel.setListIdsProductsFromBasket(listIdsProductsFromBasket = listIdsProductsFromBasket)
+                    }
+                    else {
+                        productsViewModel.setResultGetIdsProductsFromBasket(result = ErrorResult(exception = Exception()), errorType = OtherError())
+                        if (message != null) getSupportActivity().showToast(message = message)
+                    }
+                }
+
+                productsViewModel.setIsShownGetIdsProductsFromBasket(isShown = true)
+            }
+            TYPE_ADD_PRODUCT_IN_BASKET -> {
+                Log.i("TAG","ProductsFragment onSuccessResultListener TYPE_ADD_PRODUCT_IN_BASKET")
+                val responseModel = value as ResponseModel
+                val status = responseModel.status
+                val message = responseModel.message
+
+                if (status in 200..299) {
+
+                    val productId = productsViewModel.currentProductId.value
+
+                    if (productId != null) {
+
+                        val listIdsProductsFromBasket = productsViewModel.listIdsProductsFromBasket.value?:
+                        throw NullPointerException("ProductsFragment listIdsProductsFromBasket = null")
+
+                        val mutableListIdsProductsFromBasket = listIdsProductsFromBasket.toMutableList()
+
+                        mutableListIdsProductsFromBasket.add(productId)
+
+                        productsViewModel.setListIdsProductsFromBasket(listIdsProductsFromBasket = mutableListIdsProductsFromBasket)
+                    }
+
+                    updateUI(flag = FLAG_SUCCESS_RESULT)
+                }
+                else {
+                    productsViewModel.setResultAddProductInBasket(result = ErrorResult(exception = Exception()), errorType = OtherError())
+                    if (message != null) getSupportActivity().showToast(message = message)
+                }
+            }
+            TYPE_DELETE_PRODUCT_FROM_BASKET -> {
+                Log.i("TAG","ProductsFragment onSuccessResultListener TYPE_DELETE_PRODUCT_FROM_BASKET")
+                val responseModel = value as ResponseModel
+                val status = responseModel.status
+                val message = responseModel.message
+
+                if (status in 200..299) {
+                    val productId = productsViewModel.currentProductId.value
+
+                    if (productId != null) {
+
+                        val listIdsProductsFromBasket = productsViewModel.listIdsProductsFromBasket.value?:
+                        throw NullPointerException("ProductsFragment listIdsProductsFromBasket = null")
+
+                        val mutableListIdsProductsFromBasket = listIdsProductsFromBasket.toMutableList()
+
+                        mutableListIdsProductsFromBasket.remove(productId)
+
+                        productsViewModel.setListIdsProductsFromBasket(listIdsProductsFromBasket = mutableListIdsProductsFromBasket)
+                    }
+
+                    updateUI(flag = FLAG_SUCCESS_RESULT)
+                }
+                else {
+                    productsViewModel.setResultDeleteProductFromBasket(result = ErrorResult(exception = Exception()), errorType = OtherError())
+                    if (message != null) getSupportActivity().showToast(message = message)
+                }
+            }
         }
 
     }
@@ -441,9 +602,11 @@ class ProductsFragment : Fragment(), CatalogResult {
     override fun onErrorResultListener(exception: Exception, message: String) {
         Log.i("TAG","ProductsFragment onErrorResultListener")
         updateUI(FLAG_ERROR_RESULT, messageError = message)
-
+        // Установка значения "не показано" для всех запросов
         productsViewModel.setIsShownGetProductsByPath(isShown = true)
         productsViewModel.setIsShownGetAllFavorites(isShown = true)
+        productsViewModel.setIsShownGetIdsProductsFromBasket(isShown = true)
+        productsViewModel.setIsShownProductsAdapter(isShown = true)
     }
 
     override fun onSuccessfulEvent(type: String, exception: Exception?, onSuccessfulEventListener:() -> Unit){
@@ -458,6 +621,9 @@ class ProductsFragment : Fragment(), CatalogResult {
                     TYPE_GET_ALL_FAVORITES -> productsViewModel.setResultGetAllFavorites(result = PendingResult())
                     TYPE_ADD_FAVORITE -> productsViewModel.setResultAddFavorite(result = PendingResult())
                     TYPE_REMOVE_FAVORITES -> productsViewModel.setResultRemoveFavorites(result = PendingResult())
+                    TYPE_GET_IDS_PRODUCTS_FROM_BASKET -> productsViewModel.setResultGetIdsProductsFromBasket(result = PendingResult())
+                    TYPE_ADD_PRODUCT_IN_BASKET -> productsViewModel.setResultAddProductInBasket(result = PendingResult())
+                    TYPE_DELETE_PRODUCT_FROM_BASKET -> productsViewModel.setResultDeleteProductFromBasket(result = PendingResult())
                 }
                 onSuccessfulEventListener()
             },
@@ -469,6 +635,9 @@ class ProductsFragment : Fragment(), CatalogResult {
                     TYPE_GET_ALL_FAVORITES -> productsViewModel.setResultGetAllFavorites(result = ErrorResult(exception = currentException), errorType = errorType)
                     TYPE_ADD_FAVORITE -> productsViewModel.setResultAddFavorite(result = ErrorResult(exception = currentException), errorType = errorType)
                     TYPE_REMOVE_FAVORITES -> productsViewModel.setResultRemoveFavorites(result = ErrorResult(exception = currentException), errorType = errorType)
+                    TYPE_GET_IDS_PRODUCTS_FROM_BASKET -> productsViewModel.setResultGetIdsProductsFromBasket(result = ErrorResult(exception = currentException), errorType = errorType)
+                    TYPE_ADD_PRODUCT_IN_BASKET -> productsViewModel.setResultAddProductInBasket(result = ErrorResult(exception = currentException), errorType = errorType)
+                    TYPE_DELETE_PRODUCT_FROM_BASKET -> productsViewModel.setResultDeleteProductFromBasket(result = ErrorResult(exception = currentException), errorType = errorType)
                 }
                 getSupportActivity().showToast(message = getString(R.string.check_your_internet_connection))
             }
@@ -502,54 +671,156 @@ class ProductsFragment : Fragment(), CatalogResult {
         }
     }
 
+    /**
+     * Отправка всех, необходимых для работы экрана, запросов.
+     */
+    private fun sendingRequests() {
+
+        val isShownGetAllFavorites = productsViewModel.isShownGetAllFavorites
+        val isShownGetProductsByPath = productsViewModel.isShownGetProductsByPath
+        val isShownGetIdsProductsFromBasket = productsViewModel.isShownGetIdsProductsFromBasket
+
+        if (!isShownGetAllFavorites) {
+            onSuccessfulEvent(type = TYPE_GET_ALL_FAVORITES) {
+                productsViewModel.getAllFavorites()
+            }
+        }
+
+        if (!isShownGetProductsByPath) {
+            with(productsViewModel) {
+                onSuccessfulEvent(type = TYPE_GET_PRODUCTS_BY_PATH) {
+                    getProductsByPath(path = path)
+                }
+            }
+        }
+
+        if (!isShownGetIdsProductsFromBasket) {
+            with(productsViewModel) {
+                onSuccessfulEvent(type = TYPE_GET_IDS_PRODUCTS_FROM_BASKET) {
+                    getIdsProductsFromBasket(userId = userId)
+                }
+            }
+        }
+    }
+
+    /**
+     * Обработка нажатия на товар.
+     * Открытие экрана подробной информации о товаре.
+     *
+     * Параметры:
+     * [productId] - идентификатор, нажатого товара;
+     * [isFavorite] - значение того находится ли товар в "Избранном".
+     */
     private fun onClickProduct(productId: Int, isFavorite: Boolean) {
-        val bundle = Bundle()
-        bundle.putInt(KEY_PRODUCT_ID, productId)
-        bundle.putBoolean(KEY_IS_FAVORITES, isFavorite)
+
+        val bundle = Bundle().apply {
+            putInt(KEY_PRODUCT_ID, productId)
+            putBoolean(KEY_IS_FAVORITES, isFavorite)
+        }
+
         navControllerCatalog.navigate(R.id.action_productsFragment_to_productInfoFragment, bundle)
     }
 
+    /**
+     * Обработка нажатия на "сердечко".
+     * Добавление и удаление из списка избранного в зависимовти от значения [isFavorite]
+     * (true - добавление, false - удаление).
+     *
+     * Праметры:
+     * [favoriteModel] - модель избранного, нажатого товара;
+     * [isFavorite] - значение того находится ли товар в "Избранном".
+     */
     private fun onClickFavorite(favoriteModel: FavoriteModel, isFavorite: Boolean) {
-        Log.i("TAG","onClickFavorite favoriteModel = $favoriteModel")
-        Log.i("TAG","onClickFavorite isFavorite = $isFavorite")
 
-        val sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
+        // Если пользователь не авторизован, то открытие экрана авторизации
+        if (userId == UNAUTHORIZED_USER) {
+            navControllerMain.navigate(R.id.nav_graph_log_in)
+            return
+        }
 
-        val userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
+        if (isFavorite) {
+            // Добавление
+            onSuccessfulEvent(type = TYPE_ADD_FAVORITE) {
+                productsViewModel.addFavorite(favoriteModel = favoriteModel)
+            }
+        }
+        else {
+            // Удаление
+            onSuccessfulEvent(type = TYPE_REMOVE_FAVORITES) {
+                productsViewModel.removeFavorite(productId = favoriteModel.productId)
+            }
+        }
 
+        // Изменение списка избранного
+        productsViewModel.changeListAllFavorites(favoriteModel = favoriteModel,isFavorite = isFavorite)
+
+    }
+
+    /**
+     * Обработка нажатия на кнопку "В корзину".
+     * Добавление/удаление товара из корзины.
+     *
+     * Параметры:
+     * [productId] - идентификатор товара;
+     * [isInBasket] - значение того находится товар в корзине или нет.
+     */
+    private fun onClickInBasket(productId:Int, isInBasket: Boolean) {
+
+        // Если пользователь не авторизован, то открытие экрана авторизации
         if (userId == UNAUTHORIZED_USER) {
             val navControllerMain = getSupportActivity().getNavControllerMain()
             navControllerMain.navigate(R.id.nav_graph_log_in)
             return
         }
-        if (isFavorite) {
-            productsViewModel.addFavorite(favoriteModel = favoriteModel)
-            Log.i("TAG","ProductsFragment onClickFavorite add")
+
+        // Установка идентификатора текущего товара
+        productsViewModel.setCurrentProductId(productId = productId)
+
+        // Добавление/удаление текущего товара из корзины
+        if (isInBasket) {
+            onSuccessfulEvent(type = TYPE_ADD_PRODUCT_IN_BASKET){
+                productsViewModel.addProductInBasket(
+                    userId = userId,
+                    productId = productId
+                )
+            }
+
         }
         else {
-            productsViewModel.removeFavorite(productId = favoriteModel.productId)
-            Log.i("TAG","ProductsFragment onClickFavorite remove")
-        }
+            onSuccessfulEvent(type = TYPE_DELETE_PRODUCT_FROM_BASKET){
+                productsViewModel.deleteProductFromBasket(
+                    userId = userId,
+                    productId = productId
+                )
+            }
 
-        productsViewModel.changeListAllFavorites(favoriteModel = favoriteModel,isFavorite = isFavorite)
+        }
+        Log.i("TAG","ProductsFragment onClickInBasket\nproductId = $productId\nisInBasket = $isInBasket")
 
     }
 
-    private fun sortListProducts(typeSort: Int, listProducts: List<*>): List<ProductModel> {
-
-        val currentListProducts = listProducts.map {
-            return@map it as ProductModel
-        }
+    /**
+     * Сортировка списка товаров по типу.
+     *
+     * Параметры:
+     * [typeSort] - тип сортировки(
+     * [SORT_ASCENDING_PRICE] - по возрастанию цены,
+     * [SORT_DESCENDING_PRICE] - по убыванию цены,
+     * [SORT_DISCOUNT_AMOUNT] - по величине скидки
+     * );
+     * [listProducts] - список товаров для сортировки.
+     */
+    private fun sortListProducts(typeSort: Int, listProducts: List<ProductModel>): List<ProductModel> {
 
         val sortedListProducts: List<ProductModel> = when (typeSort) {
             SORT_ASCENDING_PRICE -> {
-                currentListProducts.sorted()
+                listProducts.sorted()
             }
             SORT_DESCENDING_PRICE -> {
-                currentListProducts.sortedDescending()
+                listProducts.sortedDescending()
             }
             SORT_DISCOUNT_AMOUNT -> {
-                currentListProducts.sortingByDiscountAmount()
+                listProducts.sortingByDiscountAmount()
             }
             else -> throw IllegalArgumentException()
         }
@@ -557,6 +828,12 @@ class ProductsFragment : Fragment(), CatalogResult {
         return sortedListProducts
     }
 
+    /**
+     * Получение спика цен с применением скидок.
+     *
+     * Параметры:
+     * [listAllProducts] - список всех товаров.
+     */
     private fun getListPrices(listAllProducts: List<ProductModel>): List<Int> {
         val listPrices = listAllProducts.map {
             val productModel = it
@@ -571,10 +848,37 @@ class ProductsFragment : Fragment(), CatalogResult {
 
     }
 
-    private fun installAdapter(listProducts: List<ProductModel>) = with(binding) {
+    /**
+     * Установка и настройка списка товаров для адаптера.
+     *
+     * Параметры:
+     * [listProducts] - список товаров;
+     * [listAllFavorites] - список, избранных товаров;
+     * [listIdsProductsFromBasket] - список идентификаторов товаров из корзины.
+     */
+    private fun installListProducts(
+        listProducts: List<ProductModel>,
+        listAllFavorites: List<FavoriteModel>,
+        listIdsProductsFromBasket: List<Int>
+    ) = with(binding) {
+
+        // Установка модели кнопки
+        val colorUtils = ColorUtils(context = requireContext())
+
+        val buttonModel = ButtonModel(
+            colorPrimary = colorUtils.colorPrimary,
+            colorOnPrimary = colorUtils.colorOnPrimary,
+            colorSecondaryContainer = colorUtils.colorSecondaryContainer,
+            colorOnSecondaryContainer = colorUtils.colorOnSecondaryContainer,
+            textPrimary = getString(R.string.add_to_the_shopping_cart),
+            textSecondary = getString(R.string.in_the_shopping_cart)
+        )
+
+        // Получение размеры списка всех товаров
         val sizeListAllProducts = productsViewModel.listAllProducts.value?.size ?:
         throw NullPointerException("ProductsFragment sizeListAllProducts = null")
 
+        // Если список товаров пуст, то отображается текст - "Список пуст" иначе отображается список
         if (listProducts.isEmpty()) {
             tvEmptyList.visibility = View.VISIBLE
             rvProducts.visibility = View.GONE
@@ -584,6 +888,7 @@ class ProductsFragment : Fragment(), CatalogResult {
             rvProducts.visibility = View.VISIBLE
         }
 
+        // Если товаров по ,выбранной категории, вообще нет, то панель с кнопками "Сортировать" и "Фильтровать" не отображается
         if (sizeListAllProducts == 0) {
             layoutConfigurationPanel.visibility = View.GONE
         }
@@ -591,31 +896,48 @@ class ProductsFragment : Fragment(), CatalogResult {
             layoutConfigurationPanel.visibility = View.VISIBLE
         }
 
-        val listAllFavorites = productsViewModel.listAllFavorites.value ?:
-        throw NullPointerException("ProductsFragment listAllFavorites = null")
-
+        // Создание списка, который будет передан в адаптер
         val currentMutableListProductsFavorites = mutableListOf<ProductFavoriteModel>()
 
+        // Заполнение списка currentMutableListProductsFavorites
         listProducts.forEach { productModel ->
-            val isFavorite = listAllFavorites.any {
-                val favoriteModel = it as FavoriteModel
-                favoriteModel.productId == productModel.product_id
+            val isFavorite = listAllFavorites.any { favoriteModel ->
+                favoriteModel.productId == productModel.productId
             }
+            val isInBasket = listIdsProductsFromBasket.any { productId ->
+                productId == productModel.productId
+            }
+
             currentMutableListProductsFavorites.add(
                 ProductFavoriteModel(
                     isFavorite = isFavorite,
-                    productModel = productModel
+                    productModel = productModel,
+                    isInBasket = isInBasket
                 )
             )
         }
 
+        // Создание адаптера
         val productsAdapter = ProductsAdapter(
             userId = userId,
             listProducts = currentMutableListProductsFavorites,
             onClickProduct = ::onClickProduct,
-            onClickFavorite = ::onClickFavorite)
+            onClickFavorite = ::onClickFavorite,
+            onClickInBasket = ::onClickInBasket,
+            buttonModel = buttonModel
+        )
 
-        rvProducts.adapter = productsAdapter
-        rvProducts.layoutManager = GridLayoutManager(requireContext(),2)
+        // Установка адаптера если он не был уже показан
+        val isShownProductsAdapter = productsViewModel.isShownProductsAdapter
+
+        if (!isShownProductsAdapter) {
+
+            updateUI(flag = FLAG_SUCCESS_RESULT)
+            rvProducts.adapter = productsAdapter
+            rvProducts.layoutManager = GridLayoutManager(requireContext(),2)
+
+            productsViewModel.setIsShownProductsAdapter(isShown = true)
+        }
+
     }
 }

@@ -44,7 +44,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                    android:textColor="@color/green900"
+                    android:textColor="?attr/colorPrimary"
                     android:layout_gravity="center"
                     android:textStyle="bold"
                     android:text="@string/sorting"/>
@@ -90,7 +90,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                        android:textColor="@color/green900"
+                        android:textColor="?attr/colorPrimary"
                         android:layout_gravity="center"
                         android:textStyle="bold"
                         android:text="@string/filters"/>
@@ -120,5 +120,6 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvProducts"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:background="?attr/background"/>
 </LinearLayout>

@@ -168,4 +168,6 @@
     <string name="su">Вс</string>
 
     <string name="in_stock">В наличии</string>
+    <string name="in_the_shopping_cart">В корзине</string>
+    <string name="add_to_the_shopping_cart">В корзину</string>
 </resources>

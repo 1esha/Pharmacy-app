@@ -10,20 +10,41 @@ import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import coil.load
 import com.example.domain.favorite.models.FavoriteModel
 import com.example.domain.catalog.models.ProductFavoriteModel
+import com.example.domain.models.ButtonModel
 import com.example.pharmacyapp.CLUB_DISCOUNT
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.ItemProductsBinding
 import kotlin.math.roundToInt
 
+/**
+ * Класс [ProductsAdapter] является адаптером для списка товаров во фрагиенте ProductsFragment.
+ *
+ * Парметры:
+ * [userId] - идентификатор пользователя;
+ * listProducts - список товаров;
+ * [onClickProduct] - обработка нажатия на товар;
+ * [onClickFavorite] - обработка нажатия "В Избранное";
+ * [onClickInBasket] - обработка нажатия "В корзину";
+ * [buttonModel] - модель кнопки для отрисовки.
+ */
 class ProductsAdapter(
     private val userId: Int,
     listProducts: List<*>,
     private val onClickProduct: (Int,Boolean) -> Unit,
-    private val onClickFavorite: (FavoriteModel, Boolean) -> Unit) : Adapter<ProductsAdapter.ProductsHolder>() {
+    private val onClickFavorite: (FavoriteModel, Boolean) -> Unit,
+    private val onClickInBasket: (Int,Boolean) -> Unit,
+    private val buttonModel: ButtonModel
+) : Adapter<ProductsAdapter.ProductsHolder>() {
 
-        private val mutableListProductFavorite = mutableListOf<ProductFavoriteModel>()
+    /**
+     * Изменяемый список товаров, который будет отрисовываться на экране.
+     */
+    private val mutableListProductFavorite = mutableListOf<ProductFavoriteModel>()
 
+    /**
+     * Заполнение mutableListProductFavorite при инициализации класса.
+     */
     init {
         listProducts.forEach {
             val productFavoriteModel = it as ProductFavoriteModel
@@ -32,7 +53,8 @@ class ProductsAdapter(
                 if (userId == UNAUTHORIZED_USER) {
                     ProductFavoriteModel(
                         isFavorite = false,
-                        productModel = productFavoriteModel.productModel
+                        productModel = productFavoriteModel.productModel,
+                        isInBasket = false
                     )
                 }
                 else {
@@ -58,6 +80,7 @@ class ProductsAdapter(
             val currentProduct = mutableListProductFavorite[position]
             val product = currentProduct.productModel
             var isFavorite = currentProduct.isFavorite
+            var isInBasket = currentProduct.isInBasket
 
             val originalPrice = product.price
             val discount = product.discount
@@ -68,6 +91,7 @@ class ProductsAdapter(
 
             val colorDiscount = Color.rgb(198, 1,63)
 
+            // Установка внешнего вида элемета списка
             ivProduct.load(product.image)
             tvProductName.text = product.title
 
@@ -104,16 +128,29 @@ class ProductsAdapter(
 
             ivFavorite.setImageResource(if (isFavorite) R.drawable.ic_favorite else R.drawable.ic_favorite_border)
 
-            root.setOnClickListener {
-                onClickProduct(product.product_id,isFavorite)
+            // Установка внешнего вида кнопки "В корзину" в зависимости от значения isInBasket
+            if (isInBasket) {
+                bInBasketProduct.text = buttonModel.textSecondary
+                bInBasketProduct.setBackgroundColor(buttonModel.colorSecondaryContainer)
+                bInBasketProduct.setTextColor(buttonModel.colorOnSecondaryContainer)
+            }
+            else {
+                bInBasketProduct.text = buttonModel.textPrimary
+                bInBasketProduct.setBackgroundColor(buttonModel.colorPrimary)
+                bInBasketProduct.setTextColor(buttonModel.colorOnPrimary)
             }
 
+            root.setOnClickListener {
+                onClickProduct(product.productId,isFavorite)
+            }
+
+            // Обработка нажатия на "сердечко"
             ivFavorite.setOnClickListener {
 
                 val favoriteModel = FavoriteModel(
-                    productId = product.product_id,
+                    productId = product.productId,
                     title = product.title,
-                    productPath = product.product_path,
+                    productPath = product.productPath,
                     price = product.price,
                     discount = product.discount,
                     image = product.image
@@ -123,16 +160,37 @@ class ProductsAdapter(
 
                 if (userId != UNAUTHORIZED_USER) {
                     isFavorite = !isFavorite
+                    // Изменение элемента списка
                     mutableListProductFavorite.removeAt(position)
                     mutableListProductFavorite.add(position,ProductFavoriteModel(
                         isFavorite = isFavorite,
-                        productModel = product
+                        productModel = product,
+                        isInBasket = isInBasket
                     ))
 
+                    // Обновление элемента списка
                     notifyItemChanged(position)
                 }
 
 
+            }
+
+            // Обработка нажатия на кнопку добавить/удалить в корзину.
+            bInBasketProduct.setOnClickListener {
+                isInBasket = !isInBasket
+
+                onClickInBasket(product.productId,isInBasket)
+
+                // Изменение элемента списка
+                mutableListProductFavorite.removeAt(position)
+                mutableListProductFavorite.add(position,ProductFavoriteModel(
+                    isFavorite = isFavorite,
+                    productModel = product,
+                    isInBasket = isInBasket
+                ))
+
+                // Обновление элемента списка
+                notifyItemChanged(position)
             }
         }
 }
