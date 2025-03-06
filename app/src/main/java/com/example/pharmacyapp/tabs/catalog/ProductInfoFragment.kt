@@ -1,6 +1,7 @@
 package com.example.pharmacyapp.tabs.catalog
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.graphics.Paint
 import android.os.Bundle
 import android.util.Log
@@ -32,22 +33,27 @@ import com.example.domain.models.MediatorResultsModel
 import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.ResponseValueModel
 import com.example.pharmacyapp.CLUB_DISCOUNT
+import com.example.pharmacyapp.ColorUtils
 import com.example.pharmacyapp.FLAG_CURRENT_PRODUCT
 import com.example.pharmacyapp.FLAG_ERROR_RESULT
 import com.example.pharmacyapp.FLAG_PENDING_RESULT
 import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
 import com.example.pharmacyapp.KEY_ARRAY_LIST_BODY_INSTRUCTION
 import com.example.pharmacyapp.KEY_ARRAY_LIST_IDS_AVAILABILITY_PHARMACY_ADDRESSES_DETAILS
+import com.example.pharmacyapp.KEY_ARRAY_LIST_IDS_PRODUCTS_FROM_BASKET
 import com.example.pharmacyapp.KEY_ARRAY_LIST_TITLES_INSTRUCTION
 import com.example.pharmacyapp.KEY_FAVORITE_MODEL
 import com.example.pharmacyapp.KEY_FLAGS_FOR_MAP
 import com.example.pharmacyapp.KEY_IS_FAVORITES
 import com.example.pharmacyapp.KEY_PRODUCT_ID
-import com.example.pharmacyapp.KEY_RESULT_IS_SHOWN_GET_ALL_FAVORITES
+import com.example.pharmacyapp.KEY_RESULT_FROM_PRODUCT_INFO
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.TYPE_ADD_FAVORITE
+import com.example.pharmacyapp.TYPE_ADD_PRODUCT_IN_BASKET
+import com.example.pharmacyapp.TYPE_DELETE_PRODUCT_FROM_BASKET
+import com.example.pharmacyapp.TYPE_GET_IDS_PRODUCTS_FROM_BASKET
 import com.example.pharmacyapp.TYPE_GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID
 import com.example.pharmacyapp.TYPE_GET_PRODUCT_BY_ID
 import com.example.pharmacyapp.TYPE_REMOVE_FAVORITES
@@ -81,7 +87,13 @@ class ProductInfoFragment : Fragment(), CatalogResult {
 
     private lateinit var navControllerCatalog: NavController
 
+    private lateinit var navControllerMain: NavController
+
+    private lateinit var sharedPreferences: SharedPreferences
+
     private var productId by Delegates.notNull<Int>()
+
+    private var userId by Delegates.notNull<Int>()
 
     private val arrayListTitles = arrayListOf<String>()
     private val arrayListBody = arrayListOf<String>()
@@ -90,36 +102,18 @@ class ProductInfoFragment : Fragment(), CatalogResult {
 
     private var arrayListIdsAvailabilityPharmacyAddresses: ArrayList<Int>? = null
 
-    private lateinit var navControllerMain: NavController
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        navControllerCatalog = findNavController()
+        sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES,Context.MODE_PRIVATE)
 
-        navControllerMain = getSupportActivity().getNavControllerMain()
+        userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
+        navControllerCatalog = findNavController()
 
         productId = arguments?.getInt(KEY_PRODUCT_ID) ?:
         throw NullPointerException("ProductInfoFragment productId = null")
 
-        val isShownGetProductById = productInfoViewModel.isShownGetProductById
-        val isShownGetProductAvailability = productInfoViewModel.isShownGetProductAvailabilityByProductId
-
-        if (!isShownGetProductById) {
-
-            onSuccessfulEvent(type = TYPE_GET_PRODUCT_BY_ID) {
-                productInfoViewModel.getProductById(productId = productId)
-            }
-
-        }
-
-        if (!isShownGetProductAvailability) {
-
-            onSuccessfulEvent(type = TYPE_GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID) {
-                productInfoViewModel.getProductAvailabilityByProductId(productId = productId)
-            }
-
-        }
+        sendingRequests()
 
     }
 
@@ -133,6 +127,8 @@ class ProductInfoFragment : Fragment(), CatalogResult {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) = with(binding){
+
+        navControllerMain = getSupportActivity().getNavControllerMain()
 
         // Создание callback отвечающий за обработку системной кнопки "Назад"
         val callback = object : OnBackPressedCallback(true) {
@@ -160,16 +156,31 @@ class ProductInfoFragment : Fragment(), CatalogResult {
             onClickMenuItem(itemId)
         }
 
-        // Открытие экрана с полным изображением товара
+        // Обработка нажатия на картику товара
         ivProductInfo.setOnClickListener {
-            val bundle = Bundle()
-
-            bundle.putString(FullImageProductFragment.KEY_FULL_IMAGE_PRODUCT,image)
-
+            // Установка картинки товара для передачи на экран с полным изображение
+            val bundle = Bundle().apply {
+                putString(FullImageProductFragment.KEY_FULL_IMAGE_PRODUCT,image)
+            }
+            // Открытие экрана с полным изображением товара
             navControllerMain.navigate(R.id.fullImageProductFragment, bundle)
         }
 
-        // Открытие экрана карты с аптеками
+        // Обработка нажатия кнопки "В корзину"
+        bInBasket.setOnClickListener {
+            // Получение списка идентификаторов всех товаров из корзины
+            val listIdsProductsFromBasket = productInfoViewModel.listIdsProductsFromBasket.value
+            if (listIdsProductsFromBasket != null) {
+
+                // Если товар есть в корзине
+                val isInBasket = listIdsProductsFromBasket.any { it == productId }
+
+                onClickInBasket(isInBasket = isInBasket)
+            }
+
+        }
+
+        // Обработка нажатия на поле "Наличие"
         cardAvailability.setOnClickListener {
 
             /*
@@ -177,16 +188,18 @@ class ProductInfoFragment : Fragment(), CatalogResult {
              т.е результат запроса уже получен.
              */
             if (arrayListIdsAvailabilityPharmacyAddresses != null) {
-                val bundle = Bundle()
 
-                bundle.putIntegerArrayList(
-                    KEY_ARRAY_LIST_IDS_AVAILABILITY_PHARMACY_ADDRESSES_DETAILS,
-                    arrayListIdsAvailabilityPharmacyAddresses
-                )
+                val bundle = Bundle().apply {
+                    putIntegerArrayList(
+                        KEY_ARRAY_LIST_IDS_AVAILABILITY_PHARMACY_ADDRESSES_DETAILS,
+                        arrayListIdsAvailabilityPharmacyAddresses
+                    )
+                }
 
                 // Передача флага для отрисовки разметки карты
                 bundle.putString(KEY_FLAGS_FOR_MAP, FLAG_CURRENT_PRODUCT)
 
+                // Открытие экрана карты с аптеками
                 navControllerMain.navigate(R.id.mapFragment, bundle)
             }
             else {
@@ -194,24 +207,20 @@ class ProductInfoFragment : Fragment(), CatalogResult {
             }
 
         }
-        // Обработка кнопки "Прпробовать снова"
+        // Обработка нажатия кнопки "Прпробовать снова"
         layoutPendingResultProductInfo.bTryAgain.setOnClickListener {
-            // Повторный вызов всех запросов
+
             productInfoViewModel.setIsShownGetProductById(isShown = false)
             productInfoViewModel.setIsShownGetProductAvailabilityByProductId(isShown = false)
+            productInfoViewModel.setIsShownGetIdsProductsFromBasket(isShown = false)
 
-            onSuccessfulEvent(type = TYPE_GET_PRODUCT_BY_ID) {
-                productInfoViewModel.getProductById(productId = productId)
-            }
-
-            onSuccessfulEvent(type = TYPE_GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID) {
-                productInfoViewModel.getProductAvailabilityByProductId(productId = productId)
-            }
+            // Повторный вызов всех запросов
+            sendingRequests()
         }
 
-        // Открытие экрана с инструкцие по применению
+        // Обработка нажатия на поле "Инструкция по применению"
         cardInstruction.setOnClickListener {
-
+            // Открытие экрана с инструкцие по применению
             val bundle = Bundle()
             bundle.apply {
                 putStringArrayList(KEY_ARRAY_LIST_TITLES_INSTRUCTION, arrayListTitles)
@@ -221,93 +230,33 @@ class ProductInfoFragment : Fragment(), CatalogResult {
             navControllerCatalog.navigate(R.id.action_productInfoFragment_to_instructionManualFragment, bundle)
         }
 
-        // Получение информации о товаре и обновление интерфейса
-        productInfoViewModel.productModel.observe(viewLifecycleOwner) { productModel ->
+        // Наблюдение за изменением значений - listProductAvailability, listIdsProductsFromBasket, productModel
+        productInfoViewModel.mediatorIsAllRequests.observe(viewLifecycleOwner) {
+            val listProductAvailability = productInfoViewModel.listProductAvailability.value
+            val listIdsProductsFromBasket = productInfoViewModel.listIdsProductsFromBasket.value
+            val productModel = productInfoViewModel.productModel.value
 
-            // Заполнените блока базовой информацие о товаре
-            installBasicInfo(list = productModel.product_basic_info)
+            // Если результаты по всем запросам пришли
+            if (
+                listProductAvailability != null &&
+                listIdsProductsFromBasket != null &&
+                productModel != null
+            ) {
+                // Установка информации о товаре
+                installProductModel(productModel = productModel)
 
-            fillingInstructions(list = productModel.product_detailed_info)
+                // Установка наличия товаров в аптеках
+                installProductAvailability(listProductAvailability = listProductAvailability)
 
-            image = productModel.image
+                // Установка кнопки в зависимости от того находится ли товар в корзине или нет
+                installButtonInBasket(listIdsProductsFromBasket)
 
-            val originalPrice = productModel.price
-            val discount = productModel.discount
-            val sumDiscount = ((discount / 100) * originalPrice)
-            val price = originalPrice - sumDiscount
-            val sumClubDiscount = ((CLUB_DISCOUNT / 100) * price)
-            val priceClub = price - sumClubDiscount
-
-            val textOriginalPrice = originalPrice.roundToInt().toString()
-            val textDiscount = "-"+discount.roundToInt().toString()
-            val textPrice = price.roundToInt().toString()
-            val textPriceClub = priceClub.roundToInt().toString()
-
-            ivProductInfo.load(productModel.image)
-
-            tvProductNameInfo.text = productModel.title
-
-            tvPriceWithClubCardInfo.text = textPriceClub
-
-            tvPriceInfo.text = textPrice
-            tvOriginalPriceInfo.text = textOriginalPrice
-            tvOriginalPriceInfo.paintFlags = Paint.STRIKE_THRU_TEXT_FLAG
-            tvDiscountInfo.text = textDiscount
-
-            if (discount == 0.0) {
-                cardDiscount.visibility = View.GONE
-                tvOriginalPriceInfo.visibility = View.GONE
-                tvRubleSignForOriginalPrice.visibility = View.GONE
-            }
-            else {
-                cardDiscount.visibility = View.VISIBLE
-                tvOriginalPriceInfo.visibility = View.VISIBLE
-                tvRubleSignForOriginalPrice.visibility = View.VISIBLE
+                updateUI(flag = FLAG_SUCCESS_RESULT)
 
             }
         }
 
-        // Получение списка наличия товаров и заполнение layout, отвечающего за отображение количесттва доступных аптек
-        productInfoViewModel.listProductAvailability.observe(viewLifecycleOwner) { listProductAvailability ->
-
-            // Получаем список наличия товаров с количеством товаров в аптеках больше 0
-            val listOnlyProductAvailability = listProductAvailability?.filter { productAvailabilityModel ->
-                productAvailabilityModel.numberProducts > 0
-            }
-
-            // Получаем список id аптек в которых количество товара больше 0
-            val listPharmacy = listOnlyProductAvailability?.map { productAvailabilityModel ->
-                return@map productAvailabilityModel.addressId
-            } ?: emptyList()
-
-            // Установка списка идентификаторов аптек с наличием товара для передачи на экран MapFragment
-            arrayListIdsAvailabilityPharmacyAddresses = listPharmacy.toArrayListInt()
-
-            // Получаем количевто аптек с количеством товара больше 0
-            val numberPharmaciesWithProduct = listPharmacy.size
-
-            // Получаем строку количества аптек в которых есть выбранный товар.
-            // В зависимости от количества аптек меняется текст строки
-            val textNumberPharmaciesWithProduct = when(numberPharmaciesWithProduct) {
-                0 -> {
-                    getString(R.string.out_of_stock)
-                }
-                1 -> {
-                    getString(R.string.available_in) +
-                            " $numberPharmaciesWithProduct " +
-                            getString(R.string.pharmacy)
-                }
-                else -> {
-                    getString(R.string.available_in) +
-                            " $numberPharmaciesWithProduct " +
-                            getString(R.string.pharmacies)
-                }
-            }
-
-            tvNumberPharmaciesWithProduct.text = textNumberPharmaciesWithProduct
-            Log.i("TAG","listPharmacy = $listPharmacy")
-        }
-
+        // Наблюдение за получением результатов запросов
         productInfoViewModel.mediatorProductInfo.observe(viewLifecycleOwner) { mediatorResult ->
 
             val type = mediatorResult.type
@@ -316,7 +265,8 @@ class ProductInfoFragment : Fragment(), CatalogResult {
             when(result){
                 is PendingResult -> { onPendingResultListener()}
                 is SuccessResult -> {
-                    toolbarViewModel.inflateMenu(menu = if (isFavorite) R.menu.menu_favorite else R.menu.menu_favorite_border)
+                    val currentIsFavorite = arguments?.getBoolean(KEY_IS_FAVORITES) ?: false
+                    toolbarViewModel.inflateMenu(menu = if (currentIsFavorite) R.menu.menu_favorite else R.menu.menu_favorite_border)
                     onSuccessResultListener(
                         value = result.value,
                         type = type
@@ -333,6 +283,7 @@ class ProductInfoFragment : Fragment(), CatalogResult {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        Log.i("TAG","ProductInfoFragment onDestroyView")
         _binding = null
     }
 
@@ -354,7 +305,6 @@ class ProductInfoFragment : Fragment(), CatalogResult {
 
                         productInfoViewModel.setProductModel(productModel = productModel)
 
-                        updateUI(flag = FLAG_SUCCESS_RESULT)
                     }
                     else {
                         productInfoViewModel.setResultGetProductById(result = ErrorResult(exception = Exception()), errorType = OtherError())
@@ -369,7 +319,7 @@ class ProductInfoFragment : Fragment(), CatalogResult {
             TYPE_GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID -> {
                 Log.i("TAG","ProductInfoFragment onSuccessResultListener TYPE_GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID")
                 val isShownGetProductAvailability = productInfoViewModel.isShownGetProductAvailabilityByProductId
-                Log.i("TAG","isShownGetProductAvailability = $isShownGetProductAvailability")
+
                 if (!isShownGetProductAvailability) {
 
                     val responseValueModel = value as ResponseValueModel<*>
@@ -378,17 +328,13 @@ class ProductInfoFragment : Fragment(), CatalogResult {
 
                     if (status in 200..299) {
 
-                        val list = responseValueModel.value as List<*>
-
-                        val listProductAvailability = list.map {
+                        val _listProductAvailability = responseValueModel.value as List<*>
+                        val listProductAvailability = _listProductAvailability.map {
                             return@map it as ProductAvailabilityModel
                         }
 
-                        Log.i("TAG","listProductAvailability = $listProductAvailability")
-
                         productInfoViewModel.setListProductAvailability(listProductAvailability = listProductAvailability)
 
-                        updateUI(flag = FLAG_SUCCESS_RESULT)
                     }
                     else {
                         productInfoViewModel.setResultGetProductAvailabilityByProductId(result = ErrorResult(exception = Exception()), errorType = OtherError())
@@ -407,7 +353,8 @@ class ProductInfoFragment : Fragment(), CatalogResult {
 
                 if (status in 200..299) {
 
-                    Log.i("TAG","ProductInfoFragment onSuccessResultListener Remove OK")
+                    toolbarViewModel.inflateMenu(menu = R.menu.menu_favorite_border)
+                    arguments?.putBoolean(KEY_IS_FAVORITES, false)
 
                     updateUI(flag = FLAG_SUCCESS_RESULT)
                 }
@@ -424,7 +371,8 @@ class ProductInfoFragment : Fragment(), CatalogResult {
 
                 if (status in 200..299) {
 
-                    Log.i("TAG","ProductInfoFragment onSuccessResultListener Add OK")
+                    toolbarViewModel.inflateMenu(menu = R.menu.menu_favorite)
+                    arguments?.putBoolean(KEY_IS_FAVORITES, true)
 
                     updateUI(flag = FLAG_SUCCESS_RESULT)
                 }
@@ -433,19 +381,99 @@ class ProductInfoFragment : Fragment(), CatalogResult {
                     if (message != null) getSupportActivity().showToast(message = message)
                 }
             }
+            TYPE_GET_IDS_PRODUCTS_FROM_BASKET -> {
+                Log.i("TAG","ProductInfoFragment onSuccessResultListener TYPE_GET_IDS_PRODUCTS_FROM_BASKET")
+                val isShownGetIdsProductsFromBasket = productInfoViewModel.isShownGetIdsProductsFromBasket
+
+                if (!isShownGetIdsProductsFromBasket) {
+                    val responseValueModel = value as ResponseValueModel<*>
+                    val status = responseValueModel.responseModel.status
+                    val message = responseValueModel.responseModel.message
+
+                    if (status in 200..299) {
+                        val _listIdsProductsFromBasket = responseValueModel.value as List<*>
+                        val listIdsProductsFromBasket = _listIdsProductsFromBasket.map {
+                            return@map it as Int
+                        }
+
+                        productInfoViewModel.setListIdsProductsFromBasket(listIdsProductsFromBasket = listIdsProductsFromBasket)
+                    }
+                    else {
+                        productInfoViewModel.setResultGetIdsProductsFromBasket(result = ErrorResult(exception = Exception()), errorType = OtherError())
+                        if (message != null) getSupportActivity().showToast(message = message)
+                    }
+                }
+
+                productInfoViewModel.setIsShownGetIdsProductsFromBasket(isShown = true)
+            }
+            TYPE_ADD_PRODUCT_IN_BASKET -> {
+                Log.i("TAG","ProductInfoFragment onSuccessResultListener TYPE_ADD_PRODUCT_IN_BASKET")
+                val responseModel = value as ResponseModel
+                val status = responseModel.status
+                val message = responseModel.message
+
+                if (status in 200..299) {
+
+                    val listIdsProductsFromBasket = productInfoViewModel.listIdsProductsFromBasket.value?:
+                    throw NullPointerException("ProductInfoFragment listIdsProductsFromBasket = null")
+
+                    val mutableListIdsProductsFromBasket = listIdsProductsFromBasket.toMutableList()
+
+                    mutableListIdsProductsFromBasket.add(productId)
+
+                    productInfoViewModel.setListIdsProductsFromBasket(listIdsProductsFromBasket = mutableListIdsProductsFromBasket)
+
+                    updateUI(flag = FLAG_SUCCESS_RESULT)
+                }
+                else {
+                    productInfoViewModel.setResultAddProductInBasket(result = ErrorResult(exception = Exception()), errorType = OtherError())
+                    if (message != null) getSupportActivity().showToast(message = message)
+                }
+            }
+            TYPE_DELETE_PRODUCT_FROM_BASKET -> {
+                Log.i("TAG","ProductInfoFragment onSuccessResultListener TYPE_DELETE_PRODUCT_FROM_BASKET")
+                val responseModel = value as ResponseModel
+                val status = responseModel.status
+                val message = responseModel.message
+
+                if (status in 200..299) {
+
+                    val listIdsProductsFromBasket = productInfoViewModel.listIdsProductsFromBasket.value?:
+                    throw NullPointerException("ProductInfoFragment listIdsProductsFromBasket = null")
+
+                    val mutableListIdsProductsFromBasket = listIdsProductsFromBasket.toMutableList()
+
+                    mutableListIdsProductsFromBasket.remove(productId)
+
+                    productInfoViewModel.setListIdsProductsFromBasket(listIdsProductsFromBasket = mutableListIdsProductsFromBasket)
+
+                    updateUI(flag = FLAG_SUCCESS_RESULT)
+                }
+                else {
+                    productInfoViewModel.setResultDeleteProductFromBasket(result = ErrorResult(exception = Exception()), errorType = OtherError())
+                    if (message != null) getSupportActivity().showToast(message = message)
+                }
+            }
         }
     }
 
     override fun onErrorResultListener(exception: Exception, message: String) {
+        // Установка значения "не показано" для всех запросов
         productInfoViewModel.setIsShownGetProductById(isShown = true)
         productInfoViewModel.setIsShownGetProductAvailabilityByProductId(isShown = true)
+        productInfoViewModel.setIsShownGetIdsProductsFromBasket(isShown = true)
+        // Отчистка меню
         toolbarViewModel.clearMenu()
+
         updateUI(flag = FLAG_ERROR_RESULT, messageError = message)
     }
 
     override fun onPendingResultListener() {
+        // Отчистка типы ошибки
         productInfoViewModel.clearErrorType()
+
         toolbarViewModel.clearMenu()
+
         updateUI(flag = FLAG_PENDING_RESULT)
     }
 
@@ -465,6 +493,9 @@ class ProductInfoFragment : Fragment(), CatalogResult {
                     TYPE_GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID -> productInfoViewModel.setResultGetProductAvailabilityByProductId(result = PendingResult())
                     TYPE_REMOVE_FAVORITES -> productInfoViewModel.setResultRemoveFavorites(result = PendingResult())
                     TYPE_ADD_FAVORITE -> productInfoViewModel.setResultAddFavorite(result = PendingResult())
+                    TYPE_GET_IDS_PRODUCTS_FROM_BASKET -> productInfoViewModel.setResultGetIdsProductsFromBasket(result = PendingResult())
+                    TYPE_ADD_PRODUCT_IN_BASKET -> productInfoViewModel.setResultAddProductInBasket(result = PendingResult())
+                    TYPE_DELETE_PRODUCT_FROM_BASKET -> productInfoViewModel.setResultDeleteProductFromBasket(result = PendingResult())
                 }
                 onSuccessfulEventListener()
             },
@@ -476,6 +507,9 @@ class ProductInfoFragment : Fragment(), CatalogResult {
                     TYPE_GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID -> productInfoViewModel.setResultGetProductAvailabilityByProductId(result = ErrorResult(exception = currentException), errorType = errorType)
                     TYPE_REMOVE_FAVORITES -> productInfoViewModel.setResultRemoveFavorites(result = ErrorResult(exception = currentException), errorType = errorType)
                     TYPE_ADD_FAVORITE -> productInfoViewModel.setResultAddFavorite(result = ErrorResult(exception = currentException), errorType = errorType)
+                    TYPE_GET_IDS_PRODUCTS_FROM_BASKET -> productInfoViewModel.setResultGetIdsProductsFromBasket(result = ErrorResult(exception = currentException), errorType = errorType)
+                    TYPE_ADD_PRODUCT_IN_BASKET -> productInfoViewModel.setResultAddProductInBasket(result = ErrorResult(exception = currentException), errorType = errorType)
+                    TYPE_DELETE_PRODUCT_FROM_BASKET -> productInfoViewModel.setResultDeleteProductFromBasket(result = ErrorResult(exception = currentException), errorType = errorType)
                 }
             }
         )
@@ -509,6 +543,199 @@ class ProductInfoFragment : Fragment(), CatalogResult {
     }
 
     /**
+     * Отправка всех, необходимых для работы экрана, запросов.
+     */
+    private fun sendingRequests() {
+        val isShownGetProductById = productInfoViewModel.isShownGetProductById
+        val isShownGetProductAvailability = productInfoViewModel.isShownGetProductAvailabilityByProductId
+        val isShownGetIdsProductsFromBasket = productInfoViewModel.isShownGetIdsProductsFromBasket
+
+        if (!isShownGetProductById) {
+            onSuccessfulEvent(type = TYPE_GET_PRODUCT_BY_ID) {
+                productInfoViewModel.getProductById(productId = productId)
+            }
+        }
+
+        if (!isShownGetProductAvailability) {
+            onSuccessfulEvent(type = TYPE_GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID) {
+                productInfoViewModel.getProductAvailabilityByProductId(productId = productId)
+            }
+        }
+
+        if(!isShownGetIdsProductsFromBasket) {
+            onSuccessfulEvent(type = TYPE_GET_IDS_PRODUCTS_FROM_BASKET) {
+                productInfoViewModel.getIdsProductsFromBasket(userId = userId)
+            }
+        }
+    }
+
+    /**
+     * Установка информации о товаре.
+     *
+     * Парметры:
+     * [productModel] - данные текущего товара.
+     */
+    private fun installProductModel(productModel: ProductModel) = with(binding) {
+
+        // Заполнените блока базовой информацие о товаре
+        installBasicInfo(list = productModel.productBasicInfo)
+
+        // Заполнение инструкции по применению данными
+        fillingInstructions(list = productModel.productDetailedInfo)
+
+        // Установка интерфейса
+        image = productModel.image
+
+        val originalPrice = productModel.price
+        val discount = productModel.discount
+        val sumDiscount = ((discount / 100) * originalPrice)
+        val price = originalPrice - sumDiscount
+        val sumClubDiscount = ((CLUB_DISCOUNT / 100) * price)
+        val priceClub = price - sumClubDiscount
+
+        val textOriginalPrice = originalPrice.roundToInt().toString()
+        val textDiscount = "-"+discount.roundToInt().toString()
+        val textPrice = price.roundToInt().toString()
+        val textPriceClub = priceClub.roundToInt().toString()
+
+        ivProductInfo.load(productModel.image)
+
+        tvProductNameInfo.text = productModel.title
+
+        tvPriceWithClubCardInfo.text = textPriceClub
+
+        tvPriceInfo.text = textPrice
+        tvOriginalPriceInfo.text = textOriginalPrice
+        tvOriginalPriceInfo.paintFlags = Paint.STRIKE_THRU_TEXT_FLAG
+        tvDiscountInfo.text = textDiscount
+
+        if (discount == 0.0) {
+            cardDiscount.visibility = View.GONE
+            tvOriginalPriceInfo.visibility = View.GONE
+            tvRubleSignForOriginalPrice.visibility = View.GONE
+        }
+        else {
+            cardDiscount.visibility = View.VISIBLE
+            tvOriginalPriceInfo.visibility = View.VISIBLE
+            tvRubleSignForOriginalPrice.visibility = View.VISIBLE
+
+        }
+    }
+
+    /**
+     * Установка наличия товара в аптеках.
+     *
+     * Параметры:
+     * [listProductAvailability] - список наличия товара в аптеках.
+     */
+    private fun installProductAvailability(listProductAvailability: List<ProductAvailabilityModel>) = with(binding) {
+
+        // Получаем список наличия товаров с количеством товаров в аптеках больше 0
+        val listOnlyProductAvailability = listProductAvailability.filter { productAvailabilityModel ->
+            productAvailabilityModel.numberProducts > 0
+        }
+
+        // Получаем список id аптек в которых количество товара больше 0
+        val listPharmacy = listOnlyProductAvailability.map { productAvailabilityModel ->
+            return@map productAvailabilityModel.addressId
+        } ?: emptyList()
+
+        // Установка списка идентификаторов аптек с наличием товара для передачи на экран MapFragment
+        arrayListIdsAvailabilityPharmacyAddresses = listPharmacy.toArrayListInt()
+
+        // Получаем количевто аптек с количеством товара больше 0
+        val numberPharmaciesWithProduct = listPharmacy.size
+
+        // Получаем строку количества аптек в которых есть выбранный товар.
+        // В зависимости от количества аптек меняется текст строки
+        val textNumberPharmaciesWithProduct = when(numberPharmaciesWithProduct) {
+            0 -> {
+                getString(R.string.out_of_stock)
+            }
+            1 -> {
+                getString(R.string.available_in) +
+                        " $numberPharmaciesWithProduct " +
+                        getString(R.string.pharmacy)
+            }
+            else -> {
+                getString(R.string.available_in) +
+                        " $numberPharmaciesWithProduct " +
+                        getString(R.string.pharmacies)
+            }
+        }
+
+        tvNumberPharmaciesWithProduct.text = textNumberPharmaciesWithProduct
+
+    }
+
+    /**
+     * Установка внешнего вида кнопки "В корзину".
+     *
+     * Параметры:
+     * [listIdsProductsFromBasket] - список идентификаторов товаров из корзины.
+     */
+    private fun installButtonInBasket(listIdsProductsFromBasket: List<Int>) = with(binding){
+
+        // Значение находится ли товар в корзине или нет
+        val isInBasket = listIdsProductsFromBasket.any { it == productId }
+
+        val colorUtils = ColorUtils(context = requireContext())
+
+        val colorPrimary = colorUtils.colorPrimary
+        val colorSecondaryContainer = colorUtils.colorSecondaryContainer
+        val colorOnSecondaryContainer = colorUtils.colorOnSecondaryContainer
+        val colorOnPrimary = colorUtils.colorOnPrimary
+
+        if (isInBasket) {
+            bInBasket.text = getString(R.string.in_the_shopping_cart)
+            bInBasket.setBackgroundColor(colorSecondaryContainer)
+            bInBasket.setTextColor(colorOnSecondaryContainer)
+        }
+        else {
+            bInBasket.text = getString(R.string.add_to_the_shopping_cart)
+            bInBasket.setBackgroundColor(colorPrimary)
+            bInBasket.setTextColor(colorOnPrimary)
+        }
+
+    }
+
+    /**
+     * Обработка нажатия на кнопку "В корзину".
+     * Добавление/удаление товара из корзины.
+     *
+     * Параметры:
+     * [isInBasket] - значение того находится товар в корзине или нет.
+     */
+    private fun onClickInBasket(isInBasket: Boolean) {
+
+        // Если пользователь не авторизован, то открывается экране авторизации
+        if (userId == UNAUTHORIZED_USER) {
+
+            navControllerMain.navigate(R.id.nav_graph_log_in)
+            return
+        }
+
+        // Добавление/удаление текущего товара из корзины
+        if (isInBasket) {
+            onSuccessfulEvent(type = TYPE_DELETE_PRODUCT_FROM_BASKET) {
+                productInfoViewModel.deleteProductFromBasket(
+                    userId = userId,
+                    productId = productId
+                )
+            }
+        }
+        else {
+            onSuccessfulEvent(type = TYPE_ADD_PRODUCT_IN_BASKET){
+                productInfoViewModel.addProductInBasket(
+                    userId = userId,
+                    productId = productId
+                )
+            }
+
+        }
+    }
+
+    /**
      * Обработка нажатия на кнопку на меню.
      * Добавление и удаление из "Избранного".
      *
@@ -516,9 +743,6 @@ class ProductInfoFragment : Fragment(), CatalogResult {
      * [itemId] - идентификатор, нажатого элемента.
      */
     private fun onClickMenuItem(itemId: Int) {
-
-        val sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES,Context.MODE_PRIVATE)
-        val userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
 
         // Если пользователь не авторизован, то открывается экране авторизации
         if (userId == UNAUTHORIZED_USER) {
@@ -534,8 +758,6 @@ class ProductInfoFragment : Fragment(), CatalogResult {
                 onSuccessfulEvent(type = TYPE_REMOVE_FAVORITES) {
                     productInfoViewModel.removeFavorite(productId = productId)
 
-                    toolbarViewModel.inflateMenu(menu = R.menu.menu_favorite_border)
-                    arguments?.putBoolean(KEY_IS_FAVORITES, false)
                 }
             }
             // Добавление
@@ -545,16 +767,14 @@ class ProductInfoFragment : Fragment(), CatalogResult {
                     throw NullPointerException("ProductInfoFragment productModel = null")
 
                     productInfoViewModel.addFavorite(favoriteModel = FavoriteModel(
-                        productId = productModel.product_id,
+                        productId = productModel.productId,
                         title = productModel.title,
-                        productPath = productModel.product_path,
+                        productPath = productModel.productPath,
                         price = productModel.price,
                         discount = productModel.discount,
                         image = productModel.image
                     ))
 
-                    toolbarViewModel.inflateMenu(menu = R.menu.menu_favorite)
-                    arguments?.putBoolean(KEY_IS_FAVORITES, true)
                 }
 
             }
@@ -570,9 +790,9 @@ class ProductInfoFragment : Fragment(), CatalogResult {
         throw NullPointerException("ProductInfoFragment productModel = null")
 
         val favoriteModel = FavoriteModel(
-            productId = productModel.product_id,
+            productId = productModel.productId,
             title = productModel.title,
-            productPath = productModel.product_path,
+            productPath = productModel.productPath,
             price = productModel.price,
             discount = productModel.discount,
             image = productModel.image
@@ -605,12 +825,16 @@ class ProductInfoFragment : Fragment(), CatalogResult {
             return
         }
 
-        // Если ошибки нет,то передаем значение isFavorite на экарн ProductFragment
+        // Если ошибки нет,то передаем на экарн ProductFragment значения: isFavorite, favoriteModel, listIdsProductsFromBasket
         val isFavorite = arguments?.getBoolean(KEY_IS_FAVORITES) ?: false
-        val result = Bundle()
-        result.putSerializable(KEY_FAVORITE_MODEL, getFavoriteModel())
-        result.putBoolean(KEY_IS_FAVORITES, isFavorite)
-        getSupportActivity().setFragmentResult(requestKey = KEY_RESULT_IS_SHOWN_GET_ALL_FAVORITES, result = result)
+        val listIdsProductsFromBasket = productInfoViewModel.listIdsProductsFromBasket.value
+        val result = Bundle().apply {
+            putSerializable(KEY_FAVORITE_MODEL, getFavoriteModel())
+            putBoolean(KEY_IS_FAVORITES, isFavorite)
+            putIntegerArrayList(KEY_ARRAY_LIST_IDS_PRODUCTS_FROM_BASKET,listIdsProductsFromBasket?.toArrayListInt())
+        }
+
+        getSupportActivity().setFragmentResult(requestKey = KEY_RESULT_FROM_PRODUCT_INFO, result = result)
 
         listener()
     }
@@ -622,6 +846,8 @@ class ProductInfoFragment : Fragment(), CatalogResult {
      * [list] - список из пар ключ-значение, где ключ это заголовок, а значение это информация по этому заголовку.
      */
     private fun installBasicInfo(list:List<Map<String,String>>) = with(binding){
+        // Отчистка layout на случай если в нем уже была информация
+        layoutBasicInfo.removeAllViews()
 
         val mutableListDetailsProduct = mutableListOf<DetailsProductModel>()
 

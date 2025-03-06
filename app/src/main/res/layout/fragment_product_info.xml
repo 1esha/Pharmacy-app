@@ -192,27 +192,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginEnd="4dp"
                                 android:layout_weight="1"
-                                android:text="Button" />
-
-                            <com.google.android.material.card.MaterialCardView
-                                android:id="@+id/cardCounterProducts"
-                                style="@style/Widget.Material3.CardView.Filled"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="4dp"
-                                android:layout_weight="1"
-                                android:visibility="gone">
-
-                                <LinearLayout
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:gravity="center"
-                                    android:minHeight="40dp"
-                                    android:orientation="horizontal">
-
-                                </LinearLayout>
-
-                            </com.google.android.material.card.MaterialCardView>
+                                tools:text="В корзину" />
 
                         </LinearLayout>
 
@@ -281,7 +261,7 @@
                 style="@style/PharmacyApp.CardView.Filled">
 
                 <LinearLayout
-                    android:id="@+id/layoutBasicInfo"
+
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_marginVertical="12dp"
@@ -295,6 +275,12 @@
                         android:gravity="center_vertical"
                         android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                         android:text="@string/basic_information"/>
+
+                    <LinearLayout
+                        android:id="@+id/layoutBasicInfo"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"/>
 
                 </LinearLayout>
 
