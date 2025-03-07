@@ -171,4 +171,5 @@
     <string name="in_stock">In stock</string>
     <string name="in_the_shopping_cart">In the shopping cart</string>
     <string name="add_to_the_shopping_cart">Add to the shopping cart</string>
+    <string name="category">Category: </string>
 </resources>

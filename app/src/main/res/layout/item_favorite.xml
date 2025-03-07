@@ -68,27 +68,29 @@
                         android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
                         android:text="@string/ruble_sign" />
 
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/layoutOriginalPrice"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/tvOriginalPriceFavorite"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                        tools:text="280" />
-
-                    <TextView
-                        android:layout_width="match_parent"
+                    <LinearLayout
+                        android:id="@+id/layoutOriginalPrice"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                        android:text="@string/ruble_sign" />
+                        android:layout_gravity="bottom"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tvOriginalPriceFavorite"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                            tools:text="280" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                            android:text="@string/ruble_sign" />
+
+                    </LinearLayout>
 
                 </LinearLayout>
 
@@ -117,6 +119,13 @@
                         tools:text="12%" />
 
                 </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvCategoryFavourite"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                    android:text="@string/category"/>
 
             </LinearLayout>
 
@@ -153,7 +162,7 @@
                         android:textStyle="bold"
                         android:textColor="@color/green800"
                         android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
-                        android:text="237" />
+                        tools:text="237" />
 
                     <TextView
                         android:layout_width="match_parent"
