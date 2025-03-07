@@ -9,22 +9,37 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import coil.load
 import com.example.domain.favorite.models.FavoriteModel
+import com.example.domain.models.FavouriteBasketModel
 import com.example.pharmacyapp.CLUB_DISCOUNT
 import com.example.pharmacyapp.databinding.ItemFavoriteBinding
 import kotlin.math.roundToInt
 
-class FavoriteAdapter(private val listItems: List<*>): RecyclerView.Adapter<FavoriteAdapter.FavoriteHolder>() {
+/**
+ * Класс [FavoriteAdapter] является адаптером для списка избранных товаров во фрагиенте FavoriteFragment.
+ *
+ * Параметры:
+ * listItems - список товаров;
+ * [deleteFromFavoritesListener] - обработка удаления из "Избранного";
+ * [addInBasketFromFavoritesListener] - обработка добавления в корзину.
+ */
 class FavoriteAdapter(
-    listItems: List<*>,
-    private val deleteFromFavoritesListener: (Int, List<FavoriteModel>) -> Unit,
+    listItems: List<FavouriteBasketModel>,
+    private val deleteFromFavoritesListener: (Int, FavoriteModel) -> Unit,
+    private val addInBasketFromFavoritesListener: (Int) -> Unit,
+    private val textCategory: String
     ): RecyclerView.Adapter<FavoriteAdapter.FavoriteHolder>() {
 
-        private val mutableListFavorite = mutableListOf<FavoriteModel>()
+    /**
+     * Изменяемый список товаров, который будет отрисовываться на экране.
+     */
+    private val mutableListFavorite = mutableListOf<FavouriteBasketModel>()
 
+    /**
+     * Заполнение mutableListFavorite при инициализации класса.
+     */
     init {
-        listItems.forEach {
-            val favoriteModel = it as FavoriteModel
-            mutableListFavorite.add(favoriteModel)
+        listItems.forEach { favoriteBasketModel ->
+            mutableListFavorite.add(favoriteBasketModel)
         }
     }
 
@@ -41,20 +56,24 @@ class FavoriteAdapter(
 
     override fun onBindViewHolder(holder: FavoriteHolder, position: Int): Unit = with(holder.binding) {
 
+        // Заполнение переменных данными товара, вычисление необходимых значений
         val item = mutableListFavorite[position]
-        val originalPrice = item.price
-        val discount = item.discount
+        val originalPrice = item.favoriteModel.price
+        val discount = item.favoriteModel.discount
         val sumDiscount = ((discount / 100) * originalPrice)
         val price = originalPrice - sumDiscount
         val sumClubDiscount = ((CLUB_DISCOUNT / 100) * price)
         val priceClub = price - sumClubDiscount
+        val subcategory = ' '+item.favoriteModel.productPath.toSubcategoryByPath()
 
         val textOriginalPrice = originalPrice.roundToInt().toString()
         val textDiscount = discount.roundToInt().toString()
         val textPrice = price.roundToInt().toString()
         val textPriceClub = priceClub.roundToInt().toString()
+        val textCategoryFavourite = textCategory+subcategory
 
-        tvProductNameFavorite.text = item.title
+        // Установка данных элемета списка
+        tvProductNameFavorite.text = item.favoriteModel.title
         tvPriceWithClubCardFavorite.text = textPriceClub
 
         tvOriginalPriceFavorite.text = textOriginalPrice
@@ -62,6 +81,7 @@ class FavoriteAdapter(
         tvDiscountFavorite.text = "$textDiscount%"
         tvPriceFavorite.text = textPrice
 
+        // Если нет скидки, то надо убрать TextView со скидками, иначе наоборот
         if (discount == 0.0) {
             layoutDiscount.visibility = View.GONE
             layoutOriginalPrice.visibility = View.GONE
@@ -70,18 +90,77 @@ class FavoriteAdapter(
             layoutDiscount.visibility = View.VISIBLE
             layoutOriginalPrice.visibility = View.VISIBLE
         }
-        ivProductFavorite.load(item.image)
 
+        ivProductFavorite.load(item.favoriteModel.image)
+
+        tvCategoryFavourite.text = textCategoryFavourite
+
+        // Если товар в корзине, то кнопка добавления в корзину не включена
+        bAddInBasketFromFavorites.isEnabled = !item.isInBasket
+
+        // Оюработка удаления из списка
         bDeleteFromFavorites.setOnClickListener {
             try {
                 mutableListFavorite.remove(item)
-                deleteFromFavoritesListener(item.productId, mutableListFavorite)
+
+                deleteFromFavoritesListener(item.favoriteModel.productId, item.favoriteModel)
+
+                notifyItemRemoved(position)
             }
-            catch (e: Exception) {
+            catch (e: Exception){
+                Log.e("TAG",e.stackTraceToString())
+            }
+
+
+        }
+
+        // Обработка добавления в корзину
+        bAddInBasketFromFavorites.setOnClickListener {
+            try {
+                // Обновление значения isInBasket текущего товара на значение true
+                val index = mutableListFavorite.indexOf(item)
+
+                mutableListFavorite.removeAt(index)
+                mutableListFavorite.add(index,item.copy(isInBasket = true))
+
+                addInBasketFromFavoritesListener(item.favoriteModel.productId)
+
+                notifyItemChanged(index)
+            }
+            catch (e: Exception){
                 Log.e("TAG",e.stackTraceToString())
             }
         }
 
+    }
+
+    /**
+     * Преобразование строки пути товара в строку подкатегории товара.
+     */
+    private fun String.toSubcategoryByPath(): String{
+        var indexStart = 0
+        val indexEnd = this.length
+        var counter = 0
+        var result = ""
+        this.forEach { char ->
+
+            if (char == '/') indexStart = counter + 1
+            counter++
+        }
+        val pathSubCategory = substring(indexStart,indexEnd)
+
+        counter = 0
+        pathSubCategory.forEach { char ->
+            var currentChar = char
+
+            if (counter == 0) currentChar = char.uppercaseChar()
+
+            if (char == '_') currentChar = ' '
+
+            result += currentChar
+            counter++
+        }
+        return result
     }
 
 }
