@@ -19,6 +19,12 @@ const val UNAUTHORIZED_USER = -1
 const val CLUB_DISCOUNT = 3.0
 const val EMPTY_STRING = ""
 
+/**
+ * Минимальная задержка для запроса.
+ * Нужна чтобы пользователь успел увидеть progress bar, а не моргание экрана.
+ */
+const val MIN_DELAY = 180L
+
 const val KEY_USER_ID = "KEY_USER_ID"
 const val KEY_PRODUCT_ID = "KEY_PRODUCT_ID"
 const val KEY_IS_INIT = "KEY_IS_INIT"

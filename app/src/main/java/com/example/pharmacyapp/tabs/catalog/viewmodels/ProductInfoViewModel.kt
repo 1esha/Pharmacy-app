@@ -26,6 +26,7 @@ import com.example.domain.favorite.usecases.DeleteByIdUseCase
 import com.example.domain.models.MediatorResultsModel
 import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.ResponseValueModel
+import com.example.pharmacyapp.MIN_DELAY
 import com.example.pharmacyapp.TYPE_ADD_FAVORITE
 import com.example.pharmacyapp.TYPE_ADD_PRODUCT_IN_BASKET
 import com.example.pharmacyapp.TYPE_DELETE_PRODUCT_FROM_BASKET
@@ -214,7 +215,7 @@ class ProductInfoViewModel(
      * Получение списка наличия товара в аптках по идентификатору товара.
      *
      * Параметры:
-     * [productId] -  идентификатор товара.
+     * [productId] - идентификатор товара.
      */
     fun getProductAvailabilityByProductId(productId: Int) {
         val getProductAvailabilityByProductIdUseCase = GetProductAvailabilityByProductIdUseCase(
@@ -244,7 +245,7 @@ class ProductInfoViewModel(
             favoriteModel = favoriteModel)
 
         viewModelScope.launch {
-            delay(180)
+            delay(MIN_DELAY)
             val resultAddFavorite = addFavoriteUseCase.execute()
             this@ProductInfoViewModel.resultAddFavorite.value = MediatorResultsModel(
                 type = TYPE_ADD_FAVORITE,
@@ -266,7 +267,7 @@ class ProductInfoViewModel(
         )
 
         viewModelScope.launch {
-            delay(180)
+            delay(MIN_DELAY)
             val result = deleteByIdUseCase.execute()
             resultRemoveFavorite.value = MediatorResultsModel(
                 type = TYPE_REMOVE_FAVORITES,
@@ -315,7 +316,7 @@ class ProductInfoViewModel(
         )
 
         viewModelScope.launch {
-            delay(180)
+            delay(MIN_DELAY)
             val result = addProductsInBasketUseCase.execute()
 
             resultAddProductInBasket.value = MediatorResultsModel(
@@ -340,7 +341,7 @@ class ProductInfoViewModel(
         )
 
         viewModelScope.launch {
-            delay(180)
+            delay(MIN_DELAY)
             val result = deleteProductFromBasketUseCase.execute()
 
             resultDeleteProductFromBasket.value = MediatorResultsModel(
