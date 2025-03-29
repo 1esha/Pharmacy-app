@@ -1,19 +1,22 @@
 package com.example.data.basket.datasource
 
 import com.example.data.ResultDataSource
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Интерфейс [BasketRepositoryDataSourceRemote] является репозиторием для работы с корзиной пользователя в data слое.
  */
-interface BasketRepositoryDataSourceRemote<R,B,I> {
+interface BasketRepositoryDataSourceRemote{
 
-    suspend fun addProductInBasket(userId: Int, productId: Int, numberProducts: Int): ResultDataSource<R>
+    fun addProductInBasketFlow(userId: Int, productId: Int, numberProducts: Int): Flow<ResultDataSource>
 
-    suspend fun deleteProductFromBasket(userId: Int, productId: Int): ResultDataSource<R>
+    fun deleteProductFromBasketFlow(userId: Int, productId: Int): Flow<ResultDataSource>
 
-    suspend fun getIdsProductsFromBasket(userId: Int): ResultDataSource<I>
+    fun getIdsProductsFromBasketFlow(userId: Int): Flow<ResultDataSource>
 
-    suspend fun getProductsFromBasket(userId: Int): ResultDataSource<B>
+    fun getProductsFromBasketFlow(userId: Int): Flow<ResultDataSource>
 
-    suspend fun updateNumberProductsInBasket(userId: Int, productId: Int, numberProducts: Int): ResultDataSource<R>
+    fun deleteProductsFromBasketFlow(userId: Int, listIdsProducts: List<Int>): Flow<ResultDataSource>
+
+    fun updateNumberProductsInBasketFlow(userId: Int, productId: Int, numberProducts: Int): Flow<ResultDataSource>
 }

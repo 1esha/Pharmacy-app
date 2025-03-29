@@ -1,160 +1,270 @@
 package com.example.data.basket
 
-import com.example.data.asSuccessResultDataSource
+import android.util.Log
+import com.example.data.asError
+import com.example.data.asSuccess
 import com.example.data.basket.datasource.BasketRepositoryDataSourceRemoteImpl
 import com.example.data.basket.datasource.models.BasketDataSourceModel
+import com.example.data.profile.datasource.models.ResponseDataSourceModel
 import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
 import com.example.data.toProductModel
 import com.example.data.toResponseModel
-import com.example.data.toResult
 import com.example.domain.Result
 import com.example.domain.basket.BasketRepository
 import com.example.domain.basket.models.BasketModel
-import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.ResponseValueModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 
 /**
  * Класс [BasketRepositoryImpl] является реализвцией интерфейса [BasketRepository].
  */
-class BasketRepositoryImpl: BasketRepository<
-        ResponseModel,
-        ResponseValueModel<List<BasketModel>>,
-        ResponseValueModel<List<Int>>
-        > {
+class BasketRepositoryImpl: BasketRepository {
 
     private val basketRepositoryDataSourceRemoteImpl = BasketRepositoryDataSourceRemoteImpl()
 
     /**
      * Добавление товрара в корзину.
+     * При успешном результате эмитится объект типа ResponseModel.
      *
      * Параметры:
      * [userId] - идентификатор пользователя в чью корзину будет добавлен товар;
      * [productId] - идентификатор товара для добавления;
      * [numberProducts] - количество товра, которое будет добавлено в коризну.
      */
-    override suspend fun addProductInBasket(userId: Int, productId: Int, numberProducts: Int): Result<ResponseModel> {
+    override fun addProductInBasketFlow(
+        userId: Int,
+        productId: Int,
+        numberProducts: Int
+    ): Flow<Result> = flow {
+        try {
+            basketRepositoryDataSourceRemoteImpl.addProductInBasketFlow(
+                userId = userId,
+                productId = productId,
+                numberProducts = numberProducts
+            ).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseDataSourceModel?
 
-        val responseDataSourceModel = basketRepositoryDataSourceRemoteImpl.addProductInBasket(
-            userId = userId,
-            productId = productId,
-            numberProducts = numberProducts
-        )
-        val valueDataSource = responseDataSourceModel.asSuccessResultDataSource()?.value
-        val value = valueDataSource?.toResponseModel() ?: defaultResponseModel
-        val result = responseDataSourceModel.toResult(
-            value = value
-        )
+                if (response != null) {
+                    val data = response.toResponseModel()
 
-        return result
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
     }
 
     /**
      * Удаление товара из коризины.
+     * При успешном результате эмитится объект типа ResponseModel.
      *
      * Параметры:
      * [userId] - идентификатор пользователя из чьей коризины будет удален товар;
      * [productId] - идентификатор товара для удаления.
      */
-    override suspend fun deleteProductFromBasket(userId: Int, productId: Int): Result<ResponseModel> {
+    override fun deleteProductFromBasketFlow(
+        userId: Int,
+        productId: Int
+    ): Flow<Result> = flow{
+        try {
+            basketRepositoryDataSourceRemoteImpl.deleteProductFromBasketFlow(
+                userId = userId,
+                productId = productId
+            ).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseDataSourceModel?
 
-        val responseDataSourceModel = basketRepositoryDataSourceRemoteImpl.deleteProductFromBasket(
-            userId = userId,
-            productId = productId
-        )
-        val valueDataSource = responseDataSourceModel.asSuccessResultDataSource()?.value
-        val value = valueDataSource?.toResponseModel() ?: defaultResponseModel
-        val result = responseDataSourceModel.toResult(
-            value = value
-        )
+                if (response != null) {
+                    val data = response.toResponseModel()
 
-        return result
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
     }
+
+    /**
+     * Получение списка товаров из корзины пользователя.
+     * При успешном результате эмитится список товаров из корзины ( List<BasketModel> ).
+     *
+     * Параметры:
+     * [userId] - идентификатор пользователя.
+     */
+    override fun getProductsFromBasketFlow(userId: Int): Flow<Result> = flow {
+        try {
+            basketRepositoryDataSourceRemoteImpl.getProductsFromBasketFlow(userId = userId)
+                .collect{ resultDataSource ->
+                    val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
+
+                    if (response != null) {
+                        val _listBasketDataSourceModel = response.value as List<*>
+                        val listBasketDataSourceModel = _listBasketDataSourceModel.map {
+                            return@map it as BasketDataSourceModel
+                        }
+
+                        val listBasketModel = listBasketDataSourceModel.toListBasketModel()
+
+                        val data = ResponseValueModel(
+                            value = listBasketModel,
+                            responseModel = response.responseDataSourceModel.toResponseModel()
+                        )
+                        emit(Result.Success(data = data))
+                    }
+                    else {
+                        val resultError = resultDataSource.asError()
+                        if (resultError != null) {
+                            emit(Result.Error(exception = resultError.exception))
+                        }
+                        else throw IllegalArgumentException("Несуществующий тип результата")
+                    }
+                }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+
+    }.flowOn(Dispatchers.IO)
 
     /**
      * Получение списка идентификаторов товаров, находящихся в коризине пользователя.
+     * При успешном результате эмитится список идентификаторов товаров из корзины ( List<Int> ).
      *
      * Параметры:
      * [userId] - идентификатор пользователя.
      */
-    override suspend fun getIdsProductsFromBasket(userId: Int): Result<ResponseValueModel<List<Int>>> {
+    override fun getIdsProductsFromBasketFlow(userId: Int): Flow<Result> = flow{
+        try {
+            basketRepositoryDataSourceRemoteImpl.getIdsProductsFromBasketFlow(userId = userId)
+                .collect{ resultDataSource ->
+                    val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
 
-        val responseValueDataSourceModel = basketRepositoryDataSourceRemoteImpl.getIdsProductsFromBasket(
-            userId = userId
-        )
+                    if (response != null) {
 
-        val valueDataSource = responseValueDataSourceModel.asSuccessResultDataSource()?.value
-        val listIdsProductsFromBasket = valueDataSource?.value
-        val value = valueDataSource?.toResponseValueModel(value = listIdsProductsFromBasket)
+                        val _listIdsProductsFromBasket = response.value as List<*>
+                        val listIdsProductsFromBasket = _listIdsProductsFromBasket.map {
+                            return@map it as Int
+                        }
 
-        val result = responseValueDataSourceModel.toResult(
-            value = value
-        )
-
-        return result
+                        val data = ResponseValueModel(
+                            value = listIdsProductsFromBasket,
+                            responseModel = response.responseDataSourceModel.toResponseModel()
+                        )
+                        emit(Result.Success(data = data))
+                    }
+                    else {
+                        val resultError = resultDataSource.asError()
+                        if (resultError != null) {
+                            emit(Result.Error(exception = resultError.exception))
+                        }
+                        else throw IllegalArgumentException("Несуществующий тип результата")
+                    }
+                }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
     }
 
     /**
-     * Получение списка товаров из корины пользователя.
+     * Удаление нескольких товаров из коризины.
+     * При успешном результате эмитится объект типа ResponseModel.
      *
      * Параметры:
-     * [userId] - идентификатор пользователя.
+     * [userId] - идентификатор пользователя из чьей коризины будут удалены товары;
+     * [listIdsProducts] - список идентификаторов товаров для удаления.
      */
-    override suspend fun getProductsFromBasket(userId: Int): Result<ResponseValueModel<List<BasketModel>>> {
+    override fun deleteProductsFromBasketFlow(
+        userId: Int,
+        listIdsProducts: List<Int>
+    ): Flow<Result> = flow{
+        try {
+            basketRepositoryDataSourceRemoteImpl.deleteProductsFromBasketFlow(
+                userId = userId,
+                listIdsProducts = listIdsProducts
+            ).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseDataSourceModel?
 
-        val responseDataSourceModel = basketRepositoryDataSourceRemoteImpl.getProductsFromBasket(
-            userId = userId
-        )
-
-        val valueDataSource = responseDataSourceModel.asSuccessResultDataSource()?.value
-
-        val listProductDataSourceModel = valueDataSource?.value
-
-        val value = valueDataSource?.toResponseValueModel(
-            value = listProductDataSourceModel?.toListBasketModel()
-        )
-
-        val result = responseDataSourceModel.toResult(
-            value = value
-        )
-
-        return result
+                if (response != null){
+                    val data = response.toResponseModel()
+                    emit(Result.Success(data = data))
+                }
+                else{
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
     }
 
     /**
      * Обновление количество товара в корзине.
+     * При успешном результате эмитится объект типа ResponseModel.
      *
      * Параметры:
      * [userId] - идентификатор пользователя;
      * [productId] - идентификатор товара;
      * [numberProducts] - новое количество товара в корзине.
      */
-    override suspend fun updateNumberProductsInBasket(userId: Int, productId: Int, numberProducts: Int): Result<ResponseModel> {
+    override fun updateNumberProductsInBasketFlow(
+        userId: Int,
+        productId: Int,
+        numberProducts: Int
+    ): Flow<Result> = flow{
+        try {
+            basketRepositoryDataSourceRemoteImpl.updateNumberProductsInBasketFlow(
+                userId = userId,
+                productId = productId,
+                numberProducts = numberProducts
+            ).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseDataSourceModel?
 
-        val responseDataSourceModel = basketRepositoryDataSourceRemoteImpl.updateNumberProductsInBasket(
-            userId = userId,
-            productId = productId,
-            numberProducts = numberProducts
-        )
-        val valueDataSource = responseDataSourceModel.asSuccessResultDataSource()?.value
-        val value = valueDataSource?.toResponseModel() ?: defaultResponseModel
-        val result = responseDataSourceModel.toResult(
-            value = value
-        )
+                if (response != null) {
+                    val data = response.toResponseModel()
 
-        return result
-    }
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
 
-    /**
-     * Преобразование [ResponseValueDataSourceModel] в [ResponseValueModel].
-     *
-     * Параметры:
-     * [value] - значение для [ResponseValueModel].
-     */
-    private fun <I,O>ResponseValueDataSourceModel<I>.toResponseValueModel(value: O?): ResponseValueModel<O> {
-        return ResponseValueModel(
-            value = value,
-            responseModel = this.responseDataSourceModel.toResponseModel()
-        )
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
     }
 
     /**
@@ -179,13 +289,4 @@ class BasketRepositoryImpl: BasketRepository<
 
         return mutableListBasket
     }
-
-    companion object {
-        val defaultResponseModel = ResponseModel(
-            message = "Ошибка",
-            status = 404
-        )
-    }
-
-
 }

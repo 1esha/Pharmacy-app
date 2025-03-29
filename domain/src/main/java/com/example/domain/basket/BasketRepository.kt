@@ -1,19 +1,22 @@
 package com.example.domain.basket
 
 import com.example.domain.Result
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Интерфейс [BasketRepository] является репозиторием для работы с корзиной пользователя.
  */
-interface BasketRepository<R,B,I> {
+interface BasketRepository {
 
-    suspend fun addProductInBasket(userId: Int, productId: Int, numberProducts: Int): Result<R>
+    fun addProductInBasketFlow(userId: Int, productId: Int, numberProducts: Int): Flow<Result>
 
-    suspend fun deleteProductFromBasket(userId: Int, productId: Int): Result<R>
+    fun deleteProductFromBasketFlow(userId: Int, productId: Int): Flow<Result>
 
-    suspend fun getIdsProductsFromBasket(userId: Int): Result<I>
+    fun getProductsFromBasketFlow(userId: Int): Flow<Result>
 
-    suspend fun getProductsFromBasket(userId: Int): Result<B>
+    fun getIdsProductsFromBasketFlow(userId: Int): Flow<Result>
 
-    suspend fun updateNumberProductsInBasket(userId: Int, productId: Int, numberProducts: Int): Result<R>
+    fun deleteProductsFromBasketFlow(userId: Int, listIdsProducts: List<Int>): Flow<Result>
+
+    fun updateNumberProductsInBasketFlow(userId: Int, productId: Int, numberProducts: Int): Flow<Result>
 }
