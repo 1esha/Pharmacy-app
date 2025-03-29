@@ -1,17 +1,21 @@
 package com.example.domain
 
-sealed class Result <T>
+import kotlin.Exception
 
-class PendingResult<T>: Result<T>()
+sealed class Result{
 
-class SuccessResult<T>(
-    val value: T?
-): Result<T>()
+    class Loading: Result()
 
-class ErrorResult<T>(
-    val exception: Exception
-) : Result<T>()
+    data class Success<T>(val data: T): Result()
 
-fun <T>Result<T>.asSuccessResult(): SuccessResult<T>?{
-    return if (this is SuccessResult) this else null
+    data class Error(val exception: Exception): Result()
+
+}
+
+fun Result.asSuccess(): Result.Success<*>?{
+    return if (this is Result.Success<*>) this else null
+}
+
+fun Result.asError(): Result.Error?{
+    return if (this is Result.Error) this else null
 }

@@ -1,14 +1,21 @@
 package com.example.data
 
+import kotlin.Exception
 
-sealed class ResultDataSource <T>
+sealed class ResultDataSource{
 
-class PendingResultDataSource<T>: ResultDataSource<T>()
+    class Loading: ResultDataSource()
 
-class SuccessResultDataSource<T>(
-    val value: T
-): ResultDataSource<T>()
+    data class Success<T>(val data: T): ResultDataSource()
 
-class ErrorResultDataSource<T>(
-    val exception: Exception
-) : ResultDataSource<T>()
+    data class Error(val exception: Exception): ResultDataSource()
+
+}
+
+fun ResultDataSource.asSuccess(): ResultDataSource.Success<*>?{
+    return if (this is ResultDataSource.Success<*>) this else null
+}
+
+fun ResultDataSource.asError(): ResultDataSource.Error?{
+    return if (this is ResultDataSource.Error) this else null
+}
