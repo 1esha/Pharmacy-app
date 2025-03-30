@@ -2,16 +2,20 @@ package com.example.domain.catalog.usecases
 
 import com.example.domain.Result
 import com.example.domain.catalog.CatalogRepository
-import com.example.domain.models.OperatingModeModel
-import com.example.domain.profile.models.ResponseValueModel
+import kotlinx.coroutines.flow.Flow
 
-
+/**
+ * Класс [GetOperatingModeUseCase] является UseCase для получения списка режимов работы аптек.
+ *
+ * Параметры:
+ * [catalogRepository] - репозиторий с функционалом.
+ */
 class GetOperatingModeUseCase(
-    private val catalogRepository: CatalogRepository<*, *, *, *, *, ResponseValueModel<List<OperatingModeModel>?>>
+    private val catalogRepository: CatalogRepository
 ) {
 
-    suspend fun execute(): Result<ResponseValueModel<List<OperatingModeModel>?>> {
-        val result = catalogRepository.getOperatingMode()
+    fun execute(): Flow<Result> {
+        val result = catalogRepository.getOperatingModeFlow()
 
         return result
     }

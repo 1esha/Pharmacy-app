@@ -1,14 +1,22 @@
 package com.example.data.catalog
 
-import com.example.data.asSuccessResultDataSource
+import android.util.Log
+import com.example.data.asError
+import com.example.data.asSuccess
+import com.example.data.catalog.datasource.models.OperatingModeDataSourceModel
+import com.example.data.catalog.datasource.models.PharmacyAddressesDataSourceModel
+import com.example.data.catalog.datasource.models.PharmacyAddressesDetailsDataSourceModel
+import com.example.data.catalog.datasource.models.ProductAvailabilityDataSourceModel
+import com.example.data.catalog.datasource.models.ProductDataSourceModel
 import com.example.data.catalog.datasource.remote.CatalogRepositoryDataSourceRemoteImpl
-import com.example.data.toResponseValueListOperatingModeModel
-import com.example.data.toResponseValueListPharmacyAddressesDetailsDataSourceModel
-import com.example.data.toResponseValueListPharmacyAddressesModel
-import com.example.data.toResponseValueListProductAvailabilityModel
-import com.example.data.toResponseValueListProductModel
-import com.example.data.toResponseValueProductModel
-import com.example.data.toResult
+import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
+import com.example.data.toListOperatingModeModel
+import com.example.data.toListPharmacyAddressesDetailsModel
+import com.example.data.toListPharmacyAddressesModel
+import com.example.data.toListProductAvailabilityModel
+import com.example.data.toListProductModel
+import com.example.data.toProductModel
+import com.example.data.toResponseModel
 import com.example.domain.Result
 import com.example.domain.catalog.CatalogRepository
 import com.example.domain.catalog.models.PharmacyAddressesDetailsModel
@@ -17,89 +25,352 @@ import com.example.domain.catalog.models.ProductModel
 import com.example.domain.catalog.models.PharmacyAddressesModel
 import com.example.domain.models.OperatingModeModel
 import com.example.domain.profile.models.ResponseValueModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 
-class CatalogRepositoryImpl() : CatalogRepository<
-        ResponseValueModel<List<ProductModel>?>,
-        ResponseValueModel<List<ProductAvailabilityModel>?>,
-        ResponseValueModel<List<PharmacyAddressesModel>?>,
-        ResponseValueModel<ProductModel?>,
-        ResponseValueModel<List<PharmacyAddressesDetailsModel>?>,
-        ResponseValueModel<List<OperatingModeModel>?>
-        >{
-
+class CatalogRepositoryImpl() : CatalogRepository{
 
     private val catalogRepositoryDataSourceRemoteImpl = CatalogRepositoryDataSourceRemoteImpl()
 
-    override suspend fun getAllProducts(): Result<ResponseValueModel<List<ProductModel>?>> {
-        val resultDataSource = catalogRepositoryDataSourceRemoteImpl.getAllProducts()
-        val value = resultDataSource.asSuccessResultDataSource()?.value
-        val result = resultDataSource.toResult(value = value?.toResponseValueListProductModel())
+    /**
+     * Получение всех товаров.
+     * При успешном результате эмитится список всех товаров ( List<[ProductModel]> ).
+     */
+    override fun getAllProductsFlow(): Flow<Result> = flow {
+        try {
+            catalogRepositoryDataSourceRemoteImpl.getAllProductsFlow().collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
 
-        return result
-    }
+                if (response != null) {
+                    val _listProductDataSourceModel = response.value as List<*>
+                    val listProductDataSourceModel = _listProductDataSourceModel.map { it as ProductDataSourceModel }
 
-    override suspend fun getProductsByPath(path: String): Result<ResponseValueModel<List<ProductModel>?>> {
-        val resultDataSource = catalogRepositoryDataSourceRemoteImpl.getProductsByPath(path = path)
-        val value = resultDataSource.asSuccessResultDataSource()?.value
-        val result = resultDataSource.toResult(value = value?.toResponseValueListProductModel())
+                    val listProductModel = listProductDataSourceModel.toListProductModel()
 
-        return result
-    }
+                    val data = ResponseValueModel(
+                        value = listProductModel,
+                        responseModel = response.responseDataSourceModel.toResponseModel()
+                    )
 
-    override suspend fun getPharmacyAddresses(): Result<ResponseValueModel<List<PharmacyAddressesModel>?>> {
-        val resultDataSource = catalogRepositoryDataSourceRemoteImpl.getPharmacyAddresses()
-        val value = resultDataSource.asSuccessResultDataSource()?.value
-        val result = resultDataSource.toResult(value = value?.toResponseValueListPharmacyAddressesModel())
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
 
-        return result
-    }
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
 
-    override suspend fun getProductAvailabilityByPath(path: String): Result<ResponseValueModel<List<ProductAvailabilityModel>?>> {
-        val resultDataSource = catalogRepositoryDataSourceRemoteImpl.getProductAvailabilityByPath(path = path)
-        val value = resultDataSource.asSuccessResultDataSource()?.value
-        val result = resultDataSource.toResult(value = value?.toResponseValueListProductAvailabilityModel())
+    /**
+     * Получение списка товаров по переданному пути.
+     * При успешном результате эмитится список товаров ( List<[ProductModel]> ).
+     *
+     * Параметры:
+     * [path] - путь по которому будет получен список товаров.
+     */
+    override fun getProductsByPathFlow(path: String): Flow<Result> = flow {
+        try {
+            catalogRepositoryDataSourceRemoteImpl.getProductsByPathFlow(path = path).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
 
-        return result
-    }
+                if (response != null) {
+                    val _listProductDataSourceModel = response.value as List<*>
+                    val listProductDataSourceModel = _listProductDataSourceModel.map { it as ProductDataSourceModel }
 
-    override suspend fun getProductById(productId: Int): Result<ResponseValueModel<ProductModel?>> {
-        val responseValueModel = catalogRepositoryDataSourceRemoteImpl.getProductById(productId = productId)
-        val value = responseValueModel.asSuccessResultDataSource()?.value
-        val result = responseValueModel.toResult(
-            value = value?.toResponseValueProductModel()
-        )
+                    val listProductModel = listProductDataSourceModel.toListProductModel()
 
-        return result
-    }
+                    val data = ResponseValueModel(
+                        value = listProductModel,
+                        responseModel = response.responseDataSourceModel.toResponseModel()
+                    )
 
-    override suspend fun getProductAvailabilityByProductId(productId: Int): Result<ResponseValueModel<List<ProductAvailabilityModel>?>> {
-        val responseValueModel = catalogRepositoryDataSourceRemoteImpl.getProductAvailabilityByProductId(productId = productId)
-        val value = responseValueModel.asSuccessResultDataSource()?.value
-        val result = responseValueModel.toResult(
-            value = value?.toResponseValueListProductAvailabilityModel()
-        )
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
 
-        return result
-    }
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
 
-    override suspend fun getPharmacyAddressesDetails(): Result<ResponseValueModel<List<PharmacyAddressesDetailsModel>?>> {
-        val responseValueModel = catalogRepositoryDataSourceRemoteImpl.getPharmacyAddressesDetails()
-        val value = responseValueModel.asSuccessResultDataSource()?.value
-        val result = responseValueModel.toResult(
-            value = value?.toResponseValueListPharmacyAddressesDetailsDataSourceModel()
-        )
+    /**
+     * Получение товара по его идентификатору.
+     * При успешном результате эмитится модель товара ( ProductModel ).
+     *
+     * Параметры:
+     * [productId] - идентификатор получаемого товара.
+     */
+    override fun getProductByIdFlow(productId: Int): Flow<Result> = flow {
+        try {
+            catalogRepositoryDataSourceRemoteImpl.getProductByIdFlow(productId = productId).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
 
-        return result
-    }
+                if (response != null) {
+                    val productDataSourceModel = response.value as ProductDataSourceModel
+                    val productModel = productDataSourceModel.toProductModel()
 
-    override suspend fun getOperatingMode(): Result<ResponseValueModel<List<OperatingModeModel>?>> {
-        val resultValueModel = catalogRepositoryDataSourceRemoteImpl.getOperatingMode()
-        val value = resultValueModel.asSuccessResultDataSource()?.value
-        val result = resultValueModel.toResult(
-            value = value?.toResponseValueListOperatingModeModel()
-        )
+                    val data = ResponseValueModel(
+                        value = productModel,
+                        responseModel = response.responseDataSourceModel.toResponseModel()
+                    )
 
-        return result
-    }
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
 
+    /**
+     * Получение списка данных о аптеках.
+     * При успешном результате эмитится список данных о аптеках ( List<[PharmacyAddressesModel]> ).
+     */
+    override fun getPharmacyAddressesFlow(): Flow<Result> = flow {
+        try {
+            catalogRepositoryDataSourceRemoteImpl.getPharmacyAddressesFlow().collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
+
+                if (response != null) {
+                    val _listPharmacyAddressesDataSourceModel = response.value as List<*>
+                    val listPharmacyAddressesDataSourceModel = _listPharmacyAddressesDataSourceModel.map { it as PharmacyAddressesDataSourceModel }
+
+                    val listPharmacyAddressesModel = listPharmacyAddressesDataSourceModel.toListPharmacyAddressesModel()
+
+                    val data = ResponseValueModel(
+                        value = listPharmacyAddressesModel,
+                        responseModel = response.responseDataSourceModel.toResponseModel()
+                    )
+
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Получение списка подробной информации о аптеках.
+     * При успешном результате эмитится список подробной информации о аптеках ( List<[PharmacyAddressesDetailsModel]> ).
+     */
+    override fun getPharmacyAddressesDetailsFlow(): Flow<Result> = flow {
+        try {
+            catalogRepositoryDataSourceRemoteImpl.getPharmacyAddressesDetailsFlow().collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
+
+                if (response != null) {
+                    val _listPharmacyAddressesDetailsDataSourceModel = response.value as List<*>
+                    val listPharmacyAddressesDetailsDataSourceModel = _listPharmacyAddressesDetailsDataSourceModel.map { it as PharmacyAddressesDetailsDataSourceModel }
+
+                    val listPharmacyAddressesDetailsModel = listPharmacyAddressesDetailsDataSourceModel.toListPharmacyAddressesDetailsModel()
+
+                    val data = ResponseValueModel(
+                        value = listPharmacyAddressesDetailsModel,
+                        responseModel = response.responseDataSourceModel.toResponseModel()
+                    )
+
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Получение списка наличия товаров по переданному пути.
+     * При успешном результате эмитится список данных о наличии товаров в аптеках ( List<[ProductAvailabilityModel]> ).
+     *
+     * Параметры:
+     * [path] - путь по которому будет получен список данных о наличии товаров в аптеках.
+     */
+    override fun getProductAvailabilityByPathFlow(path: String): Flow<Result> = flow {
+        try {
+            catalogRepositoryDataSourceRemoteImpl.getProductAvailabilityByPathFlow(path = path).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
+
+                if (response != null) {
+                    val _listProductAvailabilityDataSourceModel = response.value as List<*>
+                    val listProductAvailabilityDataSourceModel = _listProductAvailabilityDataSourceModel.map { it as ProductAvailabilityDataSourceModel }
+
+                    val listProductAvailabilityModel = listProductAvailabilityDataSourceModel.toListProductAvailabilityModel()
+
+                    val data = ResponseValueModel(
+                        value = listProductAvailabilityModel,
+                        responseModel = response.responseDataSourceModel.toResponseModel()
+                    )
+
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Получение списка наличия товара в аптеках по идентификатору товара.
+     * При успешном результате эмитится список данных о наличии товара в аптеках ( List<[ProductAvailabilityModel]> ).
+     *
+     * Параметры:
+     * [productId] - идентификатор товара наличие которого будет получено.
+     */
+    override fun getProductAvailabilityByProductIdFlow(productId: Int): Flow<Result> = flow {
+        try {
+            catalogRepositoryDataSourceRemoteImpl.getProductAvailabilityByProductIdFlow(productId = productId).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
+
+                if (response != null) {
+                    val _listProductAvailabilityDataSourceModel = response.value as List<*>
+                    val listProductAvailabilityDataSourceModel = _listProductAvailabilityDataSourceModel.map { it as ProductAvailabilityDataSourceModel }
+                    val listProductAvailabilityModel = listProductAvailabilityDataSourceModel.toListProductAvailabilityModel()
+
+                    val data = ResponseValueModel(
+                        value = listProductAvailabilityModel,
+                        responseModel = response.responseDataSourceModel.toResponseModel()
+                    )
+
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Получение списка наличия товаров в аптеках.
+     * При успешном результате эмитится список наличия товаров в аптеках ( List<[ProductAvailabilityModel]> ).
+     */
+    override fun getProductAvailabilityFlow(): Flow<Result> = flow {
+        try {
+            catalogRepositoryDataSourceRemoteImpl.getProductAvailabilityFlow().collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
+
+                if (response != null) {
+                    val _listProductAvailabilityDataSourceModel = response.value as List<*>
+                    val listProductAvailabilityDataSourceModel = _listProductAvailabilityDataSourceModel.map { it as ProductAvailabilityDataSourceModel }
+
+                    val listProductAvailabilityModel = listProductAvailabilityDataSourceModel.toListProductAvailabilityModel()
+
+                    val data = ResponseValueModel(
+                        value = listProductAvailabilityModel,
+                        responseModel = response.responseDataSourceModel.toResponseModel()
+                    )
+
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Получение списка с режимами работы аптек.
+     * При успешном результате эмитится список режимов работы аптек ( List<[OperatingModeModel]> ).
+     */
+    override fun getOperatingModeFlow(): Flow<Result> = flow {
+        try {
+            catalogRepositoryDataSourceRemoteImpl.getOperatingModeFlow().collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
+
+                if (response != null) {
+                    val _listOperatingModeDataSourceModel = response.value as List<*>
+                    val listOperatingModeDataSourceModel = _listOperatingModeDataSourceModel.map { it as OperatingModeDataSourceModel }
+
+                    val listOperatingModeModel = listOperatingModeDataSourceModel.toListOperatingModeModel()
+
+                    val data = ResponseValueModel(
+                        value = listOperatingModeModel,
+                        responseModel = response.responseDataSourceModel.toResponseModel()
+                    )
+
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
 }

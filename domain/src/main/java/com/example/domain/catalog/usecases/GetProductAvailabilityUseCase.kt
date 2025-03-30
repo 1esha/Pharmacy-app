@@ -5,17 +5,17 @@ import com.example.domain.catalog.CatalogRepository
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Класс [GetPharmacyAddressesDetailsUseCase] является UseCase для получения списка подробной информации о аптеках.
+ * Класс [GetProductAvailabilityUseCase] является UseCase для получения списка наличия товаров в аптеках.
  *
  * Параметры:
  * [catalogRepository] - репозиторий с функционалом.
  */
-class GetPharmacyAddressesDetailsUseCase(
+class GetProductAvailabilityUseCase(
     private val catalogRepository: CatalogRepository
 ) {
 
     fun execute(): Flow<Result> {
-        val result = catalogRepository.getPharmacyAddressesDetailsFlow()
+        val result = catalogRepository.getProductAvailabilityFlow()
 
         return result
     }

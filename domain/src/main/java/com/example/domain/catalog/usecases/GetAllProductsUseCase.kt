@@ -2,15 +2,20 @@ package com.example.domain.catalog.usecases
 
 import com.example.domain.Result
 import com.example.domain.catalog.CatalogRepository
-import com.example.domain.catalog.models.ProductModel
-import com.example.domain.profile.models.ResponseValueModel
+import kotlinx.coroutines.flow.Flow
 
+/**
+ * Класс [GetAllProductsUseCase] является UseCase для получения всех товаров.
+ *
+ * Параметры:
+ * [catalogRepository] - репозиторий с функционалом.
+ */
 class GetAllProductsUseCase(
-    private val catalogRepository: CatalogRepository<ResponseValueModel<List<ProductModel>>,*,*,*,*,*>
+    private val catalogRepository: CatalogRepository
 ) {
 
-    suspend fun execute(): Result<ResponseValueModel<List<ProductModel>>>{
-        val result = catalogRepository.getAllProducts()
+    fun execute(): Flow<Result> {
+        val result = catalogRepository.getAllProductsFlow()
         return result
     }
 

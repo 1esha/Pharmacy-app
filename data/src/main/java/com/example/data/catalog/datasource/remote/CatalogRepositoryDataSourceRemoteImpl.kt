@@ -1,239 +1,328 @@
 package com.example.data.catalog.datasource.remote
 
 import android.util.Log
-import com.example.data.ErrorResultDataSource
 import com.example.data.ResultDataSource
-import com.example.data.SuccessResultDataSource
 import com.example.data.catalog.datasource.models.OperatingModeDataSourceModel
 import com.example.data.catalog.datasource.models.PharmacyAddressesDataSourceModel
 import com.example.data.catalog.datasource.models.PharmacyAddressesDetailsDataSourceModel
 import com.example.data.catalog.datasource.models.ProductAvailabilityDataSourceModel
 import com.example.data.catalog.datasource.models.ProductDataSourceModel
 import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
+import com.example.domain.ServerException
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.parameter
 import io.ktor.client.request.request
 import io.ktor.client.request.url
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.gson.gson
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 
 
-class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote<
-        ResponseValueDataSourceModel<List<ProductDataSourceModel>?>,
-        ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>,
-        ResponseValueDataSourceModel<List<PharmacyAddressesDataSourceModel>?>,
-        ResponseValueDataSourceModel<ProductDataSourceModel?>,
-        ResponseValueDataSourceModel<List<PharmacyAddressesDetailsDataSourceModel>?>,
-        ResponseValueDataSourceModel<List<OperatingModeDataSourceModel>?>
-        > {
+class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote{
 
     private val client = HttpClient(OkHttp) {
+        // URL запроса по умолчанию
+        defaultRequest {
+            url(BASE_URL)
+        }
         install(ContentNegotiation) {
             gson()
         }
     }
 
-    override suspend fun getAllProducts(): ResultDataSource<ResponseValueDataSourceModel<List<ProductDataSourceModel>?>> =
-        withContext(Dispatchers.IO) {
-            try {
-                val response = client.request {
-                    url(GET_ALL_PRODUCTS_URL)
-                    method = HttpMethod.Get
-                }
-
-                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<List<ProductDataSourceModel>?>>()
-                Log.i("TAG","getAllProducts responseValueDataSourceModel = $responseValueDataSourceModel")
-                val successResultDataSource = SuccessResultDataSource(
-                    value = responseValueDataSourceModel
-                )
-                Log.i("TAG","getAllProducts successResultDataSource = $successResultDataSource")
-                return@withContext successResultDataSource
-            }
-            catch (e: Exception){
-                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<List<ProductDataSourceModel>?>>(
-                    exception = e
-                )
-                Log.i("TAG","getAllProducts errorResultDataSource = ${errorResultDataSource.exception}")
-                return@withContext errorResultDataSource
+    /**
+     * Получение всех товаров..
+     */
+    override fun getAllProductsFlow(): Flow<ResultDataSource> = flow{
+        Log.d("TAG","getAllProductsFlow")
+        try {
+            val response = client.request {
+                url(GET_ALL_PRODUCTS_URL)
+                method = HttpMethod.Get
             }
 
-        }
+            val data = response.body<ResponseValueDataSourceModel<List<ProductDataSourceModel>>>()
 
-    override suspend fun getProductsByPath(path: String): ResultDataSource<ResponseValueDataSourceModel<List<ProductDataSourceModel>?>> =
-        withContext(Dispatchers.IO) {
-            try {
-                val response = client.request {
-                    url(GET_PRODUCTS_BY_PATH +path)
-                    method = HttpMethod.Get
-                }
-                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<List<ProductDataSourceModel>?>>()
-                val successResultDataSource = SuccessResultDataSource(
-                    value = responseValueDataSourceModel
-                )
-                Log.i("TAG","getProductsByPath successResultDataSource = $successResultDataSource")
-                return@withContext successResultDataSource
+            if (
+                data.responseDataSourceModel.status in 200..299 &&
+                data.value != null
+                ) {
+                val result = ResultDataSource.Success(data = data)
+                emit(result)
             }
-            catch (e: Exception) {
-                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<List<ProductDataSourceModel>?>>(
-                    exception = e
-                )
-                Log.i("TAG","getProductsByPath errorResultDataSource = ${errorResultDataSource.exception}")
-                return@withContext errorResultDataSource
+            else {
+                emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.responseDataSourceModel.message)))
             }
         }
-
-    override suspend fun getPharmacyAddresses(): ResultDataSource<ResponseValueDataSourceModel<List<PharmacyAddressesDataSourceModel>?>> =
-        withContext(Dispatchers.IO) {
-            try {
-                val response = client.request {
-                    url(GET_PHARMACY_ADDRESSES)
-                    method = HttpMethod.Get
-                }
-                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<List<PharmacyAddressesDataSourceModel>?>>()
-                val successResultDataSource = SuccessResultDataSource(
-                    value = responseValueDataSourceModel
-                )
-                Log.i("TAG","getPharmacyAddresses successResultDataSource = $successResultDataSource")
-                return@withContext successResultDataSource
-            }
-            catch (e: Exception) {
-                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<List<PharmacyAddressesDataSourceModel>?>>(
-                    exception = e
-                )
-                Log.i("TAG","getPharmacyAddresses errorResultDataSource = ${errorResultDataSource.exception}")
-                return@withContext errorResultDataSource
-            }
+        catch (e: Exception){
+            emit(ResultDataSource.Error(exception = e))
         }
 
-    override suspend fun getProductAvailabilityByPath(path: String): ResultDataSource<ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>> =
-        withContext(Dispatchers.IO) {
-            try {
-                val response = client.request {
-                    url(GET_PRODUCT_AVAILABILITY_BY_PATH +path)
-                    method = HttpMethod.Get
-                }
-                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>>()
-                val successResultDataSource = SuccessResultDataSource(
-                    value = responseValueDataSourceModel
-                )
-                Log.i("TAG","getProductAvailabilityByPath successResultDataSource = $successResultDataSource")
-                return@withContext successResultDataSource
-            }
-            catch (e: Exception) {
-                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>>(
-                    exception = e
-                )
-                Log.i("TAG","getProductAvailabilityByPath errorResultDataSource = ${errorResultDataSource.exception}")
-                return@withContext errorResultDataSource
-            }
-        }
+    }.flowOn(Dispatchers.IO)
 
-    override suspend fun getProductById(productId: Int): ResultDataSource<ResponseValueDataSourceModel<ProductDataSourceModel?>> =
-        withContext(Dispatchers.IO) {
-            try {
-                val response = client.request {
-                    url(GET_PRODUCT_BY_ID+productId)
-                    method = HttpMethod.Get
-                }
-                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<ProductDataSourceModel?>>()
-                val successResultDataSource = SuccessResultDataSource(
-                    value = responseValueDataSourceModel
-                )
-                Log.i("TAG","getProductById successResultDataSource = $successResultDataSource")
-                return@withContext successResultDataSource
+    /**
+     * Получение списка товаров по переданному пути.
+     *
+     * Параметры:
+     * [path] - путь по которому будет получен список товаров.
+     */
+    override fun getProductsByPathFlow(path: String): Flow<ResultDataSource> = flow{
+        Log.d("TAG","getProductsByPathFlow")
+        try {
+            val response = client.request {
+                url(GET_PRODUCTS_BY_PATH)
+                parameter("path",path)
+                method = HttpMethod.Get
             }
-            catch (e: Exception) {
-                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<ProductDataSourceModel?>>(
-                    exception = e
-                )
-                Log.i("TAG","getProductById errorResultDataSource = ${errorResultDataSource.exception}")
-                return@withContext errorResultDataSource
-            }
-        }
 
-    override suspend fun getProductAvailabilityByProductId(productId: Int): ResultDataSource<ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>> =
-        withContext(Dispatchers.IO) {
-            try {
-                val response = client.request {
-                    url(GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID+productId)
-                    method = HttpMethod.Get
-                }
-                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>>()
-                val successResultDataSource = SuccessResultDataSource(
-                    value = responseValueDataSourceModel
-                )
-                Log.i("TAG","getProductAvailabilityByProductId successResultDataSource = $successResultDataSource")
-                return@withContext successResultDataSource
-            }
-            catch (e: Exception) {
-                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>?>>(
-                    exception = e
-                )
-                Log.i("TAG","getProductAvailabilityByProductId errorResultDataSource = ${errorResultDataSource.exception}")
-                return@withContext errorResultDataSource
-            }
-        }
+            val data = response.body<ResponseValueDataSourceModel<List<ProductDataSourceModel>>>()
 
-    override suspend fun getPharmacyAddressesDetails(): ResultDataSource<ResponseValueDataSourceModel<List<PharmacyAddressesDetailsDataSourceModel>?>> =
-        withContext(Dispatchers.IO) {
-            try {
-                val response = client.request {
-                    url(GET_PHARMACY_ADDRESSES_DETAILS)
-                    method = HttpMethod.Get
-                }
-                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<List<PharmacyAddressesDetailsDataSourceModel>?>>()
-                val successResultDataSource = SuccessResultDataSource(
-                    value = responseValueDataSourceModel
-                )
-                Log.i("TAG","getPharmacyAddressesDetails successResultDataSource = $successResultDataSource")
-                return@withContext successResultDataSource
+            if (
+                data.responseDataSourceModel.status in 200..299 &&
+                data.value != null
+            ) {
+                val result = ResultDataSource.Success(data = data)
+                emit(result)
             }
-            catch (e: Exception) {
-                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<List<PharmacyAddressesDetailsDataSourceModel>?>>(
-                    exception = e
-                )
-                Log.i("TAG","getPharmacyAddressesDetails errorResultDataSource = ${errorResultDataSource.exception}")
-                return@withContext errorResultDataSource
+            else {
+                emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.responseDataSourceModel.message)))
             }
         }
+        catch (e: Exception){
+            emit(ResultDataSource.Error(exception = e))
+        }
+    }.flowOn(Dispatchers.IO)
 
-    override suspend fun getOperatingMode(): ResultDataSource<ResponseValueDataSourceModel<List<OperatingModeDataSourceModel>?>> =
-        withContext(Dispatchers.IO) {
-            try {
-                val response = client.request {
-                    url(GET_OPERATING_MODE)
-                    method = HttpMethod.Get
-                }
-                val responseValueDataSourceModel = response.body<ResponseValueDataSourceModel<List<OperatingModeDataSourceModel>?>>()
-                val successResultDataSource = SuccessResultDataSource(
-                    value = responseValueDataSourceModel
-                )
-                Log.i("TAG","getOperatingMode successResultDataSource = $successResultDataSource")
-                return@withContext successResultDataSource
+    /**
+     * Получение товара по его идентификатору.
+     *
+     * Параметры:
+     * [productId] - идентификатор получаемого товара.
+     */
+    override fun getProductByIdFlow(productId: Int): Flow<ResultDataSource> = flow{
+        Log.d("TAG","getProductByIdFlow")
+        try {
+            val response = client.request {
+                url(GET_PRODUCT_BY_ID)
+                parameter("id",productId)
+                method = HttpMethod.Get
             }
-            catch (e: Exception) {
-                val errorResultDataSource = ErrorResultDataSource<ResponseValueDataSourceModel<List<OperatingModeDataSourceModel>?>>(
-                    exception = e
-                )
-                Log.i("TAG","getOperatingMode errorResultDataSource = ${errorResultDataSource.exception}")
-                return@withContext errorResultDataSource
+
+            val data = response.body<ResponseValueDataSourceModel<ProductDataSourceModel>>()
+
+            if (
+                data.responseDataSourceModel.status in 200..299 &&
+                data.value != null
+            ) {
+                val result = ResultDataSource.Success(data = data)
+                emit(result)
+            }
+            else {
+                emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.responseDataSourceModel.message)))
             }
         }
+        catch (e: Exception){
+            emit(ResultDataSource.Error(exception = e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Получение списка данных о аптеках.
+     */
+    override fun getPharmacyAddressesFlow(): Flow<ResultDataSource> = flow{
+        Log.d("TAG","getPharmacyAddressesFlow")
+        try {
+            val response = client.request {
+                url(GET_PHARMACY_ADDRESSES)
+                method = HttpMethod.Get
+            }
+            val data = response.body<ResponseValueDataSourceModel<List<PharmacyAddressesDataSourceModel>>>()
+
+            if (
+                data.responseDataSourceModel.status in 200..299 &&
+                data.value != null
+            ) {
+                val result = ResultDataSource.Success(data = data)
+                emit(result)
+            }
+            else {
+                emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.responseDataSourceModel.message)))
+            }
+        }
+        catch (e: Exception){
+            emit(ResultDataSource.Error(exception = e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Получение списка подробной информации о аптеках.
+     */
+    override fun getPharmacyAddressesDetailsFlow(): Flow<ResultDataSource> = flow{
+        Log.d("TAG","getPharmacyAddressesDetailsFlow")
+        try {
+            val response = client.request {
+                url(GET_PHARMACY_ADDRESSES_DETAILS)
+                method = HttpMethod.Get
+            }
+            val data = response.body<ResponseValueDataSourceModel<List<PharmacyAddressesDetailsDataSourceModel>>>()
+
+            if (
+                data.responseDataSourceModel.status in 200..299 &&
+                data.value != null
+            ) {
+                val result = ResultDataSource.Success(data = data)
+                emit(result)
+            }
+            else {
+                emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.responseDataSourceModel.message)))
+            }
+        }
+        catch (e: Exception){
+            emit(ResultDataSource.Error(exception = e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Получение списка наличия товаров по переданному пути.
+     *
+     * Параметры:
+     * [path] - путь по которому будет получен список данных о наличии товаров в аптеках.
+     */
+    override fun getProductAvailabilityByPathFlow(path: String): Flow<ResultDataSource> = flow{
+        Log.d("TAG","getProductAvailabilityByPathFlow")
+        try {
+            val response = client.request {
+                url(GET_PRODUCT_AVAILABILITY_BY_PATH)
+                parameter("path",path)
+                method = HttpMethod.Get
+            }
+
+            val data = response.body<ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>>>()
+
+            if (
+                data.responseDataSourceModel.status in 200..299 &&
+                data.value != null
+            ) {
+                val result = ResultDataSource.Success(data = data)
+                emit(result)
+            }
+            else {
+                emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.responseDataSourceModel.message)))
+            }
+        }
+        catch (e: Exception){
+            emit(ResultDataSource.Error(exception = e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Получение списка наличия товара в аптеках.
+     *
+     * Параметры:
+     * [productId] - идентификатор товара наличие которого будет получено.
+     */
+    override fun getProductAvailabilityByProductIdFlow(productId: Int): Flow<ResultDataSource> = flow{
+        Log.d("TAG","getProductAvailabilityByProductIdFlow")
+        try {
+            val response = client.request {
+                url(GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID)
+                parameter("id",productId)
+                method = HttpMethod.Get
+            }
+
+            val data = response.body<ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>>>()
+
+            if (
+                data.responseDataSourceModel.status in 200..299 &&
+                data.value != null
+            ) {
+                val result = ResultDataSource.Success(data = data)
+                emit(result)
+            }
+            else {
+                emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.responseDataSourceModel.message)))
+            }
+        }
+        catch (e: Exception){
+            emit(ResultDataSource.Error(exception = e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Получение списка наличия товаров в аптеках.
+     */
+    override fun getProductAvailabilityFlow(): Flow<ResultDataSource> = flow{
+        Log.d("TAG","getProductAvailabilityFlow")
+        try {
+            val response = client.request {
+                url(GET_PRODUCT_AVAILABILITY)
+                method = HttpMethod.Get
+            }
+            val data = response.body<ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>>>()
+
+            if (
+                data.responseDataSourceModel.status in 200..299 &&
+                data.value != null
+            ) {
+                val result = ResultDataSource.Success(data = data)
+                emit(result)
+            }
+            else {
+                emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.responseDataSourceModel.message)))
+            }
+        }
+        catch (e: Exception){
+            emit(ResultDataSource.Error(exception = e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Получение списка с режимами работы аптек.
+     */
+    override fun getOperatingModeFlow(): Flow<ResultDataSource> = flow{
+        Log.d("TAG","getOperatingModeFlow")
+        try {
+            val response = client.request {
+                url(GET_OPERATING_MODE)
+                method = HttpMethod.Get
+            }
+
+            val data = response.body<ResponseValueDataSourceModel<List<OperatingModeDataSourceModel>>>()
+
+            if (
+                data.responseDataSourceModel.status in 200..299 &&
+                data.value != null
+            ) {
+                val result = ResultDataSource.Success(data = data)
+                emit(result)
+            }
+            else {
+                emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.responseDataSourceModel.message)))
+            }
+        }
+        catch (e: Exception){
+            emit(ResultDataSource.Error(exception = e))
+        }
+    }.flowOn(Dispatchers.IO)
 
     companion object {
         private const val PORT = "4000"
         private const val BASE_URL = "http://192.168.0.114:$PORT"
-        const val GET_ALL_PRODUCTS_URL = "$BASE_URL/products"
-        const val GET_PRODUCTS_BY_PATH = "$BASE_URL/products/path?path="
-        const val GET_PHARMACY_ADDRESSES = "$BASE_URL/pharmacy/addresses"
-        const val GET_PHARMACY_ADDRESSES_DETAILS = "$BASE_URL/pharmacy/addresses_details"
-        const val GET_PRODUCT_AVAILABILITY_BY_PATH = "$BASE_URL/availability?path="
-        const val GET_PRODUCT_BY_ID = "$BASE_URL/product/id?id="
-        const val GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID = "$BASE_URL/availability/product_id?id="
-        const val GET_OPERATING_MODE = "$BASE_URL/operating_mode"
+        const val GET_ALL_PRODUCTS_URL = "/products"
+        const val GET_PRODUCTS_BY_PATH = "/products/path"
+        const val GET_PHARMACY_ADDRESSES = "/pharmacy/addresses"
+        const val GET_PHARMACY_ADDRESSES_DETAILS = "/pharmacy/addresses_details"
+        const val GET_PRODUCT_AVAILABILITY_BY_PATH = "/availability"
+        const val GET_PRODUCT_BY_ID = "/product/id"
+        const val GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID = "/availability/product_id"
+        const val GET_OPERATING_MODE = "/operating_mode"
+        const val GET_PRODUCT_AVAILABILITY = "/availability/all"
     }
 }

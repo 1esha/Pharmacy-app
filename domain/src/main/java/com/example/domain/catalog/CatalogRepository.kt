@@ -1,23 +1,26 @@
 package com.example.domain.catalog
 
 import com.example.domain.Result
+import kotlinx.coroutines.flow.Flow
 
-interface CatalogRepository<LPr,Av,Ad,Pr,AdD,Op> {
+interface CatalogRepository{
 
-    suspend fun getAllProducts(): Result<LPr>
+    fun getAllProductsFlow(): Flow<Result>
 
-    suspend fun getProductsByPath(path: String): Result<LPr>
+    fun getProductsByPathFlow(path: String): Flow<Result>
 
-    suspend fun getPharmacyAddresses(): Result<Ad>
+    fun getProductByIdFlow(productId: Int): Flow<Result>
 
-    suspend fun getProductAvailabilityByPath(path: String): Result<Av>
+    fun getPharmacyAddressesFlow(): Flow<Result>
 
-    suspend fun getProductById(productId: Int): Result<Pr>
+    fun getPharmacyAddressesDetailsFlow(): Flow<Result>
 
-    suspend fun getProductAvailabilityByProductId(productId: Int): Result<Av>
+    fun getProductAvailabilityByPathFlow(path: String): Flow<Result>
 
-    suspend fun getPharmacyAddressesDetails(): Result<AdD>
+    fun getProductAvailabilityByProductIdFlow(productId: Int): Flow<Result>
 
-    suspend fun getOperatingMode(): Result<Op>
+    fun getProductAvailabilityFlow(): Flow<Result>
+
+    fun getOperatingModeFlow(): Flow<Result>
 
 }

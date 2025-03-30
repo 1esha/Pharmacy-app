@@ -1,22 +1,25 @@
 package com.example.data.catalog.datasource.remote
 
 import com.example.data.ResultDataSource
+import kotlinx.coroutines.flow.Flow
 
-interface CatalogRepositoryDataSourceRemote<LPr,Av,Ad,Pr,AdD,Op> {
+interface CatalogRepositoryDataSourceRemote {
 
-    suspend fun getAllProducts(): ResultDataSource<LPr>
+    fun getAllProductsFlow(): Flow<ResultDataSource>
 
-    suspend fun getProductsByPath(path: String): ResultDataSource<LPr>
+    fun getProductsByPathFlow(path: String): Flow<ResultDataSource>
 
-    suspend fun getPharmacyAddresses(): ResultDataSource<Ad>
+    fun getPharmacyAddressesFlow(): Flow<ResultDataSource>
 
-    suspend fun getProductAvailabilityByPath(path: String): ResultDataSource<Av>
+    fun getProductAvailabilityByPathFlow(path: String): Flow<ResultDataSource>
 
-    suspend fun getProductById(productId: Int): ResultDataSource<Pr>
+    fun getProductByIdFlow(productId: Int): Flow<ResultDataSource>
 
-    suspend fun getProductAvailabilityByProductId(productId: Int): ResultDataSource<Av>
+    fun getProductAvailabilityByProductIdFlow(productId: Int): Flow<ResultDataSource>
 
-    suspend fun getPharmacyAddressesDetails(): ResultDataSource<AdD>
+    fun getPharmacyAddressesDetailsFlow(): Flow<ResultDataSource>
 
-    suspend fun getOperatingMode(): ResultDataSource<Op>
+    fun getOperatingModeFlow(): Flow<ResultDataSource>
+
+    fun getProductAvailabilityFlow(): Flow<ResultDataSource>
 }

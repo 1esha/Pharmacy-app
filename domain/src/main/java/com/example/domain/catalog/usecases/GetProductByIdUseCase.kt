@@ -2,16 +2,22 @@ package com.example.domain.catalog.usecases
 
 import com.example.domain.Result
 import com.example.domain.catalog.CatalogRepository
-import com.example.domain.catalog.models.ProductModel
-import com.example.domain.profile.models.ResponseValueModel
+import kotlinx.coroutines.flow.Flow
 
+/**
+ * Класс [GetProductByIdUseCase] является UseCase для получения товара по идентификатору.
+ *
+ * Параметры:
+ * [catalogRepository] - репозиторий с функционалом.
+ * [productId] - идентификатор товара, который будет получен.
+ */
 class GetProductByIdUseCase(
-    private val catalogRepository: CatalogRepository<*, *, *, ResponseValueModel<ProductModel?>,*,*>,
+    private val catalogRepository: CatalogRepository,
     private val productId: Int
 ) {
 
-    suspend fun execute(): Result<ResponseValueModel<ProductModel?>> {
-        val result = catalogRepository.getProductById(productId = productId)
+    fun execute(): Flow<Result> {
+        val result = catalogRepository.getProductByIdFlow(productId = productId)
 
         return result
     }
