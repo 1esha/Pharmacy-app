@@ -4,20 +4,24 @@ import com.example.domain.Result
 import com.example.domain.profile.models.LogInModel
 import com.example.domain.profile.models.UserInfoModel
 import com.example.domain.profile.models.UserModel
+import kotlinx.coroutines.flow.Flow
 
-interface ProfileRepository<R,V,I,S> {
+/**
+ * Интерфейс [ProfileRepository] является репозиторием для работы с данными пользователей.
+ */
+interface ProfileRepository{
 
-    suspend fun createUser(userInfoModel: UserInfoModel): Result<R>
+    fun createUserFlow(userInfoModel: UserInfoModel): Flow<Result>
 
-    suspend fun getUser(logInModel: LogInModel): Result<V>
+    fun getUserFlow(logInModel: LogInModel): Flow<Result>
 
-    suspend fun getUserId(userInfoModel: UserInfoModel): Result<I>
+    fun getUserIdFlow(userInfoModel: UserInfoModel): Flow<Result>
 
-    suspend fun getUserById(userId: Int): Result<V>
+    fun getUserByIdFlow(userId: Int): Flow<Result>
 
-    suspend fun editUser(userModel: UserModel): Result<R>
+    fun editUserFlow(userModel: UserModel): Flow<Result>
 
-    suspend fun deleteUser(userId: Int): Result<R>
+    fun deleteUserFlow(userId: Int): Flow<Result>
 
-    suspend fun getCityByUserId(userId: Int): Result<S>
+    fun getCityByUserIdFlow(userId: Int): Flow<Result>
 }

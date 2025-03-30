@@ -2,20 +2,26 @@ package com.example.domain.profile.usecases
 
 import com.example.domain.Result
 import com.example.domain.profile.ProfileRepository
-import com.example.domain.profile.models.ResponseModel
-import com.example.domain.profile.models.ResponseValueModel
 import com.example.domain.profile.models.UserInfoModel
-import com.example.domain.profile.models.UserModel
+import kotlinx.coroutines.flow.Flow
 
+/**
+ * Класс [CreateUserUseCase] является UseCase для создания новой учетной записи.
+ *
+ * Параметры:
+ * [profileRepository] - репозиторий с функционалом;
+ * [userInfoModel] - данные создаваемого пользователя.
+ */
 class CreateUserUseCase(
-    private val profileRepository: ProfileRepository<ResponseModel, ResponseValueModel<UserModel>,ResponseValueModel<Int>,ResponseValueModel<String>>,
+    private val profileRepository: ProfileRepository,
     private val userInfoModel: UserInfoModel
 ) {
 
-    suspend fun execute():Result<ResponseModel>{
-        val result = profileRepository.createUser(
+    fun execute(): Flow<Result> {
+        val result = profileRepository.createUserFlow(
             userInfoModel = userInfoModel
         )
+
         return result
     }
 

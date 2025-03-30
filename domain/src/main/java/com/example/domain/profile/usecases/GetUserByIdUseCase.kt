@@ -2,17 +2,22 @@ package com.example.domain.profile.usecases
 
 import com.example.domain.Result
 import com.example.domain.profile.ProfileRepository
-import com.example.domain.profile.models.ResponseModel
-import com.example.domain.profile.models.ResponseValueModel
-import com.example.domain.profile.models.UserModel
+import kotlinx.coroutines.flow.Flow
 
+/**
+ * Класс [GetUserByIdUseCase] является UseCase для получения данных пользователя по идентификатору.
+ *
+ * Параметры:
+ * [profileRepository] - репозиторий с функционалом;
+ * [userId] - идентификатор пользователя.
+ */
 class GetUserByIdUseCase(
-    private val profileRepository: ProfileRepository<ResponseModel, ResponseValueModel<UserModel>,ResponseValueModel<Int>,ResponseValueModel<String>>,
+    private val profileRepository: ProfileRepository,
     private val userId: Int
 ) {
 
-    suspend fun execute(): Result<ResponseValueModel<UserModel>>{
-        val result = profileRepository.getUserById(userId = userId)
+    fun execute(): Flow<Result> {
+        val result = profileRepository.getUserByIdFlow(userId = userId)
 
         return result
     }

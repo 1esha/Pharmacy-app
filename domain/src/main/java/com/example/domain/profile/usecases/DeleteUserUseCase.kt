@@ -2,17 +2,22 @@ package com.example.domain.profile.usecases
 
 import com.example.domain.Result
 import com.example.domain.profile.ProfileRepository
-import com.example.domain.profile.models.ResponseModel
-import com.example.domain.profile.models.ResponseValueModel
-import com.example.domain.profile.models.UserModel
+import kotlinx.coroutines.flow.Flow
 
+/**
+ * Класс [DeleteUserUseCase] является UseCase для удаления учетной записи.
+ *
+ * Параметры:
+ * [profileRepository] - репозиторий с функционалом;
+ * [userId] - идентификатор пользователя аккаунт которого будет удален.
+ */
 class DeleteUserUseCase(
-    private val profileRepository: ProfileRepository<ResponseModel, ResponseValueModel<UserModel>,ResponseValueModel<Int>,ResponseValueModel<String>>,
+    private val profileRepository: ProfileRepository,
     private val userId: Int
 ) {
 
-    suspend fun execute(): Result<ResponseModel>{
-        val result = profileRepository.deleteUser(
+    fun execute(): Flow<Result> {
+        val result = profileRepository.deleteUserFlow(
             userId = userId
         )
 

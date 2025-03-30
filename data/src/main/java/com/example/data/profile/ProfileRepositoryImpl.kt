@@ -1,18 +1,17 @@
 package com.example.data.profile
 
-import com.example.data.asSuccessResultDataSource
+import android.util.Log
+import com.example.data.asError
+import com.example.data.asSuccess
 import com.example.data.profile.datasource.models.ResponseDataSourceModel
 import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
 import com.example.data.profile.datasource.models.UserDataSourceModel
 import com.example.data.profile.datasource.remote.ProfileRepositoryDataSourceRemoteImpl
 import com.example.data.toLogInDataSourceModel
 import com.example.data.toResponseModel
-import com.example.data.toResponseValueIntModel
-import com.example.data.toResponseValueStringModel
-import com.example.data.toResponseValueUserModelModel
-import com.example.data.toResult
 import com.example.data.toUserDataSourceModel
 import com.example.data.toUserInfoDataSourceModel
+import com.example.data.toUserModel
 import com.example.domain.Result
 import com.example.domain.profile.ProfileRepository
 import com.example.domain.profile.models.LogInModel
@@ -20,95 +19,273 @@ import com.example.domain.profile.models.ResponseModel
 import com.example.domain.profile.models.ResponseValueModel
 import com.example.domain.profile.models.UserInfoModel
 import com.example.domain.profile.models.UserModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 
-class ProfileRepositoryImpl : ProfileRepository<
-        ResponseModel,
-        ResponseValueModel<UserModel>,
-        ResponseValueModel<Int>,
-        ResponseValueModel<String>> {
+/**
+ * Класс [ProfileRepositoryImpl] является реализацией интерфейса [ProfileRepository].
+ */
+class ProfileRepositoryImpl : ProfileRepository {
 
     private val profileRepositoryDataSourceRemote = ProfileRepositoryDataSourceRemoteImpl()
 
-    override suspend fun createUser(userInfoModel: UserInfoModel): Result<ResponseModel> {
-        val userInfoDataSourceModel = userInfoModel.toUserInfoDataSourceModel()
-        val resultDataSource = profileRepositoryDataSourceRemote.createUser(
-            userInfoDataSourceModel = userInfoDataSourceModel
-        )
-        val value = resultDataSource.asSuccessResultDataSource()?.value
-        val result = resultDataSource.toResult<ResponseDataSourceModel,ResponseModel>(
-            value = value?.toResponseModel()
-        )
+    /**
+     * Создание нового пользователя.
+     * При успешном результате эмитится ответ с сервера ( объект типа [ResponseModel] ).
+     *
+     * Параметры:
+     * [userInfoModel] - информация пользователя.
+     */
+    override fun createUserFlow(userInfoModel: UserInfoModel): Flow<Result> = flow{
+        try {
+            val userInfoDataSourceModel = userInfoModel.toUserInfoDataSourceModel()
+            profileRepositoryDataSourceRemote.createUserFlow(
+                userInfoDataSourceModel = userInfoDataSourceModel
+            ).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseDataSourceModel?
 
-        return result
-    }
+                if (response != null) {
+                    val data = response.toResponseModel()
 
-    override suspend fun getUser(logInModel: LogInModel): Result<ResponseValueModel<UserModel>> {
-        val logInDataSourceModel = logInModel.toLogInDataSourceModel()
-        val resultDataSource = profileRepositoryDataSourceRemote.getUser(
-            logInDataSourceModel = logInDataSourceModel
-        )
-        val value = resultDataSource.asSuccessResultDataSource()?.value
-        val result = resultDataSource.toResult<ResponseValueDataSourceModel<UserDataSourceModel>,ResponseValueModel<UserModel>>(
-            value = value?.toResponseValueUserModelModel()
-        )
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
 
-        return result
-    }
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
 
-    override suspend fun getUserId(userInfoModel: UserInfoModel): Result<ResponseValueModel<Int>> {
-        val userInfoDataSourceModel = userInfoModel.toUserInfoDataSourceModel()
-        val resultDataSource = profileRepositoryDataSourceRemote.getUserId(
-            userInfoDataSourceModel = userInfoDataSourceModel
-        )
-        val value = resultDataSource.asSuccessResultDataSource()?.value
-        val result = resultDataSource.toResult(
-            value = value?.toResponseValueIntModel()
-        )
+    /**
+     * Получение данных пользователя по логину и паролю.
+     * При успешном результате эмитится модель данных пользователя ( [UserModel] ).
+     *
+     * Параметры:
+     * [logInModel] - модель данных с логином и паролем.
+     */
+    override fun getUserFlow(logInModel: LogInModel): Flow<Result> = flow{
+        try {
+            val logInDataSourceModel = logInModel.toLogInDataSourceModel()
+            profileRepositoryDataSourceRemote.getUserFlow(
+                logInDataSourceModel = logInDataSourceModel
+            ).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
 
-        return result
-    }
+                if (response != null) {
+                    val userDataSourceModel = response.value as UserDataSourceModel
+                    val userModel = userDataSourceModel.toUserModel()
 
-    override suspend fun getUserById(userId: Int): Result<ResponseValueModel<UserModel>> {
-        val resultDataSourceModel = profileRepositoryDataSourceRemote.getUserById(userId = userId)
-        val value = resultDataSourceModel.asSuccessResultDataSource()?.value
-        val result = resultDataSourceModel.toResult<ResponseValueDataSourceModel<UserDataSourceModel>,ResponseValueModel<UserModel>>(
-            value = value?.toResponseValueUserModelModel()
-        )
+                    val data = ResponseValueModel(
+                        value = userModel,
+                        responseModel = response.responseDataSourceModel.toResponseModel()
+                    )
 
-        return result
-    }
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
 
-    override suspend fun editUser(userModel: UserModel): Result<ResponseModel> {
-        val userDataSourceModel = userModel.toUserDataSourceModel()
-        val resultDataSource = profileRepositoryDataSourceRemote.editUser(userDataSourceModel = userDataSourceModel)
-        val value = resultDataSource.asSuccessResultDataSource()?.value
-        val result = resultDataSource.toResult(
-            value = value?.toResponseModel()
-        )
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
 
-        return result
-    }
+    /**
+     * Получение идентификатора пользователя по информации пользователя.
+     * При успешном результате эмитится идентификатор пользователя.
+     *
+     * Параметры:
+     * [userInfoModel] - информация пользователя.
+     */
+    override fun getUserIdFlow(userInfoModel: UserInfoModel): Flow<Result> = flow{
+        try {
+            val userInfoDataSourceModel = userInfoModel.toUserInfoDataSourceModel()
+            profileRepositoryDataSourceRemote.getUserIdFlow(
+                userInfoDataSourceModel = userInfoDataSourceModel
+            ).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
 
-    override suspend fun deleteUser(userId: Int): Result<ResponseModel> {
-        val resultDataSourceModel = profileRepositoryDataSourceRemote.deleteUser(
-            userId = userId
-        )
-        val value = resultDataSourceModel.asSuccessResultDataSource()?.value
-        val result = resultDataSourceModel.toResult(
-            value = value?.toResponseModel()
-        )
+                if (response != null) {
+                    val userId = response.value as Int
 
-        return result
-    }
+                    val data = ResponseValueModel(
+                        value = userId,
+                        responseModel = response.responseDataSourceModel.toResponseModel()
+                    )
 
-    override suspend fun getCityByUserId(userId: Int): Result<ResponseValueModel<String>> {
-        val responseValueDataSourceModel = profileRepositoryDataSourceRemote.getCityByUserId(userId = userId)
-        val value = responseValueDataSourceModel.asSuccessResultDataSource()?.value
-        val result = responseValueDataSourceModel.toResult(
-            value = value?.toResponseValueStringModel()
-        )
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
 
-        return result
-    }
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Получение данных пользователя по его идентификатору.
+     * При успешном результате эмитится модель данных пользователя ( [UserModel] ).
+     *
+     * Параметры:
+     * [userId] - идентификатор пользователя.
+     */
+    override fun getUserByIdFlow(userId: Int): Flow<Result> = flow{
+        try {
+            profileRepositoryDataSourceRemote.getUserByIdFlow(userId = userId).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
+
+                if (response != null) {
+                    val userDataSourceModel = response.value as UserDataSourceModel
+                    val userModel = userDataSourceModel.toUserModel()
+
+                    val data = ResponseValueModel(
+                        value = userModel,
+                        responseModel = response.responseDataSourceModel.toResponseModel()
+                    )
+
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Редактирование данных пользователя.
+     * При успешном результате эмитится ответ с сервера ( объект типа [ResponseModel] ).
+     *
+     * Параметры:
+     * [userModel] - новые данные пользователя.
+     */
+    override fun editUserFlow(userModel: UserModel): Flow<Result> = flow{
+        try {
+            val userDataSourceModel = userModel.toUserDataSourceModel()
+            profileRepositoryDataSourceRemote.editUserFlow(
+                userDataSourceModel = userDataSourceModel
+            ).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseDataSourceModel?
+
+                if (response != null) {
+                    val data = response.toResponseModel()
+
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Удаление аккаунта пользователя.
+     * При успешном результате эмитится ответ с сервера ( объект типа [ResponseModel] ).
+     *
+     * Параметры:
+     * [userId] - идентификатор пользователя аккаунт которого будет удален.
+     */
+    override fun deleteUserFlow(userId: Int): Flow<Result> = flow{
+        try {
+            profileRepositoryDataSourceRemote.deleteUserFlow(userId = userId).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseDataSourceModel?
+
+                if (response != null) {
+                    val data = response.toResponseModel()
+
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Получение города, который выбрал пользователь.
+     * При успешном результате эмитится город пользователя.
+     *
+     * Параметры:
+     * [userId] - идентификатор пользователя.
+     */
+    override fun getCityByUserIdFlow(userId: Int): Flow<Result> = flow{
+        try {
+            profileRepositoryDataSourceRemote.getCityByUserIdFlow(userId = userId).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
+
+                if (response != null) {
+                    val city = response.value as String
+
+                    val data = ResponseValueModel(
+                        value = city,
+                        responseModel = response.responseDataSourceModel.toResponseModel()
+                    )
+
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
 
 }

@@ -4,20 +4,24 @@ import com.example.data.ResultDataSource
 import com.example.data.profile.datasource.models.LogInDataSourceModel
 import com.example.data.profile.datasource.models.UserDataSourceModel
 import com.example.data.profile.datasource.models.UserInfoDataSourceModel
+import kotlinx.coroutines.flow.Flow
 
-interface ProfileRepositoryDataSourceRemote<R,V,I,S> {
+/**
+ * Интерфейс [ProfileRepositoryDataSourceRemote] является репозиторием для работы с данными пользователей в data слое.
+ */
+interface ProfileRepositoryDataSourceRemote{
 
-    suspend fun createUser(userInfoDataSourceModel: UserInfoDataSourceModel): ResultDataSource<R>
+    fun createUserFlow(userInfoDataSourceModel: UserInfoDataSourceModel): Flow<ResultDataSource>
 
-    suspend fun getUser(logInDataSourceModel: LogInDataSourceModel): ResultDataSource<V>
+    fun getUserFlow(logInDataSourceModel: LogInDataSourceModel): Flow<ResultDataSource>
 
-    suspend fun getUserId(userInfoDataSourceModel: UserInfoDataSourceModel): ResultDataSource<I>
+    fun getUserIdFlow(userInfoDataSourceModel: UserInfoDataSourceModel): Flow<ResultDataSource>
 
-    suspend fun getUserById(userId: Int): ResultDataSource<V>
+    fun getUserByIdFlow(userId: Int): Flow<ResultDataSource>
 
-    suspend fun editUser(userDataSourceModel: UserDataSourceModel): ResultDataSource<R>
+    fun editUserFlow(userDataSourceModel: UserDataSourceModel): Flow<ResultDataSource>
 
-    suspend fun deleteUser(userId: Int): ResultDataSource<R>
+    fun deleteUserFlow(userId: Int): Flow<ResultDataSource>
 
-    suspend fun getCityByUserId(userId: Int): ResultDataSource<S>
+    fun getCityByUserIdFlow(userId: Int): Flow<ResultDataSource>
 }
