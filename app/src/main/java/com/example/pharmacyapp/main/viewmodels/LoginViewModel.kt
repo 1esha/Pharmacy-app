@@ -1,73 +1,122 @@
 package com.example.pharmacyapp.main.viewmodels
 
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.profile.ProfileRepositoryImpl
-import com.example.domain.DataEntryError
-import com.example.domain.ErrorResult
-import com.example.domain.ErrorType
-import com.example.domain.OtherError
-import com.example.domain.PendingResult
+import com.example.domain.DisconnectionException
+import com.example.domain.InputDataException
+import com.example.domain.Network
 import com.example.domain.Result
+import com.example.domain.ServerException
+import com.example.domain.models.RequestModel
 import com.example.domain.profile.models.LogInModel
-import com.example.domain.profile.models.ResponseValueModel
-import com.example.domain.profile.models.UserModel
 import com.example.domain.profile.usecases.GetUserUseCase
+import com.example.pharmacyapp.MIN_DELAY
+import com.example.pharmacyapp.TYPE_GET_USER
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class LoginViewModel : ViewModel() {
+class LoginViewModel(
+    private val profileRepositoryImpl: ProfileRepositoryImpl
+) : ViewModel() {
 
-    private val profileRepositoryImpl = ProfileRepositoryImpl()
+    private val _stateScreen = MutableStateFlow<Result>(Result.Success(data = null))
+    val stateScreen: StateFlow<Result> = _stateScreen
 
-    private val _result = MutableLiveData<Result<ResponseValueModel<UserModel>>>()
-    val result: LiveData<Result<ResponseValueModel<UserModel>>> = _result
+    private var isShownToast = true
 
-    private val _isShown = MutableLiveData<Boolean>(false)
-    val isShown: LiveData<Boolean> = _isShown
+    private var network = Network()
 
-    private val _errorType = MutableLiveData<ErrorType>(OtherError())
-    val errorType: LiveData<ErrorType> = _errorType
+    fun logIn(isNetworkStatus: Boolean,logInModel: LogInModel){
+        try {
+            network.checkNetworkStatus(
+                isNetworkStatus = isNetworkStatus,
+                connectionListener = {
+                    onLoading()
 
-    fun setLogInData(logInModel: LogInModel){
-        if (
-            logInModel.login.isEmpty() || logInModel.login.isBlank() ||
-            logInModel.userPassword.isEmpty() || logInModel.userPassword.isBlank()
-        ){
-            setResult(result = ErrorResult(exception = Exception()), errorType = DataEntryError())
-            return
-        }
-        viewModelScope.launch {
-            setResult(result = PendingResult())
-            val getUserUseCase = GetUserUseCase(
-                profileRepository = profileRepositoryImpl,
-                logInModel = logInModel
+                    if (logInModel.isEmpty()) {
+                        _stateScreen.value = Result.Error(exception = InputDataException())
+                        return@checkNetworkStatus
+                    }
+
+                    val getUserUseCase = GetUserUseCase(
+                        profileRepository = profileRepositoryImpl,
+                        logInModel = logInModel
+                    )
+
+                    viewModelScope.launch {
+                        delay(MIN_DELAY)
+
+                        getUserUseCase.execute().collect { result ->
+                            if (result is Result.Error){
+                                _stateScreen.value = Result.Error(exception = result.exception)
+                                return@collect
+                            }
+
+                            val requestModel = RequestModel(
+                                type = TYPE_GET_USER,
+                                result = result
+                            )
+
+                            val listRequest = listOf(requestModel)
+                            _stateScreen.value = Result.Success(data = listRequest)
+                        }
+                    }
+
+                },
+                disconnectionListener = ::onDisconnect
             )
-            val result = getUserUseCase.execute()
-            _result.value = result
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+            _stateScreen.value = Result.Error(exception = e)
         }
     }
 
-    fun setIsShown(isShown: Boolean){
-        _isShown.value = isShown
-
+    private fun onLoading(){
+        _stateScreen.value = Result.Loading()
     }
 
-    fun setResult(result: Result<ResponseValueModel<UserModel>>,errorType: ErrorType? = null){
-        if (result is ErrorResult && errorType != null){
-            _errorType.value = errorType?: throw NullPointerException("LoginViewModel setResult errorType = null")
+    private fun onDisconnect(){
+        _stateScreen.value = Result.Error(exception = DisconnectionException())
+    }
+
+    fun onError(exception: Exception,enterTheData: String,toast: (String?) -> Unit,block: () -> Unit){
+        try {
+            if (exception is ServerException || exception is InputDataException){
+                val messageToast = when(exception){
+                    is ServerException -> exception.serverMessage
+                    is InputDataException -> enterTheData
+                    else -> throw IllegalArgumentException()
+                }
+                if (isShownToast) toast(messageToast)
+                isShownToast = false
+            }
+            else{
+                block()
+            }
         }
-        _result.value = result
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+            _stateScreen.value = Result.Error(exception = e)
+        }
     }
 
-    fun clearErrorType(){
-        _errorType.value = OtherError()
+    fun tryAgain(isNetworkStatus: Boolean, block: () -> Unit){
+        network.checkNetworkStatus(
+            isNetworkStatus = isNetworkStatus,
+            connectionListener = {
+                _stateScreen.value = Result.Success(data = null)
+                block()
+            },
+            disconnectionListener = ::onDisconnect
+        )
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        Log.i("TAG","LoginViewModel onCleared")
+    fun setIsShownToast(){
+        isShownToast = true
     }
 }

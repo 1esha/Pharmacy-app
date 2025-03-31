@@ -8,6 +8,13 @@
     android:fitsSystemWindows="true"
     tools:context=".main.LoginFragment">
 
+    <include
+        android:id="@+id/layoutPendingResultLogin"
+        layout="@layout/pending_result"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"/>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -92,7 +99,7 @@
 
             <Button
                 android:id="@+id/bGoToRegister"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/register" />
