@@ -1,139 +1,296 @@
 package com.example.pharmacyapp.tabs.catalog.viewmodels
 
-import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.catalog.CatalogRepositoryImpl
-import com.example.domain.ErrorResult
-import com.example.domain.ErrorType
-import com.example.domain.OtherError
+import com.example.domain.DisconnectionException
+import com.example.domain.Network
 import com.example.domain.Result
 import com.example.domain.catalog.models.ProductAvailabilityModel
 import com.example.domain.catalog.models.ProductModel
 import com.example.domain.catalog.usecases.GetProductAvailabilityByPathUseCase
 import com.example.domain.catalog.usecases.GetProductsByPathUseCase
-import com.example.domain.models.MediatorResultsModel
-import com.example.domain.profile.models.ResponseValueModel
+import com.example.domain.models.RequestModel
+import com.example.pharmacyapp.EMPTY_STRING
 import com.example.pharmacyapp.TYPE_GET_PRODUCTS_BY_PATH
 import com.example.pharmacyapp.TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH
+import com.example.pharmacyapp.getPrice
+import com.example.pharmacyapp.toArrayListInt
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 class FilterViewModel(
-    private val savedStateHandle: SavedStateHandle,
     private val catalogRepositoryImpl: CatalogRepositoryImpl
 ): ViewModel() {
 
-    companion object {
-        const val KEY_IS_SHOWN_GET_PRODUCTS_BY_PATH = "KEY_IS_SHOWN_GET_PRODUCTS_BY_PATH"
-        const val KEY_IS_SHOWN_GET_PRODUCT_AVAILABILITY_BY_PATH = "KEY_IS_SHOWN_GET_PRODUCT_AVAILABILITY_BY_PATH"
+    private val _stateScreen = MutableStateFlow<Result>(Result.Loading())
+    val stateScreen: StateFlow<Result> = _stateScreen
+
+    private val network = Network()
+
+    private var isShownSendingRequests = true
+
+    private var isInit = true
+
+    private var listProductAvailability = listOf<ProductAvailabilityModel>()
+
+    private var listAllProducts = listOf<ProductModel>()
+
+    private val _arrayListIdsSelectedAddresses = MutableStateFlow<ArrayList<Int>>(arrayListOf())
+    val arrayListIdsSelectedAddresses = _arrayListIdsSelectedAddresses.asStateFlow()
+
+    private val _isChecked = MutableStateFlow<Boolean>(false)
+    val isChecked = _isChecked.asStateFlow()
+
+    private var defaultPriceUpTo: Int = 0
+    private var defaultPriceFrom: Int = 0
+
+    private val _priceFrom = MutableStateFlow<Int>(defaultPriceFrom)
+    val priceFrom get() =  _priceFrom.asStateFlow()
+
+    private val _priceUpTo = MutableStateFlow<Int>(defaultPriceUpTo)
+    val priceUpTo = _priceUpTo.asStateFlow()
+
+    private var path = EMPTY_STRING
+
+    fun initValues(
+        isChecked: Boolean?,
+        arrayListIdsSelectedAddresses: ArrayList<Int>?,
+        priceFrom: Int?,
+        priceUpTo: Int?,
+        defaultPriceUpTo: Int?,
+        defaultPriceFrom: Int?,
+        path: String?
+    ){
+        try {
+            if (isInit) {
+                this.defaultPriceFrom = defaultPriceFrom?: throw NullPointerException()
+                this.defaultPriceUpTo = defaultPriceUpTo?: throw NullPointerException()
+
+                _isChecked.value = isChecked?: throw NullPointerException()
+                _arrayListIdsSelectedAddresses.value = arrayListIdsSelectedAddresses?: throw NullPointerException()
+                _priceFrom.value = priceFrom?: throw NullPointerException()
+                _priceUpTo.value = priceUpTo?: throw NullPointerException()
+                this.path = path?: throw NullPointerException()
+
+                isInit = false
+            }
+        }
+        catch (e: Exception){
+            _stateScreen.value = Result.Error(exception = e)
+        }
     }
 
-    val mediatorFilter = MediatorLiveData<MediatorResultsModel<*>>()
+    fun sendingRequests(isNetworkStatus: Boolean){
+        if (isShownSendingRequests) {
 
-    val resultGetProductAvailabilityByPath = MutableLiveData<MediatorResultsModel<Result<ResponseValueModel<List<ProductAvailabilityModel>?>>>>()
+            network.checkNetworkStatus(
+                isNetworkStatus = isNetworkStatus,
+                connectionListener = {
 
-    val resultGetProductsByPath = MutableLiveData<MediatorResultsModel<Result<ResponseValueModel<List<ProductModel>?>>>>()
+                    onLoading()
 
-    private val _listAllProducts = MutableLiveData<List<*>>()
-    val listAllProducts: LiveData<List<*>> = _listAllProducts
+                    if (path == EMPTY_STRING) {
+                        _stateScreen.value = Result.Error(exception = IllegalArgumentException())
+                        return@checkNetworkStatus
+                    }
 
-    private val _listAllIdsProductsAvailability = MutableLiveData<List<*>>()
-    val listAllIdsProductsAvailability: LiveData<List<*>> = _listAllIdsProductsAvailability
+                    val getProductAvailabilityByPathUseCase = GetProductAvailabilityByPathUseCase(
+                        catalogRepository = catalogRepositoryImpl,
+                        path = path
+                    )
+                    val getProductsByPathUseCase = GetProductsByPathUseCase(
+                        catalogRepository = catalogRepositoryImpl,
+                        path = path
+                    )
+                    viewModelScope.launch {
+                        val resultGetProductAvailabilityByPath = getProductAvailabilityByPathUseCase.execute().map { result ->
+                            return@map RequestModel(
+                                type = TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH,
+                                result = result
+                            )
+                        }
 
-    val isShownGetProductsByPath: Boolean get() = savedStateHandle[KEY_IS_SHOWN_GET_PRODUCTS_BY_PATH] ?: false
+                        val resultGetProductsByPath = getProductsByPathUseCase.execute().map { result ->
+                            return@map RequestModel(
+                                type = TYPE_GET_PRODUCTS_BY_PATH,
+                                result = result
+                            )
+                        }
 
-    val isShownGetProductAvailabilityByPath: Boolean get() = savedStateHandle[KEY_IS_SHOWN_GET_PRODUCT_AVAILABILITY_BY_PATH] ?: false
 
-    private val _errorType = MutableLiveData<ErrorType>(OtherError())
-    val errorType: LiveData<ErrorType> = _errorType
+                        val combinedFlow = combine(
+                            resultGetProductAvailabilityByPath,
+                            resultGetProductsByPath) { productAvailabilityByPath, productsByPath ->
 
-    init {
+                            return@combine listOf(
+                                productAvailabilityByPath,
+                                productsByPath
+                            )
+                        }
 
-        mediatorFilter.addSource(resultGetProductsByPath) { r ->
-            mediatorFilter.value = r
-        }
-
-        mediatorFilter.addSource(resultGetProductAvailabilityByPath) { r ->
-            mediatorFilter.value = r
-        }
-
-    }
-
-    fun getProductAvailabilityByPath(path: String) {
-        val getProductAvailabilityByPathUseCase = GetProductAvailabilityByPathUseCase(
-            catalogRepository = catalogRepositoryImpl,
-            path = path
-        )
-
-        viewModelScope.launch {
-            val result = getProductAvailabilityByPathUseCase.execute()
-
-            resultGetProductAvailabilityByPath.value = MediatorResultsModel(
-                type = TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH,
-                result = result
+                        combinedFlow.collect{ listResults ->
+                            listResults.forEach { requestModel ->
+                                if (requestModel.result is Result.Error){
+                                    _stateScreen.value = requestModel.result
+                                    return@collect
+                                }
+                            }
+                            _stateScreen.value = Result.Success(
+                                data = listResults
+                            )
+                        }
+                    }
+                },
+                disconnectionListener = ::onDisconnect
             )
-
-            Log.i("TAG","FilterViewModel getProductAvailabilityByPath result = $result")
         }
+        isShownSendingRequests = false
     }
 
-    fun getProductsByPath(path: String) {
-        val getProductsByPathUseCase = GetProductsByPathUseCase(
-            catalogRepository = catalogRepositoryImpl,
-            path = path
+    private fun onLoading(){
+        _stateScreen.value = Result.Loading()
+    }
+
+    private fun onDisconnect(){
+        _stateScreen.value = Result.Error(exception = DisconnectionException())
+    }
+
+    fun tryAgain(isNetworkStatus: Boolean){
+        isShownSendingRequests = true
+        sendingRequests(isNetworkStatus = isNetworkStatus)
+    }
+
+    fun fillData(
+        listProductAvailability: List<ProductAvailabilityModel>,
+        listAllProducts: List<ProductModel>
+    ){
+        this.listProductAvailability = listProductAvailability
+        this.listAllProducts = listAllProducts
+    }
+
+    fun listenResultFromPharmacyAddresses(
+        newArrayListIdsSelectedAddresses: ArrayList<Int>?
+    ){
+        setArrayListIdsSelectedAddresses(newArrayListIdsSelectedAddresses = newArrayListIdsSelectedAddresses)
+    }
+
+    fun clearFilters(){
+        setChecked(isChecked = false)
+        setArrayListIdsSelectedAddresses(newArrayListIdsSelectedAddresses = arrayListOf())
+        setPriceFrom(priceFrom = defaultPriceFrom)
+        setPriceUpTo(priceUpTo = defaultPriceUpTo)
+    }
+
+    fun navigateToPharmacyAddresses(navigate: (String,ArrayList<Int>) -> Unit){
+        navigate(path, _arrayListIdsSelectedAddresses.value)
+    }
+
+    fun backToProducts(back: (Boolean,Int,Int,ArrayList<Int>,ArrayList<Int>) -> Unit) {
+        val arrayListIdsFilteredProducts = getFilteredArrayList(
+            isChecked = _isChecked.value,
+            priceFrom = _priceFrom.value,
+            priceUpTo = _priceUpTo.value,
+            arrayListSelectedIdsAddresses = _arrayListIdsSelectedAddresses.value
         )
-        viewModelScope.launch {
-            val result = getProductsByPathUseCase.execute()
-            resultGetProductsByPath.value = MediatorResultsModel(
-                type = TYPE_GET_PRODUCTS_BY_PATH,
-                result = result
+
+        back(_isChecked.value, _priceFrom.value, _priceUpTo.value, _arrayListIdsSelectedAddresses.value, arrayListIdsFilteredProducts)
+    }
+
+
+    private fun setArrayListIdsSelectedAddresses( newArrayListIdsSelectedAddresses: ArrayList<Int>?){
+        val oldArrayListIdsSelectedAddresses = _arrayListIdsSelectedAddresses.value
+
+        _arrayListIdsSelectedAddresses.value = newArrayListIdsSelectedAddresses?:oldArrayListIdsSelectedAddresses
+    }
+
+    fun setChecked(isChecked: Boolean) {
+        _isChecked.value = isChecked
+    }
+
+    fun setPriceFrom(priceFrom:Int){
+        _priceFrom.value = priceFrom
+    }
+
+    fun setPriceUpTo(priceUpTo: Int){
+        _priceUpTo.value = priceUpTo
+    }
+
+    fun checkCorrectPriceFrom(textPriceFrom: String){
+        val currentPriceFrom = if (textPriceFrom.isEmpty() || textPriceFrom.isBlank()) {
+            defaultPriceFrom
+        } else {
+            textPriceFrom.toDouble().roundToInt()
+        }.toPriceFrom()
+
+        _priceFrom.value = currentPriceFrom
+    }
+
+    fun checkCorrectPriceUpTo(textPriceUpTo: String,priceFrom: Int){
+        val currentPriceUpTo = if (textPriceUpTo.isEmpty() || textPriceUpTo.isBlank()) {
+            defaultPriceUpTo
+        } else {
+            textPriceUpTo.toDouble().roundToInt()
+        }.toPriceUpTo(priceFrom = priceFrom)
+
+        _priceUpTo.value = currentPriceUpTo
+    }
+
+    private fun Int.toPriceFrom(): Int{
+        return if (this < defaultPriceFrom || this > defaultPriceUpTo) {
+            defaultPriceFrom
+        }
+        else { this }
+    }
+
+    private fun Int.toPriceUpTo(priceFrom:Int): Int{
+        return if (
+            this > defaultPriceUpTo ||
+            this < defaultPriceFrom ||
+            priceFrom > this
+        ) {
+            defaultPriceUpTo
+        }
+        else { this }
+    }
+
+    private fun getFilteredArrayList(
+        isChecked: Boolean,
+        priceFrom: Int,
+        priceUpTo: Int,
+        arrayListSelectedIdsAddresses: ArrayList<Int>
+    ): ArrayList<Int>{
+
+        val listFilteredProductAvailability = listProductAvailability.filter { it.numberProducts > 0 }
+
+        val listIdsProductsInSelectedPharmacy =
+            if (arrayListSelectedIdsAddresses.isNotEmpty()) {
+                listFilteredProductAvailability.filter { productAvailabilityModel ->
+                    arrayListSelectedIdsAddresses.contains(productAvailabilityModel.addressId)
+                }.map { it.productId }.distinct()
+            }
+            else {
+                listFilteredProductAvailability.map { it.productId }.distinct()
+            }
+
+        val listProducts = listAllProducts.filter { productModel ->
+            val price = getPrice(
+                discount = productModel.discount,
+                price = productModel.price
             )
-        }
-    }
-
-    fun setIsShownGetProductsByPath(isShown: Boolean){
-        savedStateHandle[KEY_IS_SHOWN_GET_PRODUCTS_BY_PATH] = isShown
-    }
-
-    fun setIsShownGetProductAvailabilityByPath(isShown: Boolean){
-        savedStateHandle[KEY_IS_SHOWN_GET_PRODUCT_AVAILABILITY_BY_PATH] = isShown
-    }
-
-    fun setResultGetProductAvailabilityByPath(result: Result<ResponseValueModel<List<ProductAvailabilityModel>?>>, errorType: ErrorType? = null){
-        if (result is ErrorResult && errorType != null){
-            _errorType.value = errorType?: throw NullPointerException("FilterViewModel setResult errorType = null")
+            listIdsProductsInSelectedPharmacy.contains(productModel.productId) &&
+            price in priceFrom..priceUpTo
         }
 
-        resultGetProductAvailabilityByPath.value = MediatorResultsModel(
-            type = TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH,
-            result = result
-        )
-    }
+        val listFilteredProducts = if (isChecked){ listProducts.filter { it.discount > 0 } } else listProducts
 
-    fun setResultGetProductsByPath(result: Result<ResponseValueModel<List<ProductModel>?>>, errorType: ErrorType? = null){
-        if (result is ErrorResult && errorType != null){
-            _errorType.value = errorType?: throw NullPointerException("FilterViewModel setResult errorType = null")
-        }
-        resultGetProductsByPath.value = MediatorResultsModel(
-            type = TYPE_GET_PRODUCTS_BY_PATH,
-            result = result
-        )
-    }
+        val arrayListFilteredProducts = listFilteredProducts.map { it.productId }.toArrayListInt()
 
-    fun clearErrorType() {
-        _errorType.value = OtherError()
+        return arrayListFilteredProducts
     }
-
-    fun setListAllProducts(listProducts: List<*>) {
-        _listAllProducts.value = listProducts
-    }
-
-    fun setListAllIdsProductsAvailability(list: List<*>) {
-        _listAllIdsProductsAvailability.value = list
-    }
-
 }
