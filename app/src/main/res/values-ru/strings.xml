@@ -171,4 +171,12 @@
     <string name="in_the_shopping_cart">В корзине</string>
     <string name="add_to_the_shopping_cart">В корзину</string>
     <string name="category">Категория: </string>
+    <string name="are_you_sure_you_want_to_delete_the_selected_products_it_will_be_impossible_to_cancel_this_action">Вы точно хотите удалить выбранные товары? Отменить данное действие будет невозможно.</string>
+    <string name="removing_items_from_the_shopping_cart">Удаление товаров из корзины</string>
+
+    <string name="server_error">Ошибка сервера</string>
+    <string name="connection_error">Ошибка подключения</string>
+    <string name="unknown_error">Неизвестная ошибка</string>
+    <string name="account_deleted">Аккаунт удален</string>
+    <string name="invalid_value">Недопустимое значение</string>
 </resources>
