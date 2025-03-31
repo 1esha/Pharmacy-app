@@ -181,12 +181,6 @@ fun getPrice(discount: Double, price: Double): Int {
     return priceClubDiscounted.roundToInt()
 }
 
-fun List<ProductModel>.sortingByDiscountAmount(): List<ProductModel> {
-    val sortedListProducts = this.sortedByDescending { it.discount }
-
-    return sortedListProducts
-}
-
 /**
  * Класс [ColorUtils] помогает работать с идентификаторами цветов из кода.
  *
@@ -196,8 +190,8 @@ fun List<ProductModel>.sortingByDiscountAmount(): List<ProductModel> {
 class ColorUtils(private val context: Context){
 
     val colorPrimary = getColor(R.color.green800)
-    val colorSecondaryContainer = getColor(R.color.green200)
-    val colorOnSecondaryContainer = getColor(R.color.gray900)
+    val colorSecondaryContainer = getColor(R.color.green100)
+    val colorOnSecondaryContainer = getColor(R.color.green900)
     val colorOnPrimary = getColor(R.color.white)
 
     /**

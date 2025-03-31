@@ -6,11 +6,12 @@
         <item name="colorPrimary">@color/green800</item>
         <item name="colorOnPrimary">@color/white</item>
         <item name="colorPrimaryDark">@color/green900</item>
-        <item name="colorPrimaryContainer">@color/green200</item>
-        <item name="colorOnPrimaryContainer">@color/gray900</item>
+        <item name="colorPrimaryContainer">@color/green100</item>
+        <item name="colorOnPrimaryContainer">@color/green900</item>
 
-        <item name="colorSecondaryContainer">@color/green200</item>
-        <item name="colorOnSecondaryContainer">@color/gray900</item>
+
+        <item name="colorSecondaryContainer">@color/green100</item>
+        <item name="colorOnSecondaryContainer">@color/green900</item>
 
         <item name="background">@color/gray200</item>
 
@@ -21,15 +22,21 @@
         <item name="colorSurface">@color/white</item>
         <item name="colorOnSurface">@color/black</item>
 
+        <item name="dividerColor">@color/gray300</item>
+
         <item name="android:listDivider">@color/gray300</item>
+
+    </style>
+
+    <style name="Theme.PharmacyApp" parent="Base.Theme.PharmacyApp">
 
         <item name="bottomNavigationStyle">@style/PharmacyApp.BottomNavigationView</item>
 
         <item name="bottomSheetDialogTheme">@style/PharmacyApp.BottomSheetDialog</item>
 
-    </style>
+        <item name="checkboxStyle">@style/PharmacyApp.CheckBox</item>
 
-    <style name="Theme.PharmacyApp" parent="Base.Theme.PharmacyApp">
+        <item name="materialAlertDialogTheme">@style/PharmacyApp.MaterialAlertDialog</item>
 
     </style>
 </resources>
