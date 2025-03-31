@@ -10,17 +10,17 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
-import com.example.domain.DisconnectionError
-import com.example.domain.ErrorResult
-import com.example.domain.Network
-import com.example.domain.PendingResult
-import com.example.domain.SuccessResult
-import com.example.domain.profile.ProfileResult
-import com.example.domain.profile.models.ResponseModel
+import com.example.domain.Result
+import com.example.domain.ResultProcessing
+import com.example.domain.asSuccess
+import com.example.domain.models.RequestModel
+import com.example.domain.profile.models.ResponseValueModel
 import com.example.domain.profile.models.UserInfoModel
 import com.example.pharmacyapp.FLAG_ERROR_RESULT
 import com.example.pharmacyapp.FLAG_PENDING_RESULT
@@ -29,27 +29,62 @@ import com.example.pharmacyapp.KEY_IS_INIT
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
-import com.example.pharmacyapp.TYPE_EMPTY
+import com.example.pharmacyapp.TYPE_GET_USER_ID
 import com.example.pharmacyapp.ToolbarSettings
-import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.FragmentRegistrationBinding
-import com.example.pharmacyapp.getMessageByErrorType
+import com.example.pharmacyapp.getErrorMessage
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.RegistrationViewModel
-import kotlinx.coroutines.delay
+import com.example.pharmacyapp.main.viewmodels.factories.RegistrationViewModelFactory
 import kotlinx.coroutines.launch
 
 
-class RegistrationFragment() : Fragment(), ProfileResult {
+class RegistrationFragment() : Fragment(), ResultProcessing {
 
     private var _binding: FragmentRegistrationBinding? = null
     private val binding get() = _binding!!
 
-    private val registrationViewModel: RegistrationViewModel by viewModels()
+    private val registrationViewModel: RegistrationViewModel by viewModels(
+        factoryProducer = { RegistrationViewModelFactory() }
+    )
 
     private lateinit var sharedPreferences: SharedPreferences
 
     private lateinit var navControllerMain: NavController
+
+    private val isNetworkStatus get() = getSupportActivity().isNetworkStatus(context = requireContext())
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED){
+                registrationViewModel.stateScreen.collect{ result ->
+                    when(result){
+                        is Result.Loading -> {
+                            onLoadingResultListener()
+                        }
+                        is Result.Success<*> -> {
+                            onSuccessResultListener(data = result.data)
+                        }
+                        is Result.Error -> {
+                            onErrorResultListener(exception = result.exception)
+                        }
+                    }
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED){
+                registrationViewModel.isSetupCityText.collect{
+                    setupCityText()
+                }
+            }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -66,8 +101,6 @@ class RegistrationFragment() : Fragment(), ProfileResult {
 
         navControllerMain = findNavController()
 
-        sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
-
         toolbarSettings.installToolbarMain(icon = R.drawable.ic_back) {
             navControllerMain.navigateUp()
         }
@@ -78,45 +111,27 @@ class RegistrationFragment() : Fragment(), ProfileResult {
 
         bRegister.setOnClickListener {
 
-            registrationViewModel.setIsShown(isShown = false)
+            val userInfoModel = UserInfoModel(
+                firstName = etFirstName.text.toString(),
+                lastName = etLastName.text.toString(),
+                email = etEmail.text.toString(),
+                phoneNumber = etPhoneNumber.text.toString(),
+                userPassword = etPassword.text.toString(),
+                city = actvCity.text.toString()
+            )
 
-            onSuccessfulEvent(type = TYPE_EMPTY) {
-                val userInfoModel = UserInfoModel(
-                    firstName = etFirstName.text.toString(),
-                    lastName = etLastName.text.toString(),
-                    email = etEmail.text.toString(),
-                    phoneNumber = etPhoneNumber.text.toString(),
-                    userPassword = etPassword.text.toString(),
-                    city = actvCity.text.toString()
-                )
-                Log.i("TAG", "RegistrationFragment userInfoModel = $userInfoModel")
-                registrationViewModel.createUser(userInfoModel = userInfoModel)
-            }
-
+            registrationViewModel.setIsShownToast()
+            registrationViewModel.register(
+                isNetworkStatus = isNetworkStatus,
+                userInfoModel = userInfoModel
+            )
         }
 
-        registrationViewModel.isSetupCity.observe(viewLifecycleOwner) {
-            setupCityText()
-        }
-
-        registrationViewModel.resultCreateUser.observe(viewLifecycleOwner) { result ->
-
-            when (result) {
-                is PendingResult -> { onPendingResultListener() }
-                is SuccessResult -> {
-                    val value = result.value?: throw NullPointerException("RegistrationFragment value = null")
-                    val userId = registrationViewModel.userId.value?: UNAUTHORIZED_USER
-                    onSuccessResultListener(userId = userId, value = value)
-                }
-                is ErrorResult -> {
-                    val errorType = registrationViewModel.errorType.value
-                    val message = getString(getMessageByErrorType(errorType = errorType))
-                    onErrorResultListener(exception = result.exception, message = message)
-
-                }
+        layoutPendingResultRegistration.bTryAgain.setOnClickListener {
+            registrationViewModel.tryAgain(isNetworkStatus = isNetworkStatus){
+                updateUI(flag = FLAG_SUCCESS_RESULT)
             }
         }
-
     }
 
     override fun onDestroyView() {
@@ -124,103 +139,94 @@ class RegistrationFragment() : Fragment(), ProfileResult {
         _binding = null
     }
 
-    override fun <T> onSuccessResultListener(userId: Int, value: T, type: String?) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val responseModel = value as ResponseModel
-            val status = responseModel.status
-            val message = responseModel.message
-            delay(300)
-            updateUI(flag = FLAG_SUCCESS_RESULT)
-            if (status in 200..299) {
-                sharedPreferences.edit().putBoolean(KEY_IS_INIT, false).apply()
-                sharedPreferences.edit().putInt(KEY_USER_ID, userId).apply()
-                Log.i("TAG","RegistrationFragment onSuccessResultListener userId = ${sharedPreferences.getInt(
-                    KEY_USER_ID, UNAUTHORIZED_USER)}")
-                navControllerMain.navigate(R.id.tabsFragment, null, navOptions {
-                    popUpTo(R.id.nav_graph_log_in) {
-                        inclusive = true
-                    }
-                })
+    override fun <T> onSuccessResultListener(data: T) {
+        Log.i("TAG","RegistrationFragment onSuccessResultListener")
+        try {
+            if (data == null){
+                updateUI(flag = FLAG_SUCCESS_RESULT)
+                return
             }
-            else{
-                val isShown = registrationViewModel.isShown.value?: throw NullPointerException("RegistrationFragment onSuccessResultListener isShown = null")
-                if (!isShown){
-                    if (message != null) getSupportActivity().showToast(message = message)
+            val _listRequests = data as List<*>
+            val listRequests = _listRequests.map { request ->
+                return@map request as RequestModel
+            }
+            Log.i("TAG","listRequests = $listRequests")
+
+            var fullType = ""
+            listRequests.forEach { request ->
+                fullType += request.type
+            }
+
+            when(fullType){
+                TYPE_GET_USER_ID -> {
+                    val resultGetUserId = listRequests.find { it.type == TYPE_GET_USER_ID }?.result!!.asSuccess()!!
+
+                    val responseGetUserId = resultGetUserId.data as ResponseValueModel<*>
+
+                    val userId = responseGetUserId.value as Int
+
+                    sharedPreferences.edit().putBoolean(KEY_IS_INIT, false).apply()
+                    sharedPreferences.edit().putInt(KEY_USER_ID, userId).apply()
+                    navControllerMain.navigate(R.id.tabsFragment, null, navOptions {
+                        popUpTo(R.id.nav_graph_log_in) {
+                            inclusive = true
+                        }
+                    })
                 }
             }
-            registrationViewModel.setIsShown(isShown = true)
 
+            updateUI(flag = FLAG_SUCCESS_RESULT)
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
         }
     }
 
-    override fun onErrorResultListener(exception: Exception, message: String) {
-        viewLifecycleOwner.lifecycleScope.launch{
-            delay(300)
-            updateUI(flag = FLAG_ERROR_RESULT)
-            val isShown = registrationViewModel.isShown.value?: throw NullPointerException("RegistrationFragment onErrorResultListener isShown = null")
-            if (!isShown) getSupportActivity().showToast(message = message)
-
-            registrationViewModel.setIsShown(isShown = true)
-        }
-
-    }
-
-    override fun onPendingResultListener() {
-        updateUI(flag = FLAG_PENDING_RESULT)
-        registrationViewModel.clearErrorType()
-        Log.i("TAG","RegistrationFragment onPendingResult")
-    }
-
-    override fun onSuccessfulEvent(
-        type: String,
-        exception: java.lang.Exception?,
-        onSuccessfulEventListener: () -> Unit
-    ) {
-        val isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext())
-        val network = Network()
-
-        network.checkNetworkStatus(
-            isNetworkStatus = isNetworkStatus,
-            connectionListener = {
-                registrationViewModel.setResult(result = PendingResult())
-                onSuccessfulEventListener()
-            },
-            disconnectionListener = {
-                val currentException = if (exception == null) Exception() else  exception
-                val errorType = DisconnectionError()
-
-                registrationViewModel.setResult(result = ErrorResult(exception = currentException), errorType = errorType)
+    override fun onErrorResultListener(exception: Exception) {
+        registrationViewModel.onError(
+            exception = exception,
+            enterTheData = getString(R.string.enter_the_data),
+            toast = {
+                getSupportActivity().showToast(message = it ?: getString(R.string.unknown_error))
+                updateUI(flag = FLAG_SUCCESS_RESULT)
             }
-        )
+        ) {
+            val message = getErrorMessage(exception = exception)
+            updateUI(flag = FLAG_ERROR_RESULT, messageError = getString(message))
+        }
     }
 
-    override fun updateUI(flag: String, messageError: String?) = with(binding){
+    override fun onLoadingResultListener() {
+        Log.i("TAG","RegistrationFragment onLoadingResultListener")
+        updateUI(flag = FLAG_PENDING_RESULT)
+    }
+
+    override fun updateUI(flag: String, messageError: String?) = with(binding.layoutPendingResultRegistration){
         when(flag) {
             FLAG_PENDING_RESULT -> {
-                progressBarRegistration.visibility = View.VISIBLE
-                setEnable(isEnabled = false)
+                Log.i("TAG","FLAG_PENDING_RESULT")
+                root.visibility = View.VISIBLE
+                bTryAgain.visibility = View.INVISIBLE
+                tvErrorMessage.visibility = View.INVISIBLE
+                progressBar.visibility = View.VISIBLE
             }
             FLAG_SUCCESS_RESULT -> {
-                binding.progressBarRegistration.visibility = View.INVISIBLE
-                setEnable(isEnabled = true)
+                Log.i("TAG","FLAG_SUCCESS_RESULT")
+                root.visibility = View.GONE
+                bTryAgain.visibility = View.INVISIBLE
+                tvErrorMessage.visibility = View.INVISIBLE
+                progressBar.visibility = View.INVISIBLE
             }
             FLAG_ERROR_RESULT -> {
-                progressBarRegistration.visibility = View.INVISIBLE
-                setEnable(isEnabled = true)
+                Log.i("TAG","FLAG_ERROR_RESULT")
+                root.visibility = View.VISIBLE
+                bTryAgain.visibility = View.VISIBLE
+                tvErrorMessage.visibility = View.VISIBLE
+                tvErrorMessage.text = messageError
+                progressBar.visibility = View.INVISIBLE
             }
         }
     }
-
-    private fun setEnable(isEnabled: Boolean) = with(binding){
-        etFirstName.isEnabled = isEnabled
-        etLastName.isEnabled = isEnabled
-        etEmail.isEnabled = isEnabled
-        etPhoneNumber.isEnabled = isEnabled
-        etPassword.isEnabled = isEnabled
-        layoutCity.isEnabled = isEnabled
-        bRegister.isEnabled = isEnabled
-    }
-
 
     private fun setupCityText() {
 

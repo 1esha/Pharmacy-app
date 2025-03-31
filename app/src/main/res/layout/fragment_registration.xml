@@ -15,20 +15,19 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
+    <include
+        android:id="@+id/layoutPendingResultRegistration"
+        layout="@layout/pending_result"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"/>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="20"
             android:gravity="center"
             android:orientation="vertical">
-
-            <ProgressBar
-                android:id="@+id/progressBarRegistration"
-                style="?android:attr/progressBarStyle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:visibility="invisible"/>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -132,6 +131,7 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/city"
                         android:inputType="none"
+                        style="@style/PharmacyApp.AutoCompleteTextView.OutlinedBox"
                         tools:text="Новочебоксараск" />
 
                 </com.google.android.material.textfield.TextInputLayout>

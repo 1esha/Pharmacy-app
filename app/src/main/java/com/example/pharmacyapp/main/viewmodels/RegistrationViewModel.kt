@@ -1,111 +1,138 @@
 package com.example.pharmacyapp.main.viewmodels
 
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.profile.ProfileRepositoryImpl
-import com.example.domain.DataEntryError
-import com.example.domain.ErrorResult
-import com.example.domain.ErrorType
-import com.example.domain.IdentificationError
-import com.example.domain.OtherError
-import com.example.domain.PendingResult
+import com.example.domain.DisconnectionException
+import com.example.domain.InputDataException
+import com.example.domain.Network
 import com.example.domain.Result
-import com.example.domain.SuccessResult
-import com.example.domain.profile.models.ResponseModel
+import com.example.domain.ServerException
+import com.example.domain.models.RequestModel
 import com.example.domain.profile.models.UserInfoModel
 import com.example.domain.profile.usecases.CreateUserUseCase
 import com.example.domain.profile.usecases.GetUserIdUseCase
-import com.example.pharmacyapp.UNAUTHORIZED_USER
+import com.example.pharmacyapp.MIN_DELAY
+import com.example.pharmacyapp.TYPE_GET_USER_ID
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class RegistrationViewModel : ViewModel() {
 
-    private val profileRepositoryImpl = ProfileRepositoryImpl()
+class RegistrationViewModel(
+    private val profileRepositoryImpl: ProfileRepositoryImpl
+) : ViewModel() {
 
-    private val _resultCreateUser = MutableLiveData<Result<ResponseModel>>()
-    val resultCreateUser: LiveData<Result<ResponseModel>> = _resultCreateUser
+    private val _stateScreen = MutableStateFlow<Result>(Result.Success(data = null))
+    val stateScreen: StateFlow<Result> = _stateScreen
 
-    private val _userId = MutableLiveData(UNAUTHORIZED_USER)
-    val userId: LiveData<Int> = _userId
+    private var isShownToast = true
 
-    private val _isShown = MutableLiveData(false)
-    val isShown: LiveData<Boolean> = _isShown
+    private var network = Network()
 
-    private val _errorType = MutableLiveData<ErrorType>(OtherError())
-    val errorType: LiveData<ErrorType> = _errorType
+    val isSetupCityText = MutableStateFlow(true)
 
-    private val _isSetupCity = MutableLiveData(true)
-    val isSetupCity: LiveData<Boolean> = _isSetupCity
+    fun register(isNetworkStatus: Boolean,userInfoModel: UserInfoModel){
+        try {
+            network.checkNetworkStatus(
+                isNetworkStatus = isNetworkStatus,
+                connectionListener = {
 
-    fun createUser(userInfoModel: UserInfoModel) {
-        if (
-            userInfoModel.firstName.isEmpty() || userInfoModel.firstName.isBlank() ||
-            userInfoModel.lastName.isEmpty() || userInfoModel.lastName.isBlank() ||
-            userInfoModel.email.isEmpty() || userInfoModel.email.isBlank() ||
-            userInfoModel.phoneNumber.isEmpty() || userInfoModel.phoneNumber.isBlank() ||
-            userInfoModel.userPassword.isEmpty() || userInfoModel.userPassword.isBlank() ||
-            userInfoModel.city.isEmpty() || userInfoModel.city.isBlank()
-        ) {
-            setResult(
-                result = ErrorResult(exception = Exception()),
-                errorType = DataEntryError()
-            )
-            return
-        }
-        viewModelScope.launch {
-            val createUserUseCase = CreateUserUseCase(
-                profileRepository = profileRepositoryImpl,
-                userInfoModel = userInfoModel
-            )
+                    onLoading()
 
-            val getUserIdUseCase = GetUserIdUseCase(
-                profileRepository = profileRepositoryImpl,
-                userInfoModel = userInfoModel
-            )
+                    if (userInfoModel.isEmpty()){
+                        _stateScreen.value = Result.Error(exception = InputDataException())
+                        return@checkNetworkStatus
+                    }
 
-            val resultCreateUser = createUserUseCase.execute()
-            val resultGetUserId = getUserIdUseCase.execute()
-
-            when (resultGetUserId) {
-                is PendingResult -> {}
-                is SuccessResult -> {
-                    _userId.value = resultGetUserId.value?.value ?: throw NullPointerException("RegistrationViewModel userId = null")
-                    _resultCreateUser.value = resultCreateUser
-                }
-                is ErrorResult -> {
-                    setResult(
-                        result = ErrorResult(exception = resultGetUserId.exception),
-                        errorType = IdentificationError()
+                    val getUserIdUseCase = GetUserIdUseCase(
+                        profileRepository = profileRepositoryImpl,
+                        userInfoModel = userInfoModel
                     )
+
+                    val createUserUseCase = CreateUserUseCase(
+                        profileRepository = profileRepositoryImpl,
+                        userInfoModel = userInfoModel
+                    )
+
+                    viewModelScope.launch {
+                        delay(MIN_DELAY)
+
+                        createUserUseCase.execute().collect { resultCreateUser ->
+
+                            if (resultCreateUser is Result.Error){
+                                _stateScreen.value = resultCreateUser
+                                return@collect
+                            }
+
+                            getUserIdUseCase.execute().collect { resultGetUserId ->
+                                if (resultGetUserId is Result.Error){
+                                    _stateScreen.value = resultGetUserId
+                                }
+                                else{
+                                    _stateScreen.value = Result.Success(
+                                        data = listOf(RequestModel(
+                                            type = TYPE_GET_USER_ID,
+                                            result = resultGetUserId
+                                        ))
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                disconnectionListener = ::onDisconnect
+            )
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+            _stateScreen.value = Result.Error(exception = e)
+        }
+    }
+
+    private fun onLoading(){
+        _stateScreen.value = Result.Loading()
+    }
+
+    private fun onDisconnect(){
+        _stateScreen.value = Result.Error(exception = DisconnectionException())
+    }
+
+    fun onError(exception: Exception,enterTheData: String,toast: (String?) -> Unit,block: () -> Unit){
+        try {
+            if (exception is ServerException || exception is InputDataException){
+                val messageToast = when(exception){
+                    is ServerException -> exception.serverMessage
+                    is InputDataException -> enterTheData
+                    else -> throw IllegalArgumentException()
                 }
+                if (isShownToast) toast(messageToast)
+                isShownToast = false
             }
-
+            else{
+                block()
+            }
         }
-
-    }
-
-    fun setIsShown(isShown: Boolean) {
-        _isShown.value = isShown
-    }
-
-    fun setResult(result: Result<ResponseModel>, errorType: ErrorType? = null) {
-        if (result is ErrorResult && errorType != null) {
-            _errorType.value = errorType ?: throw NullPointerException("RegistrationViewModel setResult errorType = null")
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+            _stateScreen.value = Result.Error(exception = e)
         }
-        _resultCreateUser.value = result
     }
 
-    fun clearErrorType() {
-        _errorType.value = OtherError()
+    fun tryAgain(isNetworkStatus: Boolean, block: () -> Unit){
+        network.checkNetworkStatus(
+            isNetworkStatus = isNetworkStatus,
+            connectionListener = {
+                _stateScreen.value = Result.Success(data = null)
+                block()
+            },
+            disconnectionListener = ::onDisconnect
+        )
     }
 
-
-    override fun onCleared() {
-        super.onCleared()
-        Log.i("TAG", "RegistrationViewModel onCleared")
+    fun setIsShownToast(){
+        isShownToast = true
     }
-
 }
