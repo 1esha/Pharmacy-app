@@ -8,7 +8,7 @@ import com.example.domain.models.SelectedPharmacyAddressesModel
 import com.example.pharmacyapp.databinding.ItemPharmacyAddressesBinding
 
 class PharmacyAddressesAdapter(
-    private val listItems: List<*>,
+    private val mutableListSelectedPharmacyAddressesModel: MutableList<SelectedPharmacyAddressesModel>,
     private val onClick: (Int, Boolean) -> Unit
 ): Adapter<PharmacyAddressesAdapter.PharmacyAddressesHolder>() {
 
@@ -21,10 +21,10 @@ class PharmacyAddressesAdapter(
         return PharmacyAddressesHolder(binding)
     }
 
-    override fun getItemCount(): Int = listItems.size
+    override fun getItemCount(): Int = mutableListSelectedPharmacyAddressesModel.size
 
     override fun onBindViewHolder(holder: PharmacyAddressesHolder, position: Int) = with(holder.biding) {
-        val item = listItems[position] as SelectedPharmacyAddressesModel
+        val item = mutableListSelectedPharmacyAddressesModel[position]
 
         tvAddressPharmacy.text = item.pharmacyAddressesModel.address
         tvCityAddressPharmacy.text = item.pharmacyAddressesModel.city
@@ -33,7 +33,14 @@ class PharmacyAddressesAdapter(
 
         checkBoxAddressPharmacy.setOnClickListener {
             val isChecked = checkBoxAddressPharmacy.isChecked
-            onClick(position,isChecked)
+            val index = mutableListSelectedPharmacyAddressesModel.indexOf(item)
+
+            mutableListSelectedPharmacyAddressesModel.removeAt(index)
+            mutableListSelectedPharmacyAddressesModel.add(index,item.copy(isSelected = isChecked))
+
+            notifyItemChanged(position)
+
+            onClick(item.pharmacyAddressesModel.addressId,isChecked)
         }
 
     }

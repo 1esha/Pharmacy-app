@@ -1,181 +1,230 @@
 package com.example.pharmacyapp.tabs.catalog.viewmodels
 
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.catalog.CatalogRepositoryImpl
-import com.example.domain.ErrorResult
-import com.example.domain.ErrorType
-import com.example.domain.OtherError
+import com.example.domain.DisconnectionException
+import com.example.domain.Network
 import com.example.domain.Result
 import com.example.domain.catalog.models.ProductAvailabilityModel
+import com.example.domain.catalog.models.PharmacyAddressesModel
 import com.example.domain.catalog.usecases.GetPharmacyAddressesUseCase
 import com.example.domain.catalog.usecases.GetProductAvailabilityByPathUseCase
-import com.example.domain.models.MediatorResultsModel
-import com.example.domain.catalog.models.PharmacyAddressesModel
+import com.example.domain.models.RequestModel
 import com.example.domain.models.SelectedPharmacyAddressesModel
-import com.example.domain.profile.models.ResponseValueModel
+import com.example.pharmacyapp.EMPTY_STRING
 import com.example.pharmacyapp.TYPE_GET_PHARMACY_ADDRESSES
 import com.example.pharmacyapp.TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH
+import com.example.pharmacyapp.toArrayListInt
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class PharmacyAddressesViewModel(
-    private val savedStateHandle: SavedStateHandle,
     private val catalogRepositoryImpl: CatalogRepositoryImpl
 ) : ViewModel() {
 
-    companion object {
-        const val KEY_IS_SHOWN_GET_PHARMACY_ADDRESSES = "KEY_IS_SHOWN_GET_PHARMACY_ADDRESSES"
-        const val KEY_IS_SHOWN_GET_PRODUCT_AVAILABILITY_BY_PATH = "KEY_IS_SHOWN_GET_PRODUCT_AVAILABILITY_BY_PATH"
+    private val _stateScreen = MutableStateFlow<Result>(Result.Loading())
+    val stateScreen: StateFlow<Result> = _stateScreen
+
+    private val network = Network()
+
+    private var isShownSendingRequests = true
+
+    private var isShownFillingList = true
+
+    private var isInit = true
+
+    private var isInstallAdapter = true
+
+    private val _counter = MutableStateFlow<Int>(0)
+    val counter: StateFlow<Int> = _counter.asStateFlow()
+
+    private val _listSelectedPharmacyAddresses = MutableStateFlow<List<SelectedPharmacyAddressesModel>>(mutableListOf())
+    val listSelectedPharmacyAddresses: StateFlow<List<SelectedPharmacyAddressesModel>> = _listSelectedPharmacyAddresses.asStateFlow()
+
+    private var arrayListSelectedIdsAddresses = arrayListOf<Int>()
+
+    private var path = EMPTY_STRING
+
+
+    fun initValues(
+        path: String?,
+        arrayListSelectedIdsAddresses: ArrayList<Int>
+    ){
+        try {
+            if (isInit) {
+                this.path = path!!
+                this.arrayListSelectedIdsAddresses = arrayListSelectedIdsAddresses
+
+                isInit = false
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+            _stateScreen.value = Result.Error(exception = e)
+        }
     }
 
-    val mediatorPharmacyAddresses = MediatorLiveData<MediatorResultsModel<*>>()
+    fun sendingRequests(isNetworkStatus: Boolean){
+        if (isShownSendingRequests) {
 
-    val resultGetPharmacyAddresses = MutableLiveData<MediatorResultsModel<Result<ResponseValueModel<List<PharmacyAddressesModel>?>>>>()
+            network.checkNetworkStatus(
+                isNetworkStatus = isNetworkStatus,
+                connectionListener = {
 
-    val resultGetProductAvailabilityByPath = MutableLiveData<MediatorResultsModel<Result<ResponseValueModel<List<ProductAvailabilityModel>?>>>>()
+                    onLoading()
 
-    val isShownGetPharmacyAddresses: Boolean get() = savedStateHandle[KEY_IS_SHOWN_GET_PHARMACY_ADDRESSES] ?: false
+                    if (path == EMPTY_STRING) {
+                        _stateScreen.value = Result.Error(exception = NullPointerException())
+                        return@checkNetworkStatus
+                    }
 
-    val isShownGetProductAvailabilityByPath: Boolean get() = savedStateHandle[KEY_IS_SHOWN_GET_PRODUCT_AVAILABILITY_BY_PATH] ?: false
+                    val getPharmacyAddressesUseCase = GetPharmacyAddressesUseCase(
+                        catalogRepository = catalogRepositoryImpl
+                    )
+                    val getProductAvailabilityByPathUseCase = GetProductAvailabilityByPathUseCase(
+                        catalogRepository = catalogRepositoryImpl,
+                        path = path
+                    )
 
-    private val _errorType = MutableLiveData<ErrorType>(OtherError())
-    val errorType: LiveData<ErrorType> = _errorType
+                    viewModelScope.launch {
+                        val resultGetPharmacyAddresses = getPharmacyAddressesUseCase.execute().map { result ->
+                            return@map RequestModel(
+                                type = TYPE_GET_PHARMACY_ADDRESSES,
+                                result = result
+                            )
+                        }
 
-    private val _isInitPharmacyAddresses = MutableLiveData<Boolean>(true)
+                        val resultGetProductAvailabilityByPath = getProductAvailabilityByPathUseCase.execute().map { result ->
+                            return@map RequestModel(
+                                type = TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH,
+                                result = result
+                            )
+                        }
 
-    private val _mutableListSelectedPharmacyAddresses = MutableLiveData<MutableList<SelectedPharmacyAddressesModel>>(mutableListOf())
-    val mutableListSelectedPharmacyAddresses: LiveData<MutableList<SelectedPharmacyAddressesModel>> = _mutableListSelectedPharmacyAddresses
+                        val combinedFlow = combine(
+                            resultGetPharmacyAddresses,
+                            resultGetProductAvailabilityByPath) { getPharmacyAddresses, getProductAvailabilityByPath ->
 
-    private val _listPharmacyAddresses = MutableLiveData<List<*>>()
-    val listPharmacyAddresses: LiveData<List<*>> = _listPharmacyAddresses
+                            return@combine listOf(
+                                getPharmacyAddresses,
+                                getProductAvailabilityByPath
+                            )
+                        }
 
-    private val _counterSelectedItems = MutableLiveData<Int>(0)
-    val counterSelectedItems: LiveData<Int> = _counterSelectedItems
+                        combinedFlow.collect{ listResults ->
+                            listResults.forEach { requestModel ->
+                                if (requestModel.result is Result.Error){
+                                    _stateScreen.value = requestModel.result
+                                    return@collect
+                                }
+                            }
+                            _stateScreen.value = Result.Success(
+                                data = listResults
+                            )
+                        }
+                    }
 
-    init {
-
-        mediatorPharmacyAddresses.addSource(resultGetPharmacyAddresses) { r ->
-            mediatorPharmacyAddresses.value = r
-        }
-
-        mediatorPharmacyAddresses.addSource(resultGetProductAvailabilityByPath) { r ->
-            mediatorPharmacyAddresses.value = r
-        }
-
-    }
-
-    fun getPharmacyAddresses() {
-        val getPharmacyAddressesUseCase = GetPharmacyAddressesUseCase(
-            catalogRepository = catalogRepositoryImpl
-        )
-
-        viewModelScope.launch {
-            val result = getPharmacyAddressesUseCase.execute()
-            resultGetPharmacyAddresses.value = MediatorResultsModel(
-                type = TYPE_GET_PHARMACY_ADDRESSES,
-                result = result
+                },
+                disconnectionListener = ::onDisconnect
             )
         }
+        isShownSendingRequests = false
     }
 
-    fun getProductAvailabilityByPath(path: String) {
-        val getProductAvailabilityByPathUseCase = GetProductAvailabilityByPathUseCase(
-            catalogRepository = catalogRepositoryImpl,
-            path = path
-        )
-
-        viewModelScope.launch {
-            val result = getProductAvailabilityByPathUseCase.execute()
-
-            resultGetProductAvailabilityByPath.value = MediatorResultsModel(
-                type = TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH,
-                result = result
-            )
-        }
+    private fun onLoading(){
+        _stateScreen.value = Result.Loading()
     }
 
-    fun setCounterSelectedItems(counter: Int?) {
-        _counterSelectedItems.value = counter ?: -1
+    private fun onDisconnect(){
+        _stateScreen.value = Result.Error(exception = DisconnectionException())
     }
 
-    fun setListPharmacyAddresses(list: List<*>) {
-        _listPharmacyAddresses.value = list
+    fun tryAgain(isNetworkStatus: Boolean){
+        isShownSendingRequests = true
+        isShownFillingList = true
+        isInstallAdapter = true
+        sendingRequests(isNetworkStatus = isNetworkStatus)
     }
 
-    fun setMutableListSelectedPharmacyAddresses(mutableList: MutableList<SelectedPharmacyAddressesModel>) {
-        _mutableListSelectedPharmacyAddresses.value = mutableList
-    }
+    fun fillingList(
+        listPharmacyAddresses: List<PharmacyAddressesModel>,
+        listProductAvailability: List<ProductAvailabilityModel>
+    ) {
+        if (isShownFillingList) {
+            val mutableListSelectedPharmacyAddresses = mutableListOf<SelectedPharmacyAddressesModel>()
 
-    fun setInitPharmacyAddresses(list: List<*>, counter: Int) {
-        val isInit = _isInitPharmacyAddresses.value ?: throw NullPointerException("PharmacyAddressesViewModel setInitPharmacyAddresses isInit = null")
-        if (isInit) {
-            list.forEach {
-                val selectedPharmacyAddressesModel = it as SelectedPharmacyAddressesModel
-                _mutableListSelectedPharmacyAddresses.value?.add(
+            listPharmacyAddresses.forEach { pharmacyAddress ->
+                val isAvailabilityProduct = listProductAvailability.any { productAvailability ->
+                    productAvailability.addressId == pharmacyAddress.addressId && productAvailability.numberProducts > 0
+                }
+
+                val isSelect = arrayListSelectedIdsAddresses.any { it == pharmacyAddress.addressId }
+
+                if (isAvailabilityProduct) mutableListSelectedPharmacyAddresses.add(
                     SelectedPharmacyAddressesModel(
-                        pharmacyAddressesModel = selectedPharmacyAddressesModel.pharmacyAddressesModel,
-                        isSelected = selectedPharmacyAddressesModel.isSelected,
-                        productAvailabilityModel = selectedPharmacyAddressesModel.productAvailabilityModel
+                        isSelected = isSelect,
+                        pharmacyAddressesModel = pharmacyAddress
                     )
                 )
             }
-            _counterSelectedItems.value = counter
-            Log.i("TAG","PharmacyAddressesViewModel setInitPharmacyAddresses _listSelectedPharmacyAddresses = ${_mutableListSelectedPharmacyAddresses.value}")
+
+            _listSelectedPharmacyAddresses.value = mutableListSelectedPharmacyAddresses
         }
-        _isInitPharmacyAddresses.value = false
 
+        isShownFillingList = false
     }
 
-    fun setPharmacyAddresses(position: Int, isSelect: Boolean) {
-        val item = _mutableListSelectedPharmacyAddresses.value?.get(position)?: throw NullPointerException("PharmacyAddressesViewModel setPharmacyAddresses item = null")
-        _mutableListSelectedPharmacyAddresses.value?.removeAt(position)
-        _mutableListSelectedPharmacyAddresses.value?.add(position,SelectedPharmacyAddressesModel(
-            pharmacyAddressesModel = item.pharmacyAddressesModel,
-            isSelected = isSelect,
-            productAvailabilityModel = item.productAvailabilityModel
-        ))
+    fun updateCounter(){ _counter.value = _listSelectedPharmacyAddresses.value.count { it.isSelected } }
 
-        Log.i("TAG","PharmacyAddressesViewModel setPharmacyAddresses _mutableListSelectedPharmacyAddresses = ${_mutableListSelectedPharmacyAddresses.value}")
+    fun clearAddressesSelected(){
+        setIsInstallAdapter(isInstallAdapter = true)
+
+        _listSelectedPharmacyAddresses.value = _listSelectedPharmacyAddresses.value.map { it.copy(isSelected = false) }
     }
 
-    fun setResultGetProductAvailabilityByPath(result: Result<ResponseValueModel<List<ProductAvailabilityModel>?>>, errorType: ErrorType? = null){
-        if (result is ErrorResult && errorType != null){
-            _errorType.value = errorType?: throw NullPointerException("PharmacyAddressesViewModel setResult errorType = null")
+    fun installAdapter(block:() -> Unit){
+
+        if (isInstallAdapter) block()
+
+        if (_listSelectedPharmacyAddresses.value.isNotEmpty()) isInstallAdapter = false
+    }
+
+    fun setIsInstallAdapter(isInstallAdapter: Boolean){
+        this.isInstallAdapter = isInstallAdapter
+    }
+
+    fun transmittingArrayListSelectedIds(back: (ArrayList<Int>) -> Unit) {
+        val mutableListOnlySelectedPharmacyAddresses = _listSelectedPharmacyAddresses.value.filter { it.isSelected }
+
+        val arrayListPharmacyAddressesId = mutableListOnlySelectedPharmacyAddresses.map { it.pharmacyAddressesModel.addressId }.toArrayListInt()
+
+        back(arrayListPharmacyAddressesId)
+    }
+
+    fun onSelectAddress(addressId: Int, isSelect: Boolean){
+        try {
+            val mutableListSelectedPharmacyAddresses = _listSelectedPharmacyAddresses.value.toMutableList()
+
+            val selectedPharmacyAddressesModel = mutableListSelectedPharmacyAddresses.find { it.pharmacyAddressesModel.addressId == addressId }
+
+            val index = mutableListSelectedPharmacyAddresses.indexOf(selectedPharmacyAddressesModel)
+
+            mutableListSelectedPharmacyAddresses.removeAt(index)
+            mutableListSelectedPharmacyAddresses.add(index, selectedPharmacyAddressesModel!!.copy(isSelected = isSelect))
+
+            _listSelectedPharmacyAddresses.value = mutableListSelectedPharmacyAddresses
         }
-        resultGetProductAvailabilityByPath.value = MediatorResultsModel(
-            type = TYPE_GET_PRODUCT_AVAILABILITY_BY_PATH,
-            result = result
-        )
-    }
-
-    fun setResultGetPharmacyAddresses(
-        result: Result<ResponseValueModel<List<PharmacyAddressesModel>?>>,
-        errorType: ErrorType? = null
-    ) {
-        if (result is ErrorResult && errorType != null) {
-            _errorType.value = errorType
-                ?: throw NullPointerException("PharmacyAddressesViewModel setResult errorType = null")
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+            _stateScreen.value = Result.Error(exception = e)
         }
-        resultGetPharmacyAddresses.value = MediatorResultsModel(
-            type = TYPE_GET_PHARMACY_ADDRESSES,
-            result = result
-        )
+
     }
 
-    fun setIsShownGetPharmacyAddresses(isShown: Boolean) {
-        savedStateHandle[KEY_IS_SHOWN_GET_PHARMACY_ADDRESSES] = isShown
-    }
-
-    fun setIsShownGetProductAvailabilityByPath(isShown: Boolean) {
-        savedStateHandle[KEY_IS_SHOWN_GET_PRODUCT_AVAILABILITY_BY_PATH] = isShown
-    }
-
-    fun clearErrorType() {
-        _errorType.value = OtherError()
-    }
 }
