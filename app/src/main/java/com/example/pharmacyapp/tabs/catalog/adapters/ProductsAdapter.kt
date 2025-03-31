@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView.Adapter
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import coil.load
 import com.example.domain.favorite.models.FavoriteModel
-import com.example.domain.catalog.models.ProductFavoriteModel
+import com.example.domain.catalog.models.ProductInCatalogModel
 import com.example.domain.models.ButtonModel
 import com.example.pharmacyapp.CLUB_DISCOUNT
 import com.example.pharmacyapp.R
@@ -22,7 +22,7 @@ import kotlin.math.roundToInt
  *
  * Парметры:
  * [userId] - идентификатор пользователя;
- * listProducts - список товаров;
+ * [mutableListProductsInCatalog] - список товаров;
  * [onClickProduct] - обработка нажатия на товар;
  * [onClickFavorite] - обработка нажатия "В Избранное";
  * [onClickInBasket] - обработка нажатия "В корзину";
@@ -30,39 +30,12 @@ import kotlin.math.roundToInt
  */
 class ProductsAdapter(
     private val userId: Int,
-    listProducts: List<*>,
-    private val onClickProduct: (Int,Boolean) -> Unit,
+    private var mutableListProductsInCatalog: MutableList<ProductInCatalogModel>,
+    private val onClickProduct: (Int) -> Unit,
     private val onClickFavorite: (FavoriteModel, Boolean) -> Unit,
     private val onClickInBasket: (Int,Boolean) -> Unit,
     private val buttonModel: ButtonModel
 ) : Adapter<ProductsAdapter.ProductsHolder>() {
-
-    /**
-     * Изменяемый список товаров, который будет отрисовываться на экране.
-     */
-    private val mutableListProductFavorite = mutableListOf<ProductFavoriteModel>()
-
-    /**
-     * Заполнение mutableListProductFavorite при инициализации класса.
-     */
-    init {
-        listProducts.forEach {
-            val productFavoriteModel = it as ProductFavoriteModel
-
-            mutableListProductFavorite.add(
-                if (userId == UNAUTHORIZED_USER) {
-                    ProductFavoriteModel(
-                        isFavorite = false,
-                        productModel = productFavoriteModel.productModel,
-                        isInBasket = false
-                    )
-                }
-                else {
-                    productFavoriteModel
-                }
-            )
-        }
-    }
 
     class ProductsHolder(val binding: ItemProductsBinding) : ViewHolder(binding.root)
 
@@ -73,11 +46,11 @@ class ProductsAdapter(
         return ProductsHolder(binding = binding)
     }
 
-    override fun getItemCount(): Int = mutableListProductFavorite.size
+    override fun getItemCount(): Int = mutableListProductsInCatalog.size
 
     override fun onBindViewHolder(holder: ProductsHolder, position: Int): Unit =
         with(holder.binding) {
-            val currentProduct = mutableListProductFavorite[position]
+            val currentProduct = mutableListProductsInCatalog[position]
             val product = currentProduct.productModel
             var isFavorite = currentProduct.isFavorite
             var isInBasket = currentProduct.isInBasket
@@ -141,7 +114,7 @@ class ProductsAdapter(
             }
 
             root.setOnClickListener {
-                onClickProduct(product.productId,isFavorite)
+                onClickProduct(product.productId)
             }
 
             // Обработка нажатия на "сердечко"
@@ -161,8 +134,10 @@ class ProductsAdapter(
                 if (userId != UNAUTHORIZED_USER) {
                     isFavorite = !isFavorite
                     // Изменение элемента списка
-                    mutableListProductFavorite.removeAt(position)
-                    mutableListProductFavorite.add(position,ProductFavoriteModel(
+                    val index = mutableListProductsInCatalog.indexOf(currentProduct)
+
+                    mutableListProductsInCatalog.removeAt(index)
+                    mutableListProductsInCatalog.add(index,ProductInCatalogModel(
                         isFavorite = isFavorite,
                         productModel = product,
                         isInBasket = isInBasket
@@ -171,7 +146,6 @@ class ProductsAdapter(
                     // Обновление элемента списка
                     notifyItemChanged(position)
                 }
-
 
             }
 
@@ -182,8 +156,10 @@ class ProductsAdapter(
                 onClickInBasket(product.productId,isInBasket)
 
                 // Изменение элемента списка
-                mutableListProductFavorite.removeAt(position)
-                mutableListProductFavorite.add(position,ProductFavoriteModel(
+                val index = mutableListProductsInCatalog.indexOf(currentProduct)
+
+                mutableListProductsInCatalog.removeAt(index)
+                mutableListProductsInCatalog.add(index,ProductInCatalogModel(
                     isFavorite = isFavorite,
                     productModel = product,
                     isInBasket = isInBasket

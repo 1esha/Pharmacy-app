@@ -1,30 +1,27 @@
 package com.example.pharmacyapp.tabs.catalog.viewmodels
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.MutableLiveData
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.basket.BasketRepositoryImpl
 import com.example.data.catalog.CatalogRepositoryImpl
 import com.example.data.favorite.FavoriteRepositoryImpl
-import com.example.domain.ErrorResult
-import com.example.domain.ErrorType
-import com.example.domain.OtherError
+import com.example.domain.DisconnectionException
+import com.example.domain.Network
 import com.example.domain.Result
 import com.example.domain.basket.usecases.AddProductInBasketUseCase
 import com.example.domain.basket.usecases.DeleteProductFromBasketUseCase
 import com.example.domain.basket.usecases.GetIdsProductsFromBasketUseCase
+import com.example.domain.catalog.models.ProductInCatalogModel
 import com.example.domain.favorite.models.FavoriteModel
 import com.example.domain.catalog.models.ProductModel
+import com.example.domain.catalog.usecases.GetProductsByPathUseCase
 import com.example.domain.favorite.usecases.AddFavoriteUseCase
 import com.example.domain.favorite.usecases.DeleteByIdUseCase
 import com.example.domain.favorite.usecases.GetAllFavoritesUseCase
-import com.example.domain.catalog.usecases.GetProductsByPathUseCase
-import com.example.domain.models.MediatorResultsModel
-import com.example.domain.profile.models.ResponseModel
-import com.example.domain.profile.models.ResponseValueModel
+import com.example.domain.models.RequestModel
+import com.example.pharmacyapp.EMPTY_STRING
 import com.example.pharmacyapp.MIN_DELAY
 import com.example.pharmacyapp.TYPE_ADD_FAVORITE
 import com.example.pharmacyapp.TYPE_ADD_PRODUCT_IN_BASKET
@@ -33,277 +30,319 @@ import com.example.pharmacyapp.TYPE_GET_ALL_FAVORITES
 import com.example.pharmacyapp.TYPE_GET_IDS_PRODUCTS_FROM_BASKET
 import com.example.pharmacyapp.TYPE_GET_PRODUCTS_BY_PATH
 import com.example.pharmacyapp.TYPE_REMOVE_FAVORITES
+import com.example.pharmacyapp.UNAUTHORIZED_USER
+import com.example.pharmacyapp.getPrice
+import com.example.pharmacyapp.tabs.catalog.SortingBottomSheetDialogFragment.Companion.KEY_SORTING_TYPE
+import com.example.pharmacyapp.tabs.catalog.SortingBottomSheetDialogFragment.Companion.SORT_ASCENDING_PRICE
+import com.example.pharmacyapp.tabs.catalog.SortingBottomSheetDialogFragment.Companion.SORT_DESCENDING_PRICE
+import com.example.pharmacyapp.tabs.catalog.SortingBottomSheetDialogFragment.Companion.SORT_DISCOUNT_AMOUNT
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
  * Класс [ProductsViewModel] является viewModel для класса ProductsFragment.
  */
 class ProductsViewModel(
-    private val savedStateHandle: SavedStateHandle,
     private val catalogRepositoryImpl: CatalogRepositoryImpl,
     private val favoriteRepositoryImpl: FavoriteRepositoryImpl,
     private val basketRepositoryImpl: BasketRepositoryImpl
 ): ViewModel() {
 
-    companion object {
-        // Ключи для передачи и получения значения был ли обработан запрос или нет
-        private const val KEY_IS_SHOWN_GET_PRODUCTS_BY_PATH = "KEY_IS_SHOWN_GET_PRODUCTS_BY_PATH"
-        private const val KEY_IS_SHOWN_GET_ALL_FAVORITES = "KEY_IS_SHOWN_GET_ALL_FAVORITES"
-        private const val KEY_IS_SHOWN_GET_IDS_PRODUCTS_FROM_BASKET = "KEY_IS_SHOWN_GET_IDS_PRODUCTS_FROM_BASKET"
-        private const val KEY_IS_SHOWN_PRODUCTS_ADAPTER = "KEY_IS_SHOWN_PRODUCTS_ADAPTER"
-    }
-
-    /**
-     * [mediatorProduct] - наблюдает за изменениями результатов запросов -
-     * [resultGetProductsByPath],
-     * [resultAddFavorite],
-     * [resultGetAllFavorites],
-     * [resultRemoveFavorite],
-     * [resultGetIdsProductsFromBasket],
-     * [resultAddProductInBasket],
-     * [resultDeleteProductFromBasket].
-     */
-    val mediatorProduct = MediatorLiveData<MediatorResultsModel<*>>()
-
-    /**
-     * [mediatorIsAllRequests] - наблюдает за изменениями переменных MutableLiveDate -
-     * [_listProducts],
-     * [_listAllFavorites],
-     * [_listIdsProductsFromBasket].
-     */
-    val mediatorIsAllRequests = MediatorLiveData<Any>()
-
-    /**
-     * Переменные типа [MutableLiveData], хранящие результаты соответсвующих запросов:
-     * [getProductsByPath],
-     * [getAllFavorites],
-     * [addFavorite],
-     * [removeFavorite],
-     * [getIdsProductsFromBasket],
-     * [addProductInBasket],
-     * [deleteProductFromBasket].
-     */
-    private val resultGetProductsByPath = MutableLiveData<MediatorResultsModel<Result<ResponseValueModel<List<ProductModel>?>>>>()
-
-    private val resultGetAllFavorites = MutableLiveData<MediatorResultsModel<Result<ResponseValueModel<List<FavoriteModel>>>>>()
-
-    private val resultAddFavorite = MutableLiveData<MediatorResultsModel<Result<ResponseModel>>>()
-
-    private val resultRemoveFavorite = MutableLiveData<MediatorResultsModel<Result<ResponseModel>>>()
-
-    private val resultGetIdsProductsFromBasket = MutableLiveData<MediatorResultsModel<Result<ResponseValueModel<List<Int>>>>>()
-
-    private val resultAddProductInBasket = MutableLiveData<MediatorResultsModel<Result<ResponseModel>>>()
-
-    private val resultDeleteProductFromBasket = MutableLiveData<MediatorResultsModel<Result<ResponseModel>>>()
-
-    /**
-     * Хранит список товаров, отображаемый пользователю.
-     * Может изменятся из за фильтрации, сортировки и т.д.
-     */
-    private val _listProducts = MutableLiveData<List<ProductModel>>(null)
-    val listProducts: LiveData<List<ProductModel>> = _listProducts
-
-    /**
-     * Хранит список всех товаров, не изменятся.
-     * Является начальным значением для списка [_listProducts].
-     */
-    private val _listAllProducts = MutableLiveData<List<ProductModel>>(null)
-    val listAllProducts: LiveData<List<ProductModel>> = _listAllProducts
-
-    /**
-     * Хранит список всех избранных товаров пользователя.
-     */
-    private val _listAllFavorites = MutableLiveData<List<FavoriteModel>>(null)
-    val listAllFavorites: LiveData<List<FavoriteModel>> = _listAllFavorites
-
-    /**
-     * Хранит список идентификаторов товаров из корзины пользователя.
-     */
-    private val _listIdsProductsFromBasket = MutableLiveData<List<Int>>()
-    val listIdsProductsFromBasket: LiveData<List<Int>> = _listIdsProductsFromBasket
-
-    /**
-     * Хранит идентификатор текущего товара для добавления/удаления из корзины.
-     */
-    private val _currentProductId = MutableLiveData<Int>()
-    val currentProductId: LiveData<Int> = _currentProductId
+    private val _stateScreen = MutableStateFlow<Result>(Result.Loading())
+    val stateScreen: StateFlow<Result> = _stateScreen
 
     /**
      * Хранит значени для оображения точки над кнопкой "Фильтры".
      * Значение true - фильтры применены, false - нет.
      */
-    private val _isCheckFilter = MutableLiveData<Boolean>(false)
-    val isCheckFilter: LiveData<Boolean> = _isCheckFilter
+    private val _isCheckFilter = MutableStateFlow<Boolean>(false)
+    val isCheckFilter = _isCheckFilter.asStateFlow()
 
-    /**
-     * Переменные:
-     * [isShownProductsAdapter],
-     * [isShownGetProductsByPath],
-     * [isShownGetAllFavorites],
-     * [isShownGetIdsProductsFromBasket],
-     * хранят значения соответствующих запросов был ли обработан запрос или нет.
-     * По умолчаню запросы не обработаны. Значение - false.
-     */
-    val isShownProductsAdapter: Boolean get() = savedStateHandle[KEY_IS_SHOWN_PRODUCTS_ADAPTER] ?: false
+    private val _listProductsInCatalog = MutableStateFlow<List<ProductInCatalogModel>>(mutableListOf())
+    val listProductsInCatalog: StateFlow<List<ProductInCatalogModel>> get() = _listProductsInCatalog.asStateFlow()
 
-    val isShownGetProductsByPath: Boolean get() = savedStateHandle[KEY_IS_SHOWN_GET_PRODUCTS_BY_PATH] ?: false
+    private var isShownSendingRequests = true
 
-    val isShownGetAllFavorites: Boolean get() = savedStateHandle[KEY_IS_SHOWN_GET_ALL_FAVORITES] ?: false
+    private var isShownFillData = true
 
-    val isShownGetIdsProductsFromBasket: Boolean get() = savedStateHandle[KEY_IS_SHOWN_GET_IDS_PRODUCTS_FROM_BASKET] ?: false
+    private var isInstallAdapter = true
 
-    /**
-     * Переменная [errorType] хранит тип ошибки. По умолчанию является - [OtherError].
-     */
-    private val _errorType = MutableLiveData<ErrorType>(OtherError())
-    val errorType: LiveData<ErrorType> = _errorType
+    private var isInit = true
 
-    /**
-     * Установка источников наблюдения для mediatorProduct и mediatorIsAllRequests при инициализации класса.
-     */
-    init {
-        mediatorProduct.addSource(resultGetProductsByPath) { result ->
-            mediatorProduct.value = result
+    private val network = Network()
+
+    private var defaultPriceUpTo: Int = 0
+    private var defaultPriceFrom: Int = 0
+
+    private var userId = UNAUTHORIZED_USER
+    private var path = EMPTY_STRING
+    private var typeSort = SORT_ASCENDING_PRICE
+
+    private var isChecked: Boolean = false
+    private var priceFrom: Int = defaultPriceFrom
+    private var priceUpTo: Int = defaultPriceUpTo
+    private var arrayListIdsSelectedAddresses: ArrayList<Int> = arrayListOf()
+
+    private var listAllProductsInCatalog = listOf<ProductInCatalogModel>()
+
+    private var currentProductInCatalog: ProductInCatalogModel? = null
+
+    private var listAllProducts = listOf<ProductModel>()
+
+    fun initValues(
+        userId: Int,
+        path: String?
+    ){
+        try {
+            if (isInit){
+                this.userId = userId
+                this.path = path?:throw NullPointerException()
+
+                isInit = false
+            }
         }
-
-        mediatorProduct.addSource(resultAddFavorite) { result ->
-            mediatorProduct.value = result
-        }
-
-        mediatorProduct.addSource(resultGetAllFavorites) { result ->
-            mediatorProduct.value = result
-        }
-
-        mediatorProduct.addSource(resultRemoveFavorite) { result ->
-            mediatorProduct.value = result
-        }
-
-        mediatorProduct.addSource(resultGetIdsProductsFromBasket) { result ->
-            mediatorProduct.value = result
-        }
-
-        mediatorProduct.addSource(resultAddProductInBasket) { result ->
-            mediatorProduct.value = result
-        }
-
-        mediatorProduct.addSource(resultDeleteProductFromBasket) { result ->
-            mediatorProduct.value = result
-        }
-        //
-        mediatorIsAllRequests.addSource(_listProducts) { result ->
-            mediatorIsAllRequests.value = result
-        }
-
-        mediatorIsAllRequests.addSource(_listAllFavorites) { result ->
-            mediatorIsAllRequests.value = result
-        }
-
-        mediatorIsAllRequests.addSource(_listIdsProductsFromBasket) { result ->
-            mediatorIsAllRequests.value = result
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+            _stateScreen.value = Result.Error(exception = e)
         }
     }
 
-    /**
-     * Получение списка товаров по пути (категории) товара.
-     *
-     * Параметры:
-     * [path] - путь по которому будет получен список товаров.
-     */
-    fun getProductsByPath(path: String) {
-        val getProductsByPathUseCase = GetProductsByPathUseCase(
-            catalogRepository = catalogRepositoryImpl,
-            path = path
+
+    fun sendingRequests(isNetworkStatus: Boolean){
+        if (isShownSendingRequests) {
+            network.checkNetworkStatus(
+                isNetworkStatus = isNetworkStatus,
+                connectionListener = {
+
+                    onLoading()
+
+                    if (path == EMPTY_STRING){
+                        _stateScreen.value = Result.Error(exception = IllegalArgumentException())
+                        return@checkNetworkStatus
+                    }
+
+                    val getProductsByPathUseCase = GetProductsByPathUseCase(
+                        catalogRepository = catalogRepositoryImpl,
+                        path = path
+                    )
+                    val getAllFavoritesUseCase = GetAllFavoritesUseCase(
+                        favoriteRepository = favoriteRepositoryImpl
+                    )
+                    val getIdsProductsFromBasketUseCase = GetIdsProductsFromBasketUseCase(
+                        basketRepository = basketRepositoryImpl,
+                        userId = userId
+                    )
+                    viewModelScope.launch {
+                        val resultGetProductsByPath = getProductsByPathUseCase.execute().map { result ->
+                            return@map RequestModel(
+                                type = TYPE_GET_PRODUCTS_BY_PATH,
+                                result = result
+                            )
+                        }
+
+                        val resultGetAllFavorites = getAllFavoritesUseCase.execute().map { result ->
+                            return@map RequestModel(
+                                type = TYPE_GET_ALL_FAVORITES,
+                                result = result
+                            )
+                        }
+
+                        val resultGetIdsProductsFromBasket = getIdsProductsFromBasketUseCase.execute().map { result ->
+                            return@map RequestModel(
+                                type = TYPE_GET_IDS_PRODUCTS_FROM_BASKET,
+                                result = result
+                            )
+                        }
+
+                        val combinedFlow = combine(
+                            resultGetProductsByPath,
+                            resultGetAllFavorites,
+                            resultGetIdsProductsFromBasket) { productsByPath, allFavorites, idsProductsFromBasket ->
+
+                            return@combine listOf(
+                                productsByPath,
+                                allFavorites,
+                                idsProductsFromBasket
+                            )
+                        }
+
+                        combinedFlow.collect{ listResults ->
+                            listResults.forEach { requestModel ->
+                                if (requestModel.result is Result.Error){
+                                    _stateScreen.value = requestModel.result
+                                    return@collect
+                                }
+                            }
+                            _stateScreen.value = Result.Success(
+                                data = listResults
+                            )
+                        }
+                    }
+
+                },
+                disconnectionListener = ::onDisconnect
+            )
+        }
+        isShownSendingRequests = false
+    }
+
+    private fun onLoading(){
+        _stateScreen.value = Result.Loading()
+    }
+
+    private fun onDisconnect(){
+        _stateScreen.value = Result.Error(exception = DisconnectionException())
+    }
+
+    fun tryAgain(isNetworkStatus: Boolean){
+        val mutableListProductsInCatalog = _listProductsInCatalog.value.toMutableList()
+        mutableListProductsInCatalog.clear()
+        _listProductsInCatalog.value = mutableListProductsInCatalog
+
+        isShownSendingRequests = true
+        isShownFillData = true
+        isInstallAdapter = true
+        sendingRequests(isNetworkStatus = isNetworkStatus)
+    }
+
+    fun fillData(
+        listAllProducts: List<ProductModel>,
+        listAllFavorite: List<FavoriteModel>,
+        listIdsProductsFromBasket: List<Int>
+    ){
+        if (isShownFillData) {
+            this.listAllProducts = listAllProducts
+
+            val mutableListAllProductsInCatalog = mutableListOf<ProductInCatalogModel>()
+
+            listAllProducts.forEach { productModel ->
+                val productId = productModel.productId
+
+                if (userId == UNAUTHORIZED_USER){
+                    mutableListAllProductsInCatalog.add(ProductInCatalogModel(
+                        isFavorite = false,
+                        productModel = productModel,
+                        isInBasket = false
+                    ))
+                }
+                else {
+                    val isFavorite = listAllFavorite.any { it.productId == productId }
+                    val isInBasket = listIdsProductsFromBasket.any { it == productId }
+
+                    mutableListAllProductsInCatalog.add(ProductInCatalogModel(
+                        isFavorite = isFavorite,
+                        productModel = productModel,
+                        isInBasket = isInBasket
+                    ))
+                }
+
+            }
+            listAllProductsInCatalog = mutableListAllProductsInCatalog
+
+            val sortedListProductsInCatalog = sortListProductsInCatalog(listProductsInCatalog = mutableListAllProductsInCatalog)
+            _listProductsInCatalog.value = sortedListProductsInCatalog
+        }
+
+        isShownFillData = false
+    }
+
+    fun listenResultFromProductInfo(
+        productId: Int,
+        isFavorite: Boolean,
+        isInBasket: Boolean
+    ){
+        setCurrentProductInCatalog(
+            productId = productId,
+            isFavorite = isFavorite,
+            isInBasket = isInBasket
         )
 
-        viewModelScope.launch {
-            val result = getProductsByPathUseCase.execute()
-            resultGetProductsByPath.value = MediatorResultsModel(
-                type = TYPE_GET_PRODUCTS_BY_PATH,
-                result = result
-            )
+        changeListProductsInCatalog()
+    }
+
+    fun listenResultFromFilter(
+        isChecked: Boolean,
+        priceFrom: Int,
+        priceUpTo: Int,
+        arrayListIdsSelectedAddresses: ArrayList<Int>?,
+        arrayListIdsFiltered: ArrayList<Int>
+    ){
+        try {
+            Log.d("TAG","ProductsViewModel\nisChecked = $isChecked\npriceFrom = $priceFrom\npriceUpTo = $priceUpTo\narrayListIdsSelectedAddresses = $arrayListIdsSelectedAddresses")
+            this.isChecked = isChecked
+            this.priceFrom = priceFrom
+            this.priceUpTo = priceUpTo
+            this.arrayListIdsSelectedAddresses = arrayListIdsSelectedAddresses?: throw NullPointerException()
+
+            setListProductsInCatalog(arrayListIdsFiltered = arrayListIdsFiltered)
+
+            checkFilters()
+
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+            _stateScreen.value = Result.Error(exception = e)
         }
     }
 
-    /**
-     * Получение списка всех избранных товаров пользователя.
-     */
-    fun getAllFavorites() {
-        val getAllFavoritesUseCase = GetAllFavoritesUseCase(favoriteRepository = favoriteRepositoryImpl)
-
-        viewModelScope.launch {
-            val result = getAllFavoritesUseCase.execute()
-            resultGetAllFavorites.value = MediatorResultsModel(
-                type = TYPE_GET_ALL_FAVORITES,
-                result = result
-            )
-        }
+    fun listenResultFromSorting(
+        type: Int
+    ){
+        setIsInstallAdapter(isInstallAdapter = true)
+        setListProductsInCatalog(type = type)
     }
 
-    /**
-     * Добавление товара в "Избранное".
-     *
-     * Параметры:
-     * [favoriteModel] - товар, который будет добавлен в "Избранное".
-     */
-    fun addFavorite(favoriteModel: FavoriteModel)  {
-        val addFavoriteUseCase = AddFavoriteUseCase(
+    private fun addFavorite(favoriteModel: FavoriteModel) {
+        onLoading()
+        val addFavoritesUseCase = AddFavoriteUseCase(
             favoriteRepository = favoriteRepositoryImpl,
-            favoriteModel = favoriteModel)
-
+            favoriteModel = favoriteModel
+        )
         viewModelScope.launch {
             delay(MIN_DELAY)
-            val resultAddFavorite = addFavoriteUseCase.execute()
-            this@ProductsViewModel.resultAddFavorite.value = MediatorResultsModel(
-                type = TYPE_ADD_FAVORITE,
-                result = resultAddFavorite
-            )
+
+            addFavoritesUseCase.execute().collect{ result ->
+                if (result is Result.Error){
+                    _stateScreen.value = result
+                    return@collect
+                }
+                val data = listOf(RequestModel(
+                    type = TYPE_REMOVE_FAVORITES,
+                    result = result
+                ))
+                _stateScreen.value = Result.Success(data = data)
+            }
         }
+
     }
 
-    /**
-     * Удаление  товара из "Избранного".
-     *
-     * Параметры:
-     * [productId] - идентификатор товара, который будет удален из "Избранного".
-     */
-    fun removeFavorite(productId: Int) {
+    private fun removeFavorite(productId: Int) {
+        onLoading()
+
         val deleteByIdUseCase = DeleteByIdUseCase(
             favoriteRepository = favoriteRepositoryImpl,
             productId = productId
         )
-
         viewModelScope.launch {
             delay(MIN_DELAY)
-            val result = deleteByIdUseCase.execute()
-            resultRemoveFavorite.value = MediatorResultsModel(
-                type = TYPE_REMOVE_FAVORITES,
-                result = result
-            )
-        }
 
-    }
+            deleteByIdUseCase.execute().collect{ result ->
+                if (result is Result.Error){
+                    _stateScreen.value = result
+                    return@collect
+                }
 
-    /**
-     * Получение списка идентификаторов товаров из корзины.
-     *
-     * Параметры:
-     * [userId] -  идентификатор пользователя из чьей корзины будет получен список.
-     */
-    fun getIdsProductsFromBasket(userId: Int) {
-        val getIdsProductsFromBasketUseCase = GetIdsProductsFromBasketUseCase(
-            basketRepository = basketRepositoryImpl,
-            userId = userId
-        )
-
-        viewModelScope.launch {
-            val result = getIdsProductsFromBasketUseCase.execute()
-
-            resultGetIdsProductsFromBasket.value = MediatorResultsModel(
-                type = TYPE_GET_IDS_PRODUCTS_FROM_BASKET,
-                result = result
-            )
+                val data = listOf(RequestModel(
+                    type = TYPE_ADD_FAVORITE,
+                    result = result
+                ))
+                _stateScreen.value = Result.Success(data = data)
+            }
         }
     }
 
@@ -315,22 +354,30 @@ class ProductsViewModel(
      * [productId] - идентификатор товара;
      * [numberProducts] - количество товара, который будет добавлен. По умолчанию количесто = 1.
      */
-    fun addProductInBasket(userId: Int, productId: Int, numberProducts: Int = 1) {
-        val addProductsInBasketUseCase = AddProductInBasketUseCase(
+    private fun addProductInBasket(userId: Int, productId: Int, numberProducts: Int = 1) {
+        onLoading()
+
+        val addProductInBasketUseCase = AddProductInBasketUseCase(
             basketRepository = basketRepositoryImpl,
             userId = userId,
             productId = productId,
             numberProducts = numberProducts
         )
-
         viewModelScope.launch {
             delay(MIN_DELAY)
-            val result = addProductsInBasketUseCase.execute()
 
-            resultAddProductInBasket.value = MediatorResultsModel(
-                type = TYPE_ADD_PRODUCT_IN_BASKET,
-                result = result
-            )
+            addProductInBasketUseCase.execute().collect{ result ->
+                if (result is Result.Error){
+                    _stateScreen.value = result
+                    return@collect
+                }
+
+                val data = listOf(RequestModel(
+                    type = TYPE_ADD_PRODUCT_IN_BASKET,
+                    result = result
+                ))
+                _stateScreen.value = Result.Success(data = data)
+            }
         }
     }
 
@@ -341,234 +388,276 @@ class ProductsViewModel(
      * [userId] - идентификатор пользователя из чьей корзины будет удален товар;
      * [productId] - идентификатор товара.
      */
-    fun deleteProductFromBasket(userId: Int, productId: Int) {
+    private fun deleteProductFromBasket(userId: Int, productId: Int) {
+        onLoading()
+
         val deleteProductFromBasketUseCase = DeleteProductFromBasketUseCase(
             basketRepository = basketRepositoryImpl,
             userId = userId,
             productId = productId
         )
-
         viewModelScope.launch {
             delay(MIN_DELAY)
-            val result = deleteProductFromBasketUseCase.execute()
 
-            resultDeleteProductFromBasket.value = MediatorResultsModel(
-                type = TYPE_DELETE_PRODUCT_FROM_BASKET,
-                result = result
+            deleteProductFromBasketUseCase.execute().collect{ result ->
+                if (result is Result.Error){
+                    _stateScreen.value = result
+                    return@collect
+                }
+
+                val data = listOf(RequestModel(
+                    type = TYPE_DELETE_PRODUCT_FROM_BASKET,
+                    result = result
+                ))
+                _stateScreen.value = Result.Success(data = data)
+            }
+        }
+    }
+
+    fun installAdapter(block:(Int, Boolean, Int) -> Unit){
+        val isEmptyList = _listProductsInCatalog.value.isEmpty()
+        val sizeListAllProducts = listAllProducts.size
+        if (isInstallAdapter) block(userId,isEmptyList,sizeListAllProducts)
+
+        if (sizeListAllProducts != 0) isInstallAdapter = false
+    }
+
+    fun onClickFavorite(
+        isNetworkStatus: Boolean,
+        favoriteModel: FavoriteModel,
+        isFavorite: Boolean,
+        navigate: () -> Unit){
+        network.checkNetworkStatus(
+            isNetworkStatus = isNetworkStatus,
+            connectionListener = {
+                // Если пользователь не авторизован, то открытие экрана авторизации
+                if (userId == UNAUTHORIZED_USER) {
+                    navigate()
+                    return@checkNetworkStatus
+                }
+
+                setCurrentProductInCatalog(
+                    productId = favoriteModel.productId,
+                    isFavorite = isFavorite
+                )
+
+                if (isFavorite) {
+                    // Добавление
+                    addFavorite(favoriteModel = favoriteModel)
+                }
+                else {
+                    // Удаление
+                    removeFavorite(productId = favoriteModel.productId)
+                }
+            },
+            disconnectionListener = ::onDisconnect
+        )
+
+    }
+
+    fun onClickInBasket(
+        isNetworkStatus: Boolean,
+        productId:Int,
+        isInBasket: Boolean,
+        navigate: () -> Unit){
+        network.checkNetworkStatus(
+            isNetworkStatus = isNetworkStatus,
+            connectionListener = {
+                // Если пользователь не авторизован, то открытие экрана авторизации
+                if (userId == UNAUTHORIZED_USER) {
+                    navigate()
+                    return@checkNetworkStatus
+                }
+
+                setCurrentProductInCatalog(
+                    productId = productId,
+                    isInBasket = isInBasket
+                )
+
+                // Добавление/удаление текущего товара из корзины
+                if (isInBasket) {
+                    addProductInBasket(
+                        userId = userId,
+                        productId = productId
+                    )
+                }
+                else {
+                    deleteProductFromBasket(
+                        userId = userId,
+                        productId = productId
+                    )
+                }
+            },
+            disconnectionListener = ::onDisconnect
+        )
+    }
+
+    fun navigateToFilters(navigate: (String, Boolean, Int, Int, Int, Int, ArrayList<Int>) -> Unit){
+        val listPrices = getListPrices(listAllProducts = listAllProducts)
+
+        defaultPriceFrom = listPrices.min()
+        defaultPriceUpTo = listPrices.max()
+
+        navigate(
+            path,
+            isChecked,
+            priceFrom,
+            priceUpTo,
+            defaultPriceFrom,
+            defaultPriceUpTo,
+            arrayListIdsSelectedAddresses
+        )
+    }
+
+    fun navigateToSorting(navigate:(Int) -> Unit){
+        navigate(typeSort)
+    }
+
+    private fun checkFilters(){
+        val isCheckedFilter = if (
+            priceFrom == defaultPriceFrom &&
+            priceUpTo == defaultPriceUpTo &&
+            arrayListIdsSelectedAddresses.size == 0 &&
+            !isChecked&&
+            _listProductsInCatalog.value.size == listAllProducts.size
+        ) false else true
+
+        _isCheckFilter.value = isCheckedFilter
+    }
+
+    fun setIsInstallAdapter(isInstallAdapter: Boolean){
+        this.isInstallAdapter = isInstallAdapter
+    }
+
+    private fun setListProductsInCatalog(arrayListIdsFiltered: ArrayList<Int>) {
+        val filteredList = listAllProductsInCatalog.filter { productsInCatalog ->
+            arrayListIdsFiltered.contains(productsInCatalog.productModel.productId)
+        }
+        val sortedListProductsInCatalog = sortListProductsInCatalog(listProductsInCatalog = filteredList)
+
+        _listProductsInCatalog.value = sortedListProductsInCatalog
+    }
+
+    private fun setListProductsInCatalog(type: Int) {
+        typeSort = type
+
+        val sortedListProductFavorite = sortListProductsInCatalog(listProductsInCatalog = _listProductsInCatalog.value)
+        _listProductsInCatalog.value = sortedListProductFavorite
+    }
+
+    private fun setCurrentProductInCatalog(productId: Int, isFavorite: Boolean? = null, isInBasket: Boolean? = null){
+        try {
+            val productInCatalogModel = _listProductsInCatalog.value.find { it.productModel.productId == productId }!!
+
+            val oldIsFavorite = productInCatalogModel.isFavorite
+            val oldIsInBasket= productInCatalogModel.isInBasket
+
+            currentProductInCatalog = productInCatalogModel.copy(
+                isFavorite = isFavorite?:oldIsFavorite,
+                isInBasket = isInBasket?:oldIsInBasket
             )
         }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+            _stateScreen.value = Result.Error(exception = e)
+        }
     }
 
-    /**
-     * Изменение списка избранных товаров.
-     *
-     * Парамектры:
-     * [favoriteModel] - товар для добавления/удаления из списка;
-     * [isFavorite] - значение в "Избранном" товар или нет.
-     */
-    fun changeListAllFavorites(favoriteModel: FavoriteModel, isFavorite: Boolean) {
-        val listAllFavorites = _listAllFavorites.value ?:
-        throw NullPointerException("ProductsViewModel listAllFavorites = null")
+    fun changeListProductsInCatalog(){
+        try {
+            val mutableListProductsInCatalog = _listProductsInCatalog.value.toMutableList()
+            val mutableListAllProductsInCatalog = listAllProductsInCatalog.toMutableList()
 
-        val currentListAllFavorites = mutableListOf<FavoriteModel>()
+            val oldProductInCatalogModel = mutableListProductsInCatalog.find { it.productModel.productId == currentProductInCatalog!!.productModel.productId }
+            val index = mutableListProductsInCatalog.indexOf(oldProductInCatalogModel)
+            val indexForAllProducts = mutableListAllProductsInCatalog.indexOf(oldProductInCatalogModel)
 
-        listAllFavorites.forEach { currentFavoriteModel->
-            currentListAllFavorites.add(currentFavoriteModel)
+            if (index >= 0){
+                mutableListProductsInCatalog.removeAt(index)
+                mutableListProductsInCatalog.add(index,currentProductInCatalog!!)
+
+                _listProductsInCatalog.value = mutableListProductsInCatalog
+            }
+
+            if (indexForAllProducts >= 0){
+                mutableListAllProductsInCatalog.removeAt(indexForAllProducts)
+                mutableListAllProductsInCatalog.add(indexForAllProducts,currentProductInCatalog!!)
+
+                listAllProductsInCatalog = mutableListAllProductsInCatalog
+            }
         }
-
-        if (isFavorite) {
-            currentListAllFavorites.add(favoriteModel)
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+            _stateScreen.value = Result.Error(exception = e)
         }
-        else {
-            currentListAllFavorites.remove(favoriteModel)
-        }
-
-        _listAllFavorites.value = currentListAllFavorites
     }
 
-    /**
-     * Установка списка избранных товаров.
-     *
-     * Параметры:
-     * [listAllFavorites] - список избранного для установки.
-     */
-    fun setListAllFavorites(listAllFavorites: List<FavoriteModel>) {
-        _listAllFavorites.value = listAllFavorites
-    }
 
     /**
-     * Установка списка идентификаторов товаров из корзины
+     * Получение спика цен с применением скидок.
      *
      * Параметры:
-     * [listIdsProductsFromBasket] - список идентификаторов товаров для установки.
+     * [listAllProducts] - список всех товаров.
      */
-    fun setListIdsProductsFromBasket(listIdsProductsFromBasket: List<Int>) {
-        _listIdsProductsFromBasket.value = listIdsProductsFromBasket
-    }
+    private fun getListPrices(listAllProducts: List<ProductModel>): List<Int> {
+        val listPrices = listAllProducts.map {
+            val productModel = it
 
-    /**
-     * Установка списка товаров для отображения на экарне.
-     *
-     * Параметры:
-     * [listProductModel] - список товаров для установки.
-     */
-    fun setListProductsModel(listProductModel: List<ProductModel>) {
-        _listProducts.value = listProductModel
-    }
-
-    /**
-     * Установка списка всех товаров по выбранному пути.
-     *
-     * Параметры:
-     * [listProductModel] - список всех товаров для установки.
-     */
-    fun setListAllProductsModel(listProductModel: List<ProductModel>) {
-        _listAllProducts.value = listProductModel
-    }
-
-    /**
-     * Установка значения включены фильтры или нет.
-     *
-     * Параметры:
-     * [isChecked] -  значение есть фильтры или нет.
-     */
-    fun setIsCheckFilter(isChecked: Boolean) {
-        _isCheckFilter.value = isChecked
-    }
-
-    /**
-     * Установка идентификатора текущего товара для добавления/удаления из корзины.
-     *
-     * Параметры:
-     * [productId] - идентификатор товара.
-     */
-    fun setCurrentProductId(productId:Int) {
-        _currentProductId.value = productId
-    }
-
-    /**
-     * Функции
-     * [setIsShownGetProductsByPath],
-     * [setIsShownGetAllFavorites],
-     * [setIsShownGetIdsProductsFromBasket],
-     * [setIsShownProductsAdapter]
-     * устанавливают значения для определения был ли обработан запрос или нет.
-     *
-     * Параметры:
-     * [isShown] - true запрос обработан, false запрос надо обработать.
-     */
-    fun setIsShownGetProductsByPath(isShown: Boolean){
-        savedStateHandle[KEY_IS_SHOWN_GET_PRODUCTS_BY_PATH] = isShown
-    }
-
-    fun setIsShownGetAllFavorites(isShown: Boolean){
-        savedStateHandle[KEY_IS_SHOWN_GET_ALL_FAVORITES] = isShown
-    }
-
-    fun setIsShownGetIdsProductsFromBasket(isShown: Boolean) {
-        savedStateHandle[KEY_IS_SHOWN_GET_IDS_PRODUCTS_FROM_BASKET] = isShown
-    }
-
-    fun setIsShownProductsAdapter(isShown: Boolean) {
-        savedStateHandle[KEY_IS_SHOWN_PRODUCTS_ADAPTER] = isShown
-    }
-
-    /**
-     * Установка результата для [resultGetProductsByPath].
-     */
-    fun setResultGetProductsByPath(result: Result<ResponseValueModel<List<ProductModel>?>>, errorType: ErrorType? = null){
-        if (result is ErrorResult && errorType != null){
-            _errorType.value = errorType?: throw NullPointerException("ProductsViewModel setResult errorType = null")
+            return@map getPrice(
+                discount = productModel.discount,
+                price = productModel.price
+            )
         }
-        resultGetProductsByPath.value = MediatorResultsModel(
-            type = TYPE_GET_PRODUCTS_BY_PATH,
-            result = result
-        )
+
+        return listPrices
+
     }
 
-    /**
-     * Установка результата для [resultGetAllFavorites].
-     */
-    fun setResultGetAllFavorites(result: Result<ResponseValueModel<List<FavoriteModel>>>, errorType: ErrorType? = null){
-        if (result is ErrorResult && errorType != null){
-            _errorType.value = errorType?: throw NullPointerException("ProductsViewModel setResult errorType = null")
+    private fun sortListProducts(listProducts: List<ProductModel>): List<ProductModel> {
+        var sortedListProducts = listOf<ProductModel>()
+        try {
+            val _sortedListProducts: List<ProductModel> = when (typeSort) {
+                SORT_ASCENDING_PRICE -> {
+                    listProducts.sorted()
+                }
+                SORT_DESCENDING_PRICE -> {
+                    listProducts.sortedDescending()
+                }
+                SORT_DISCOUNT_AMOUNT -> {
+                    listProducts.sortingByDiscountAmount()
+                }
+                else -> throw IllegalArgumentException()
+            }
+
+            sortedListProducts = _sortedListProducts
         }
-        resultGetAllFavorites.value = MediatorResultsModel(
-            type = TYPE_GET_ALL_FAVORITES,
-            result = result
-        )
-    }
-
-    /**
-     * Установка результата для [resultAddFavorite].
-     */
-    fun setResultAddFavorite(result: Result<ResponseModel>, errorType: ErrorType? = null){
-        if (result is ErrorResult && errorType != null){
-            _errorType.value = errorType?: throw NullPointerException("ProductsViewModel setResult errorType = null")
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
         }
-        resultAddFavorite.value = MediatorResultsModel(
-            type = TYPE_ADD_FAVORITE,
-            result = result
-        )
+
+        return sortedListProducts
     }
 
-    /**
-     * Установка результата для [resultRemoveFavorite].
-     */
-    fun setResultRemoveFavorites(result: Result<ResponseModel>, errorType: ErrorType? = null){
-        if (result is ErrorResult && errorType != null){
-            _errorType.value = errorType?: throw NullPointerException("ProductsViewModel setResult errorType = null")
+    private fun sortListProductsInCatalog(listProductsInCatalog: List<ProductInCatalogModel>): List<ProductInCatalogModel> {
+        val listProducts = listProductsInCatalog.map { it.productModel }
+
+        val sortedListProducts = sortListProducts(listProducts = listProducts)
+
+        val sortListProductInCatalog = mutableListOf<ProductInCatalogModel>()
+
+        sortedListProducts.forEach { productModel ->
+            val productInCatalog = listProductsInCatalog.find { it.productModel == productModel }
+            if (productInCatalog != null) sortListProductInCatalog.add(productInCatalog)
         }
-        resultRemoveFavorite.value = MediatorResultsModel(
-            type = TYPE_REMOVE_FAVORITES,
-            result = result
-        )
+
+        return sortListProductInCatalog
     }
 
-    /**
-     * Установка результата для [resultGetIdsProductsFromBasket].
-     */
-    fun setResultGetIdsProductsFromBasket(result: Result<ResponseValueModel<List<Int>>>, errorType: ErrorType? = null){
-        if (result is ErrorResult && errorType != null){
-            _errorType.value = errorType?: throw NullPointerException("ProductsViewModel setResult errorType = null")
-        }
-        resultGetIdsProductsFromBasket.value = MediatorResultsModel(
-            type = TYPE_GET_IDS_PRODUCTS_FROM_BASKET,
-            result = result
-        )
+    private fun List<ProductModel>.sortingByDiscountAmount(): List<ProductModel> {
+        val sortedListProducts = this.sortedByDescending { it.discount }
+
+        return sortedListProducts
     }
 
-    /**
-     * Установка результата для [resultAddProductInBasket].
-     */
-    fun setResultAddProductInBasket(result: Result<ResponseModel>, errorType: ErrorType? = null){
-        if (result is ErrorResult && errorType != null){
-            _errorType.value = errorType?: throw NullPointerException("ProductsViewModel setResult errorType = null")
-        }
-        resultAddProductInBasket.value = MediatorResultsModel(
-            type = TYPE_ADD_PRODUCT_IN_BASKET,
-            result = result
-        )
-    }
-
-    /**
-     * Установка результата для [resultDeleteProductFromBasket].
-     */
-    fun setResultDeleteProductFromBasket(result: Result<ResponseModel>, errorType: ErrorType? = null){
-        if (result is ErrorResult && errorType != null){
-            _errorType.value = errorType?: throw NullPointerException("ProductsViewModel setResult errorType = null")
-        }
-        resultDeleteProductFromBasket.value = MediatorResultsModel(
-            type = TYPE_DELETE_PRODUCT_FROM_BASKET,
-            result = result
-        )
-    }
-
-    /**
-     * Отчистка типа ошибки.
-     */
-    fun clearErrorType() {
-        _errorType.value = OtherError()
-    }
 
 }
