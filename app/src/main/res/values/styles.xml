@@ -31,4 +31,47 @@
 
     </style>
 
+    <style name="PharmacyApp.CheckBox" parent="Widget.Material3.CompoundButton.CheckBox">
+
+        <item name="android:textAppearance">@style/TextAppearance.Material3.BodyMedium</item>
+
+    </style>
+
+    <style name="PharmacyApp.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+
+        <item name="android:background">@color/white</item>
+
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.App.Button</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.App.Button</item>
+
+    </style>
+
+    <style name="Widget.App.Button" parent="Widget.Material3.Button.TextButton.Dialog">
+
+        <item name="android:background">@color/white</item>
+
+    </style>
+
+    <style name="PharmacyApp.ButtonDelete.TonalButton" parent="Widget.Material3.Button">
+
+       <item name="android:textColor">@color/red900</item>
+        <item name="android:backgroundTint">@color/red100</item>
+        <item name="rippleColor">@color/red200</item>
+
+    </style>
+
+    <style name="PharmacyApp.ButtonDelete.TextButton.Icon" parent="Widget.Material3.Button.TextButton.Icon">
+
+        <item name="rippleColor">@color/red100</item>
+
+        <item name="android:textColor">@color/red800</item>
+
+        <item name="iconTint">@color/red800</item>
+
+    </style>
+
+    <style name="PharmacyApp.AutoCompleteTextView.OutlinedBox" parent="Widget.Material3.AutoCompleteTextView.OutlinedBox">
+       <item name="dropDownBackgroundTint">@color/green50</item>
+    </style>
+
 </resources>
