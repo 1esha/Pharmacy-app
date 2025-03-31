@@ -1,20 +1,16 @@
 package com.example.pharmacyapp.main.viewmodels
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.MutableLiveData
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.profile.ProfileRepositoryImpl
-import com.example.domain.DataEntryError
-import com.example.domain.ErrorResult
-import com.example.domain.ErrorType
-import com.example.domain.IdentificationError
-import com.example.domain.OtherError
+import com.example.domain.DisconnectionException
+import com.example.domain.IdentificationException
+import com.example.domain.InputDataException
+import com.example.domain.Network
 import com.example.domain.Result
-import com.example.domain.models.MediatorResultsModel
-import com.example.domain.profile.models.ResponseModel
-import com.example.domain.profile.models.ResponseValueModel
+import com.example.domain.ServerException
+import com.example.domain.models.RequestModel
 import com.example.domain.profile.models.UserInfoModel
 import com.example.domain.profile.models.UserModel
 import com.example.domain.profile.usecases.DeleteUserUseCase
@@ -24,186 +20,242 @@ import com.example.pharmacyapp.TYPE_DELETE_USER
 import com.example.pharmacyapp.TYPE_EDIT_USER
 import com.example.pharmacyapp.TYPE_GET_USER_BY_ID
 import com.example.pharmacyapp.UNAUTHORIZED_USER
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 
-class EditViewModel : ViewModel() {
+class EditViewModel(
+    private val profileRepositoryImpl: ProfileRepositoryImpl
+) : ViewModel() {
+    private val _stateScreen = MutableStateFlow<Result>(Result.Loading())
+    val stateScreen: StateFlow<Result> = _stateScreen
 
-    private val profileRepositoryImpl = ProfileRepositoryImpl()
+    private val _userModel = MutableStateFlow<UserModel?>(null)
+    val userModel = _userModel.asStateFlow()
 
-    val mediatorLiveData = MediatorLiveData<MediatorResultsModel<*>>()
+    private var newUserModel: UserModel? = null
 
-    private val resultGetUserById = MutableLiveData<MediatorResultsModel<Result<ResponseValueModel<UserModel>>>>()
+    private var isShownSendingRequests = true
 
-    private val resultEditUser = MutableLiveData<MediatorResultsModel<Result<ResponseModel>>>()
+    private var isShownFillData = true
 
-    private val resultDeleteUser = MutableLiveData<MediatorResultsModel<Result<ResponseModel>>>()
+    private var isShownInstallUI = true
 
-    private val _isShown = MutableLiveData<Boolean>(false)
-    val isShown: LiveData<Boolean> = _isShown
+    private var isShownToast = true
 
-    private val _isShownSuccessResultGetUserById = MutableLiveData<Boolean>(false)
-    val isShownSuccessResultGetUserById: LiveData<Boolean> = _isShownSuccessResultGetUserById
+    private var isInit = true
 
-    private val _isShownSuccessResultEditUser = MutableLiveData<Boolean>(false)
-    val isShownSuccessResultEditUser: LiveData<Boolean> = _isShownSuccessResultEditUser
+    private val network = Network()
 
-    private val _errorType = MutableLiveData<ErrorType>(OtherError())
-    val errorType: LiveData<ErrorType> = _errorType
+    private var userId = UNAUTHORIZED_USER
 
-    init {
-        mediatorLiveData.addSource(resultGetUserById) { r ->
-            mediatorLiveData.value = r
+    fun initValues(
+        userId: Int
+    ){
+        if (isInit){
+            this.userId = userId
+
+            isInit = false
         }
-
-        mediatorLiveData.addSource(resultEditUser) { r ->
-            mediatorLiveData.value = r
-        }
-
-        mediatorLiveData.addSource(resultDeleteUser) { r ->
-            mediatorLiveData.value = r
-        }
-
     }
 
-    fun getUserById(userId: Int) {
-        if (userId == UNAUTHORIZED_USER) {
-            _errorType.value = IdentificationError()
-            resultGetUserById.value = MediatorResultsModel(
-                type = TYPE_GET_USER_BY_ID,
-                result = ErrorResult(exception = Exception())
+    fun sendingRequests(isNetworkStatus: Boolean){
+        if (isShownSendingRequests){
+
+            network.checkNetworkStatus(
+                isNetworkStatus = isNetworkStatus,
+                connectionListener = {
+                    onLoading()
+
+                    if (userId == UNAUTHORIZED_USER) {
+                        _stateScreen.value = Result.Error(exception = IdentificationException())
+                        return@checkNetworkStatus
+                    }
+
+                    val getUserByIdUseCase = GetUserByIdUseCase(
+                        profileRepository = profileRepositoryImpl,
+                        userId = userId
+                    )
+
+                    viewModelScope.launch {
+                        getUserByIdUseCase.execute().collect { result ->
+                            val requestModel = RequestModel(
+                                type = TYPE_GET_USER_BY_ID,
+                                result = result
+                            )
+
+                            if (result is Result.Error){
+                                _stateScreen.value = result
+                                return@collect
+                            }
+
+                            _stateScreen.value = Result.Success(
+                                data = listOf(requestModel)
+                            )
+                        }
+                    }
+                },
+                disconnectionListener = ::onDisconnect
             )
-
-            return
         }
-        val getUserByIdUseCase = GetUserByIdUseCase(
-            profileRepository = profileRepositoryImpl,
-            userId = userId
-        )
-        viewModelScope.launch {
-            val result = getUserByIdUseCase.execute()
-            resultGetUserById.value = MediatorResultsModel(
-                type = TYPE_GET_USER_BY_ID,
-                result = result
-            )
-
-        }
-
+        isShownSendingRequests = false
     }
 
-    fun editUser(userInfoModel: UserInfoModel, userId: Int) {
-        if (
-            userId <= 0 ||
-            userInfoModel.firstName.isEmpty() || userInfoModel.firstName.isBlank() ||
-            userInfoModel.lastName.isEmpty() || userInfoModel.lastName.isBlank() ||
-            userInfoModel.email.isEmpty() || userInfoModel.email.isBlank() ||
-            userInfoModel.phoneNumber.isEmpty() || userInfoModel.phoneNumber.isBlank() ||
-            userInfoModel.userPassword.isEmpty() || userInfoModel.userPassword.isBlank() ||
-            userInfoModel.city.isEmpty() || userInfoModel.city.isBlank()
-        ) {
-            _errorType.value = DataEntryError()
-            resultEditUser.value = MediatorResultsModel(
-                type = TYPE_EDIT_USER,
-                result = ErrorResult(exception = Exception())
-            )
+    private fun onLoading(){
+        _stateScreen.value = Result.Loading()
+    }
 
-            return
+    fun onDisconnect(){
+        _stateScreen.value = Result.Error(exception = DisconnectionException())
+    }
+
+    fun onError(exception: Exception,enterTheData: String,toast: (String?) -> Unit,block: () -> Unit){
+        try {
+            if (exception is ServerException || exception is InputDataException){
+                val messageToast = when(exception){
+                    is ServerException -> exception.serverMessage
+                    is InputDataException -> enterTheData
+                    else -> throw IllegalArgumentException()
+                }
+                if (isShownToast) toast(messageToast)
+                isShownToast = false
+            }
+            else{
+                block()
+            }
         }
-        viewModelScope.launch {
-            val editUserUseCase = EditUserUseCase(
-                profileRepository = profileRepositoryImpl,
-                userModel = UserModel(
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+            _stateScreen.value = Result.Error(exception = e)
+        }
+    }
+
+    fun tryAgain(isNetworkStatus: Boolean){
+        _userModel.value = null
+
+        isShownSendingRequests = true
+        isShownFillData = true
+        isShownInstallUI = true
+        sendingRequests(isNetworkStatus = isNetworkStatus)
+    }
+
+    fun fillData(userModel: UserModel){
+        if (isShownFillData){
+            _userModel.value = userModel
+        }
+
+        isShownFillData = false
+    }
+
+    fun installUI(block: () -> Unit){
+        if (isShownInstallUI) {
+            block()
+        }
+        isShownInstallUI = false
+    }
+
+    fun onSuccessfullyEdited(block: (UserModel) -> Unit){
+        try {
+            _userModel.value = newUserModel
+            if (isShownToast) block(_userModel.value!!)
+            isShownToast = false
+        }
+       catch (e: Exception){
+           Log.e("TAG",e.stackTraceToString())
+           _stateScreen.value = Result.Error(exception = e)
+       }
+    }
+
+    fun onEditUser(
+        isNetworkStatus: Boolean,
+        userInfoModel: UserInfoModel
+    ){
+        network.checkNetworkStatus(
+            isNetworkStatus = isNetworkStatus,
+            connectionListener = {
+                isShownToast = true
+
+                if (userInfoModel.isEmpty()) {
+                    _stateScreen.value = Result.Error(exception = InputDataException())
+                    return@checkNetworkStatus
+                }
+
+                newUserModel = UserModel(
                     userId = userId,
                     userInfoModel = userInfoModel
                 )
-            )
-            val result = editUserUseCase.execute()
-            resultEditUser.value = MediatorResultsModel(
-                type = TYPE_EDIT_USER,
-                result = result
-            )
 
-        }
+                editUser(userInfoModel = userInfoModel)
+            },
+            disconnectionListener = ::onDisconnect
+        )
     }
 
-    fun deleteUser(userId: Int) {
-        if (userId == UNAUTHORIZED_USER) {
-            _errorType.value = IdentificationError()
-            resultDeleteUser.value = MediatorResultsModel(
-                type = TYPE_DELETE_USER,
-                result = ErrorResult(exception = Exception())
-            )
+    private fun editUser(userInfoModel: UserInfoModel) {
+        onLoading()
 
-            return
-        }
+        val editUserUseCase = EditUserUseCase(
+            profileRepository = profileRepositoryImpl,
+            userModel = UserModel(
+                userId = userId,
+                userInfoModel = userInfoModel
+            )
+        )
         viewModelScope.launch {
-            val deleteUserUseCase = DeleteUserUseCase(
-                profileRepository = profileRepositoryImpl,
-                userId = userId
+            editUserUseCase.execute().collect { result ->
+                if (result is Result.Error){
+                    _stateScreen.value = result
+                    return@collect
+                }
+
+                val requestModel = RequestModel(
+                    type = TYPE_EDIT_USER,
+                    result = result
+                )
+
+                _stateScreen.value = Result.Success(
+                    data = listOf(requestModel)
+                )
+            }
+        }
+    }
+
+    fun deleteUser(isNetworkStatus: Boolean,) {
+        network.checkNetworkStatus(
+            isNetworkStatus = isNetworkStatus,
+            connectionListener = {
+                onLoading()
+
+                if (userId == UNAUTHORIZED_USER) {
+                    _stateScreen.value = Result.Error(exception = IdentificationException())
+                    return@checkNetworkStatus
+                }
+
+                val deleteUserUseCase = DeleteUserUseCase(
+                    profileRepository = profileRepositoryImpl,
+                    userId = userId
+                )
+                viewModelScope.launch {
+                    deleteUserUseCase.execute().collect { result ->
+                        if (result is Result.Error){
+                            _stateScreen.value = result
+                            return@collect
+                        }
+
+                        val requestModel = RequestModel(
+                            type = TYPE_DELETE_USER,
+                            result = result
+                        )
+
+                        _stateScreen.value = Result.Success(
+                            data = listOf(requestModel)
+                        )
+                    }
+                }
+            },
+            disconnectionListener = ::onDisconnect
             )
-
-            val result = deleteUserUseCase.execute()
-            resultDeleteUser.value = MediatorResultsModel(
-                type = TYPE_DELETE_USER,
-                result = result
-            )
-
-        }
     }
-
-    fun setResultGetUserById(
-        result: Result<ResponseValueModel<UserModel>>,
-        errorType: ErrorType? = null
-    ) {
-        if (result is ErrorResult && errorType != null) {
-            _errorType.value =
-                errorType ?: throw NullPointerException("EditViewModel setResult errorType = null")
-        }
-        resultGetUserById.value = MediatorResultsModel(
-            type = TYPE_GET_USER_BY_ID,
-            result = result
-        )
-
-    }
-
-    fun setResultEditUser(result: Result<ResponseModel>, errorType: ErrorType? = null) {
-        if (result is ErrorResult && errorType != null) {
-            _errorType.value =
-                errorType ?: throw NullPointerException("EditViewModel setResult errorType = null")
-        }
-        resultEditUser.value = MediatorResultsModel(
-            type = TYPE_EDIT_USER,
-            result = result
-        )
-
-    }
-
-    fun setResultDeleteUser(result: Result<ResponseModel>, errorType: ErrorType? = null) {
-        if (result is ErrorResult && errorType != null) {
-            _errorType.value =
-                errorType ?: throw NullPointerException("EditViewModel setResult errorType = null")
-        }
-        resultDeleteUser.value = MediatorResultsModel(
-            type = TYPE_DELETE_USER,
-            result = result
-        )
-
-    }
-
-    fun clearErrorType() {
-        _errorType.value = OtherError()
-    }
-
-    fun setIsShownSuccessResultEditUser(isShown: Boolean) {
-        _isShownSuccessResultEditUser.value = isShown
-    }
-
-    fun setIsShownSuccessResultGetUserById(isShown: Boolean) {
-        _isShownSuccessResultGetUserById.value = isShown
-    }
-
-    fun setIsShown(isShown: Boolean) {
-        _isShown.value = isShown
-    }
-
 }
