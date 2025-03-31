@@ -6,13 +6,13 @@ import androidx.annotation.ColorRes
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.navigation.NavController
-import com.example.domain.DataEntryError
-import com.example.domain.DisconnectionError
-import com.example.domain.ErrorType
-import com.example.domain.IdentificationError
-import com.example.domain.catalog.models.ProductModel
+import com.example.domain.DisconnectionException
+import com.example.domain.IdentificationException
+import com.example.domain.InputDataException
 import com.google.android.material.appbar.MaterialToolbar
+import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.util.toLowerCasePreservingASCIIRules
+import kotlin.Exception
 import kotlin.math.roundToInt
 
 const val UNAUTHORIZED_USER = -1
@@ -149,12 +149,14 @@ data class ToolbarSettingsModel(
     val onClickNavigationIcon: OnClickNavigationIcon
 )
 
-fun getMessageByErrorType(errorType: ErrorType?): Int {
-    return when (errorType) {
-        is DisconnectionError -> R.string.check_your_internet_connection
-        is IdentificationError -> R.string.error_in_getting_the_id
-        is DataEntryError -> R.string.enter_the_data
-        else -> R.string.error
+fun getErrorMessage(exception: Exception): Int{
+    return when(exception){
+        is ConnectTimeoutException -> R.string.connection_error
+        is DisconnectionException -> R.string.check_your_internet_connection
+        is IdentificationException -> R.string.error_in_getting_the_id
+        is InputDataException -> R.string.enter_the_data
+        is NullPointerException -> R.string.invalid_value
+        else -> R.string.unknown_error
     }
 }
 
