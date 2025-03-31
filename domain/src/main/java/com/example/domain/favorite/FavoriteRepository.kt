@@ -2,17 +2,21 @@ package com.example.domain.favorite
 
 import com.example.domain.Result
 import com.example.domain.favorite.models.FavoriteModel
+import kotlinx.coroutines.flow.Flow
 
-interface FavoriteRepository<Fa,LFa,Re> {
+/**
+ * Интерфейс [FavoriteRepository] является контрактом для работы с избранными товарами.
+ */
+interface FavoriteRepository{
 
-    suspend fun getAllFavorites(): Result<LFa>
+    fun getAllFavoritesFlow(): Flow<Result>
 
-    suspend fun getFavoriteById(productId: Int): Result<Fa>
+    fun getFavoriteByIdFlow(productId: Int): Flow<Result>
 
-    suspend fun insertFavorite(favoriteModel: FavoriteModel): Result<Re>
+    fun insertFavoriteFlow(favoriteModel: FavoriteModel): Flow<Result>
 
-    suspend fun deleteById(productId: Int): Result<Re>
+    fun deleteByIdFlow(productId: Int): Flow<Result>
 
-    suspend fun deleteAllFavorite(): Result<Re>
+    fun deleteAllFavoriteFlow(): Flow<Result>
 
 }

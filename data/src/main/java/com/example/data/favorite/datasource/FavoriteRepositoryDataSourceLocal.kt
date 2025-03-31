@@ -2,17 +2,21 @@ package com.example.data.favorite.datasource
 
 import com.example.data.ResultDataSource
 import com.example.data.favorite.datasource.entity.FavoriteEntity
+import kotlinx.coroutines.flow.Flow
 
-interface FavoriteRepositoryDataSourceLocal<Fa,LFa,Re> {
+/**
+ * Интерфейс [FavoriteRepositoryDataSourceLocal] является контрактом для работы с избранными товарами в data слое.
+ */
+interface FavoriteRepositoryDataSourceLocal{
 
-    suspend fun getAllFavorites(): ResultDataSource<LFa>
+    fun getAllFavoritesFlow(): Flow<ResultDataSource>
 
-    suspend fun getFavoriteById(productId: Int): ResultDataSource<Fa>
+    fun getFavoriteByIdFlow(productId: Int): Flow<ResultDataSource>
 
-    suspend fun insertFavorite(favoriteEntity: FavoriteEntity): ResultDataSource<Re>
+    fun insertFavoriteFlow(favoriteEntity: FavoriteEntity): Flow<ResultDataSource>
 
-    suspend fun deleteById(productId: Int): ResultDataSource<Re>
+    fun deleteByIdFlow(productId: Int): Flow<ResultDataSource>
 
-    suspend fun deleteAllFavorite(): ResultDataSource<Re>
+    fun deleteAllFavoriteFlow(): Flow<ResultDataSource>
 
 }

@@ -5,6 +5,11 @@ import androidx.room.Insert
 import androidx.room.Query
 import com.example.data.favorite.datasource.entity.FavoriteEntity
 
+/**
+ * Интерфейс [FavoriteDao] это объект доступа к данным,
+ * который предоставляет способ доступа к данным,
+ * хранящимся в базе данных SQLite для работы с избранными товарами.
+ */
 @Dao
 interface FavoriteDao {
 

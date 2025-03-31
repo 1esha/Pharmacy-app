@@ -3,15 +3,22 @@ package com.example.domain.favorite.usecases
 import com.example.domain.Result
 import com.example.domain.favorite.FavoriteRepository
 import com.example.domain.favorite.models.FavoriteModel
-import com.example.domain.profile.models.ResponseModel
+import kotlinx.coroutines.flow.Flow
 
+/**
+ * Класс [AddFavoriteUseCase] является UseCase для добавления товара в список избранного.
+ *
+ * Параметры:
+ * [favoriteRepository] - репозиторий с функционалом;
+ * [favoriteModel] - данные о товаре, которые будут добавлены.
+ */
 class AddFavoriteUseCase(
-    private val favoriteRepository: FavoriteRepository<*,*,ResponseModel>,
+    private val favoriteRepository: FavoriteRepository,
     private val favoriteModel: FavoriteModel
 ) {
 
-    suspend fun execute(): Result<ResponseModel> {
-        val result = favoriteRepository.insertFavorite(favoriteModel = favoriteModel)
+    fun execute(): Flow<Result> {
+        val result = favoriteRepository.insertFavoriteFlow(favoriteModel = favoriteModel)
 
         return result
     }

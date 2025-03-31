@@ -2,15 +2,20 @@ package com.example.domain.favorite.usecases
 
 import com.example.domain.Result
 import com.example.domain.favorite.FavoriteRepository
-import com.example.domain.favorite.models.FavoriteModel
-import com.example.domain.profile.models.ResponseValueModel
+import kotlinx.coroutines.flow.Flow
 
+/**
+ * Класс [GetAllFavoritesUseCase] является UseCase для получения списка со всеми избранными товарами.
+ *
+ * Параметры:
+ * [favoriteRepository] - репозиторий с функционалом.
+ */
 class GetAllFavoritesUseCase(
-    private val favoriteRepository: FavoriteRepository<*, ResponseValueModel<List<FavoriteModel>>, *>,
+    private val favoriteRepository: FavoriteRepository,
 ) {
 
-    suspend fun execute(): Result<ResponseValueModel<List<FavoriteModel>>> {
-        val result = favoriteRepository.getAllFavorites()
+    fun execute(): Flow<Result> {
+        val result = favoriteRepository.getAllFavoritesFlow()
 
         return result
     }

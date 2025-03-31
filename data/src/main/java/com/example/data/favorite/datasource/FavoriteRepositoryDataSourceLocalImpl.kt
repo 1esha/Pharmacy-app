@@ -1,98 +1,123 @@
 package com.example.data.favorite.datasource
 
 
-import com.example.data.ErrorResultDataSource
 import com.example.data.ResultDataSource
 import com.example.data.SUCCESS
 import com.example.data.SUCCESS_CODE
-import com.example.data.SuccessResultDataSource
 import com.example.data.favorite.datasource.entity.FavoriteEntity
 import com.example.data.profile.datasource.models.ResponseDataSourceModel
 import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 
 class FavoriteRepositoryDataSourceLocalImpl(private val favoriteDao: FavoriteDao):
-    FavoriteRepositoryDataSourceLocal<
-            ResponseValueDataSourceModel<FavoriteEntity>,
-            ResponseValueDataSourceModel<List<FavoriteEntity>>,
-            ResponseDataSourceModel> {
+    FavoriteRepositoryDataSourceLocal {
 
-
-    override suspend fun getAllFavorites(): ResultDataSource<ResponseValueDataSourceModel<List<FavoriteEntity>>> = withContext(Dispatchers.IO) {
+    /**
+     * Получение списка со всеми избранными товарами.
+     */
+    override fun getAllFavoritesFlow(): Flow<ResultDataSource> = flow{
         try {
             val listFavoriteEntity = favoriteDao.getAllFavorites()
-            val responseValueDataSourceModel = ResponseValueDataSourceModel(
+            val data = ResponseValueDataSourceModel(
                 value = listFavoriteEntity,
                 responseDataSourceModel = ResponseDataSourceModel(
                     message = SUCCESS,
                     status = SUCCESS_CODE
                 )
             )
-            return@withContext SuccessResultDataSource(value = responseValueDataSourceModel)
+
+            emit(ResultDataSource.Success(data = data))
         }
         catch (e: Exception) {
-            return@withContext ErrorResultDataSource(exception = e)
+            emit(ResultDataSource.Error(exception = e))
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
-    override suspend fun getFavoriteById(productId: Int): ResultDataSource<ResponseValueDataSourceModel<FavoriteEntity>> = withContext(Dispatchers.IO) {
+    /**
+     * Получение товара из списка избранного по его идентификатору.
+     *
+     * Параметры:
+     * [productId] - идентификатор товара, который будет получен.
+     */
+    override fun getFavoriteByIdFlow(productId: Int): Flow<ResultDataSource> = flow{
         try {
             val favoriteEntity = favoriteDao.getFavoriteById(productId = productId)
-            val responseValueDataSourceModel = ResponseValueDataSourceModel(
+            val data = ResponseValueDataSourceModel(
                 value = favoriteEntity,
                 responseDataSourceModel = ResponseDataSourceModel(
                     message = SUCCESS,
                     status = SUCCESS_CODE
                 )
             )
-            return@withContext SuccessResultDataSource(value = responseValueDataSourceModel)
+
+            emit(ResultDataSource.Success(data = data))
         }
         catch (e: Exception) {
-            return@withContext ErrorResultDataSource(exception = e)
+            emit(ResultDataSource.Error(exception = e))
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
-    override suspend fun insertFavorite(favoriteEntity: FavoriteEntity): ResultDataSource<ResponseDataSourceModel> = withContext(Dispatchers.IO){
+    /**
+     * Добавление товара в список избранного.
+     *
+     * Параметры:
+     * [favoriteEntity] - данные о товаре, которые будут добавлены.
+     */
+    override fun insertFavoriteFlow(favoriteEntity: FavoriteEntity): Flow<ResultDataSource> = flow{
         try {
             favoriteDao.insertFavorite(favoriteEntity = favoriteEntity)
-            return@withContext SuccessResultDataSource(value = ResponseDataSourceModel(
+            val data = ResponseDataSourceModel(
                 message = SUCCESS,
                 status = SUCCESS_CODE
             )
-            )
+
+            emit(ResultDataSource.Success(data = data))
         }
         catch (e: Exception) {
-            return@withContext ErrorResultDataSource(exception = e)
+            emit(ResultDataSource.Error(exception = e))
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
-    override suspend fun deleteById(productId: Int): ResultDataSource<ResponseDataSourceModel>  = withContext(Dispatchers.IO){
+    /**
+     * Удаление товара из списка избранного по его идентификатору.
+     *
+     * Параметры:
+     * [productId] - идентификатор удаляемого товара.
+     */
+    override fun deleteByIdFlow(productId: Int): Flow<ResultDataSource> = flow{
         try {
             favoriteDao.deleteById(productId = productId)
-            return@withContext SuccessResultDataSource(value = ResponseDataSourceModel(
+            val data = ResponseDataSourceModel(
                 message = SUCCESS,
                 status = SUCCESS_CODE
             )
-            )
+
+            emit(ResultDataSource.Success(data = data))
         }
         catch (e: Exception) {
-            return@withContext ErrorResultDataSource(exception = e)
+            emit(ResultDataSource.Error(exception = e))
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
-    override suspend fun deleteAllFavorite(): ResultDataSource<ResponseDataSourceModel> = withContext(Dispatchers.IO){
+    /**
+     * Удаление всех товаров из списка избранного.
+     */
+    override fun deleteAllFavoriteFlow(): Flow<ResultDataSource> = flow{
         try {
             favoriteDao.deleteAllFavorite()
-            return@withContext SuccessResultDataSource(value = ResponseDataSourceModel(
+            val data = ResponseDataSourceModel(
                 message = SUCCESS,
                 status = SUCCESS_CODE
             )
-            )
+
+            emit(ResultDataSource.Success(data = data))
         }
         catch (e: Exception) {
-            return@withContext ErrorResultDataSource(exception = e)
+            emit(ResultDataSource.Error(exception = e))
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
 }

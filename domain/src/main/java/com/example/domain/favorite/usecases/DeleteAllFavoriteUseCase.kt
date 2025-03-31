@@ -2,12 +2,18 @@ package com.example.domain.favorite.usecases
 
 import com.example.domain.Result
 import com.example.domain.favorite.FavoriteRepository
-import com.example.domain.profile.models.ResponseModel
+import kotlinx.coroutines.flow.Flow
 
-class DeleteAllFavoriteUseCase(private val favoriteRepository: FavoriteRepository<*,*,ResponseModel>) {
+/**
+ * Класс [DeleteAllFavoriteUseCase] является UseCase для удаления всех товаров из списка избранного.
+ *
+ * Параметры:
+ * [favoriteRepository] - репозиторий с функционалом.
+ */
+class DeleteAllFavoriteUseCase(private val favoriteRepository: FavoriteRepository) {
 
-    suspend fun execute(): Result<ResponseModel> {
-        val result = favoriteRepository.deleteAllFavorite()
+    fun execute(): Flow<Result> {
+        val result = favoriteRepository.deleteAllFavoriteFlow()
 
         return result
     }

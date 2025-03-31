@@ -2,15 +2,22 @@ package com.example.domain.favorite.usecases
 
 import com.example.domain.Result
 import com.example.domain.favorite.FavoriteRepository
-import com.example.domain.profile.models.ResponseModel
+import kotlinx.coroutines.flow.Flow
 
+/**
+ * Класс [DeleteByIdUseCase] является UseCase для удаления товара из списка избранного по его идентификатору.
+ *
+ * Параметры:
+ * [favoriteRepository] - репозиторий с функционалом;
+ * [productId] - идентификатор удаляемого товара.
+ */
 class DeleteByIdUseCase(
-    private val favoriteRepository: FavoriteRepository<*, *, ResponseModel>,
+    private val favoriteRepository: FavoriteRepository,
     private val productId: Int
 ) {
 
-    suspend fun execute(): Result<ResponseModel> {
-        val result = favoriteRepository.deleteById(productId = productId)
+    fun execute(): Flow<Result> {
+        val result = favoriteRepository.deleteByIdFlow(productId = productId)
 
         return result
     }
