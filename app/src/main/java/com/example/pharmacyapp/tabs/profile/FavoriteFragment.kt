@@ -10,20 +10,17 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.domain.DisconnectionError
-import com.example.domain.ErrorResult
-import com.example.domain.Network
-import com.example.domain.OtherError
-import com.example.domain.PendingResult
 import com.example.domain.Result
-import com.example.domain.SuccessResult
+import com.example.domain.asSuccess
 import com.example.domain.favorite.models.FavoriteModel
 import com.example.domain.models.FavouriteBasketModel
-import com.example.domain.profile.ProfileResult
-import com.example.domain.profile.models.ResponseModel
+import com.example.domain.models.RequestModel
 import com.example.domain.profile.models.ResponseValueModel
 import com.example.pharmacyapp.FLAG_ERROR_RESULT
 import com.example.pharmacyapp.FLAG_PENDING_RESULT
@@ -38,19 +35,19 @@ import com.example.pharmacyapp.TYPE_REMOVE_FAVORITES
 import com.example.pharmacyapp.ToolbarSettingsModel
 import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.databinding.FragmentFavoriteBinding
-import com.example.pharmacyapp.getMessageByErrorType
+import com.example.pharmacyapp.getErrorMessage
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 import com.example.pharmacyapp.tabs.profile.adapters.FavoriteAdapter
 import com.example.pharmacyapp.tabs.profile.viewmodels.FavoriteViewModel
 import com.example.pharmacyapp.tabs.profile.viewmodels.factories.FavoriteViewModelFactory
+import kotlinx.coroutines.launch
 import java.lang.Exception
-import kotlin.properties.Delegates
 
 /**
  * Класс [FavoriteFragment] является экраном со списком избранных товаров.
  */
-class FavoriteFragment : Fragment(), ProfileResult {
+class FavoriteFragment : Fragment() {
 
     private var _binding: FragmentFavoriteBinding? = null
     private val binding get() = _binding!!
@@ -59,27 +56,54 @@ class FavoriteFragment : Fragment(), ProfileResult {
 
     private lateinit var sharedPreferences: SharedPreferences
 
-    private var userId by Delegates.notNull<Int>()
-
     private val toolbarViewModel: ToolbarViewModel by activityViewModels()
+
+    private lateinit var favoriteAdapter: FavoriteAdapter
 
     private val favoriteViewModel: FavoriteViewModel by viewModels(
         factoryProducer = { FavoriteViewModelFactory(context = requireContext()) }
     )
+
+    private val isNetworkStatus get() =  getSupportActivity().isNetworkStatus(context = requireContext())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
 
-        // Получение id пользователя
-        userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
+        favoriteViewModel.initValues(
+            userId =sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
+        )
 
         navControllerProfile = findNavController()
 
-        // Отправка необходимых запросов
-        sendingRequests()
+        favoriteViewModel.sendingRequests(isNetworkStatus = isNetworkStatus)
 
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED){
+                favoriteViewModel.stateScreen.collect{ result ->
+                    when(result){
+                        is Result.Loading -> {
+                            onLoadingResultListener()
+                        }
+                        is Result.Success<*> -> {
+                            onSuccessResultListener(data = result.data)
+                        }
+                        is Result.Error -> {
+                            onErrorResultListener(exception = result.exception)
+                        }
+                    }
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED){
+                favoriteViewModel.listFavouriteBasketModel.collect { listFavouriteBasketModel ->
+                    installUI(mutableListFavouriteBasketModel = listFavouriteBasketModel.toMutableList())
+                }
+            }
+        }
     }
 
     override fun onCreateView(
@@ -105,247 +129,82 @@ class FavoriteFragment : Fragment(), ProfileResult {
 
         // Обработка кнопки "Прпробовать снова"
         layoutPendingResultFavorite.bTryAgain.setOnClickListener {
-            // Установка значение "не показано" для запросов
-            favoriteViewModel.setIsShownFavoriteAdapter(isShown = false)
-            favoriteViewModel.setIsShownGetAllFavorites(isShown = false)
-            favoriteViewModel.setIsShownGetIdsProductsFromBasket(isShown = false)
-
-            // Повторный вызов всех запросов
-            sendingRequests()
+            favoriteViewModel.tryAgain(isNetworkStatus = isNetworkStatus)
         }
 
-        // Наблюдение за изменениями listAllFavorite, listIdsProductsFromBasket
-        favoriteViewModel.mediatorIsAllRequests.observe(viewLifecycleOwner) {
-            val listAllFavorite = favoriteViewModel.listAllFavorite.value
-            val listIdsProductsFromBasket = favoriteViewModel.listIdsProductsFromBasket.value
-
-            // Если результаты по всем запросам пришли
-            if (
-                listAllFavorite != null &&
-                listIdsProductsFromBasket != null
-                ) {
-
-                // Установка списка избранного
-                installListFavourites(
-                    listAllFavorite = listAllFavorite,
-                    listIdsProductsFromBasket = listIdsProductsFromBasket
-                )
-
-                updateUI(flag = FLAG_SUCCESS_RESULT)
-            }
-        }
-
-        // Наблюдение за получением результатов запросов
-        favoriteViewModel.mediatorFavorites.observe(viewLifecycleOwner) { mediatorResult ->
-            val type = mediatorResult.type
-            val result = mediatorResult.result as Result<*>
-
-            when(result){
-                is PendingResult -> { onPendingResultListener() }
-                is SuccessResult -> {
-                    onSuccessResultListener(
-                        userId = userId,
-                        value = result.value,
-                        type = type)
-                }
-                is ErrorResult -> {
-                    val errorType = favoriteViewModel.errorType.value
-                    val message = getString(getMessageByErrorType(errorType = errorType))
-                    onErrorResultListener(exception = result.exception, message = message)
-                }
-            }
-        }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-        favoriteViewModel.setIsShownFavoriteAdapter(isShown = false)
+        favoriteViewModel.setIsInstallAdapter(isInstallAdapter = true)
     }
 
-    override fun <T> onSuccessResultListener(userId: Int, value: T, type: String?) {
+    fun <T> onSuccessResultListener(data: T) {
+        Log.i("TAG","FavoriteFragment onSuccessResultListener")
+        try {
+            val _listRequests = data as List<*>
+            val listRequests = _listRequests.map { request ->
+                return@map request as RequestModel
+            }
+            Log.i("TAG","listRequests = $listRequests")
 
-        when(type) {
-            TYPE_GET_ALL_FAVORITES -> {
-                Log.i("TAG","FavoriteFragment onSuccessResultListener TYPE_GET_ALL_FAVORITES")
-                val isShownGetAllFavorites = favoriteViewModel.isShownGetAllFavorites
-
-                if (!isShownGetAllFavorites) {
-                    val responseValueModel = value as ResponseValueModel<*>
-                    val responseModel = responseValueModel.responseModel
-                    val status = responseModel.status
-                    val message = responseModel.message
-
-                    if (status in 200..299) {
-
-                        val _listAllFavorites = responseValueModel.value as List<*>
-                        val listAllFavorites = _listAllFavorites.map {
-                            return@map it as FavoriteModel
-                        }
-
-                        favoriteViewModel.setListAllFavorites(listAllFavorite = listAllFavorites)
-
-                    }
-                    else {
-                        favoriteViewModel.setResultGetAllFavorite(result = ErrorResult(exception = Exception()), errorType = OtherError())
-                        if (message != null) getSupportActivity().showToast(message = message)
-                    }
-                }
-
-                favoriteViewModel.setIsShownGetAllFavorites(isShown = true)
+            var fullType = ""
+            listRequests.forEach { request ->
+                fullType += request.type
             }
 
-            TYPE_REMOVE_FAVORITES -> {
-                Log.i("TAG","FavoriteFragment onSuccessResultListener TYPE_REMOVE_FAVORITES")
-                val isShownRemoveFavorites = favoriteViewModel.isShownRemoveFavorites
+            when(fullType){
+                TYPE_GET_ALL_FAVORITES + TYPE_GET_IDS_PRODUCTS_FROM_BASKET -> {
+                    Log.i("TAG","fullType = TYPE_GET_ALL_FAVORITES + TYPE_GET_IDS_PRODUCTS_FROM_BASKET")
+                    val resultGetAllFavorites = listRequests.find { it.type == TYPE_GET_ALL_FAVORITES }?.result!!.asSuccess()!!
+                    val resultGetIdsProductsFromBasket = listRequests.find { it.type == TYPE_GET_IDS_PRODUCTS_FROM_BASKET }?.result!!.asSuccess()!!
 
-                if (!isShownRemoveFavorites) {
-                    val responseModel = value as ResponseModel
-                    val status = responseModel.status
-                    val message = responseModel.message
 
-                    if (status in 200..299) {
+                    val responseGetAllFavorites = resultGetAllFavorites.data as ResponseValueModel<*>
+                    val responseGetIdsProductsFromBasket = resultGetIdsProductsFromBasket.data as ResponseValueModel<*>
 
-                        val listAllFavorite = favoriteViewModel.listAllFavorite.value ?:
-                        throw NullPointerException("FavoriteFragment listAllFavorite = null")
+                    val _listAllFavorite = responseGetAllFavorites.value as List<*>
+                    val listAllFavorite = _listAllFavorite.map { it as FavoriteModel }
 
-                        val currentFavoriteModel = favoriteViewModel.currentFavoriteModelForRemove.value
+                    val _listIdsProductsFromBasket = responseGetIdsProductsFromBasket.value as List<*>
+                    val listIdsProductsFromBasket = _listIdsProductsFromBasket.map { it as Int }
 
-                        if (currentFavoriteModel != null) {
-
-                            val mutableListAllFavorite = listAllFavorite.toMutableList()
-
-                            mutableListAllFavorite.remove(currentFavoriteModel)
-
-                            favoriteViewModel.setListAllFavorites(listAllFavorite = mutableListAllFavorite)
-
-                            getSupportActivity().showToast(getString(R.string.the_product_was_removed_from_the_favorites_section))
-                        }
-
-                    }
-                    else {
-                        favoriteViewModel.setResultRemoveFavorite(result = ErrorResult(exception = Exception()), errorType = OtherError())
-                        if (message != null) getSupportActivity().showToast(message = message)
-                    }
-                }
-
-                favoriteViewModel.setIsShownRemoveFavorites(isShown = true)
-            }
-            TYPE_GET_IDS_PRODUCTS_FROM_BASKET -> {
-                Log.i("TAG","FavoriteFragment onSuccessResultListener TYPE_GET_IDS_PRODUCTS_FROM_BASKET")
-                val isShownGetIdsProductsFromBasket = favoriteViewModel.isShownGetIdsProductsFromBasket
-
-                if (!isShownGetIdsProductsFromBasket) {
-                    val responseValueModel = value as ResponseValueModel<*>
-                    val responseModel = responseValueModel.responseModel
-                    val status = responseModel.status
-                    val message = responseModel.message
-
-                    if (status in 200..299) {
-
-                        val _listIdsProductsFromBasket = responseValueModel.value as List<*>
-                        val listIdsProductsFromBasket = _listIdsProductsFromBasket.map {
-                            return@map it as Int
-                        }
-
-                        favoriteViewModel.setListIdsProductsFromBasket(listIdsProductsFromBasket = listIdsProductsFromBasket)
-
-                    }
-                    else {
-                        favoriteViewModel.setResultGetIdsProductsFromBasket(result = ErrorResult(exception = Exception()), errorType = OtherError())
-                        if (message != null) getSupportActivity().showToast(message = message)
-                    }
-                }
-
-                favoriteViewModel.setIsShownGetIdsProductsFromBasket(isShown = true)
-            }
-            TYPE_ADD_PRODUCT_IN_BASKET -> {
-
-                val responseModel = value as ResponseModel
-                val status = responseModel.status
-                val message = responseModel.message
-
-                if (status in 200..299) {
-
-                    val listIdsProductsFromBasket = favoriteViewModel.listIdsProductsFromBasket.value ?:
-                    throw NullPointerException("FavoriteFragment listIdsProductsFromBasket = null")
-                    val currentProductId = favoriteViewModel.currentProductIdForAddInBasket.value
-
-                    if (currentProductId != null) {
-
-                        val mutableListIdsProductsFromBasket = listIdsProductsFromBasket.toMutableList()
-
-                        mutableListIdsProductsFromBasket.add(currentProductId)
-
-                        favoriteViewModel.setListIdsProductsFromBasket(listIdsProductsFromBasket = mutableListIdsProductsFromBasket)
-                    }
+                    favoriteViewModel.fillData(
+                        listAllFavorite = listAllFavorite,
+                        listIdsProductsFromBasket = listIdsProductsFromBasket
+                    )
 
                 }
-                else {
-                    favoriteViewModel.setResultAddProductInBasket(result = ErrorResult(exception = Exception()), errorType = OtherError())
-                    if (message != null) getSupportActivity().showToast(message = message)
+                TYPE_REMOVE_FAVORITES -> {
+                    Log.i("TAG","fullType = TYPE_REMOVE_FAVORITES")
+                    favoriteViewModel.removeFromFavorites()
+                }
+                TYPE_ADD_PRODUCT_IN_BASKET -> {
+                    Log.i("TAG","fullType = TYPE_ADD_PRODUCT_IN_BASKET")
+                   favoriteViewModel.changeListFavouriteBasketModel()
                 }
             }
+
+            updateUI(flag = FLAG_SUCCESS_RESULT)
         }
-
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
     }
 
-    override fun onErrorResultListener(exception: Exception, message: String) {
+    fun onErrorResultListener(exception: Exception) {
         Log.i("TAG","FavoriteFragment onErrorResultListener")
-        // При ошибке установка знчений "показано" для запросов, чтобы запросы не отправлялись заново
-        favoriteViewModel.setIsShownGetAllFavorites(isShown = true)
-        favoriteViewModel.setIsShownGetIdsProductsFromBasket(isShown = true)
-        favoriteViewModel.setIsShownRemoveFavorites(isShown = true)
-        favoriteViewModel.setIsShownFavoriteAdapter(isShown = true)
-
-        updateUI(flag = FLAG_ERROR_RESULT, messageError = message)
+        val message = getErrorMessage(exception = exception)
+        updateUI(flag = FLAG_ERROR_RESULT, messageError = getString(message))
     }
 
-    override fun onPendingResultListener() {
-        Log.i("TAG","FavoriteFragment onPendingResultListener")
-        // Отчистка типа ошибки
-        favoriteViewModel.clearErrorType()
-
+    fun onLoadingResultListener() {
+        Log.i("TAG","FavoriteFragment onLoadingResultListener")
         updateUI(flag = FLAG_PENDING_RESULT)
     }
 
-    override fun onSuccessfulEvent(
-        type: String,
-        exception: Exception?,
-        onSuccessfulEventListener: () -> Unit
-    ) {
-        val isNetworkStatus = getSupportActivity().isNetworkStatus(context = requireContext())
-        val network = Network()
-
-        network.checkNetworkStatus(
-            isNetworkStatus = isNetworkStatus,
-            connectionListener = {
-
-                when(type) {
-                    TYPE_GET_ALL_FAVORITES -> favoriteViewModel.setResultGetAllFavorite(result = PendingResult())
-                    TYPE_REMOVE_FAVORITES -> favoriteViewModel.setResultRemoveFavorite(result = PendingResult())
-                    TYPE_ADD_PRODUCT_IN_BASKET -> favoriteViewModel.setResultAddProductInBasket(result = PendingResult())
-                    TYPE_GET_IDS_PRODUCTS_FROM_BASKET -> favoriteViewModel.setResultGetIdsProductsFromBasket(result = PendingResult())
-                }
-
-                onSuccessfulEventListener()
-            },
-            disconnectionListener = {
-                val currentException = if (exception == null) Exception() else  exception
-                val errorType = DisconnectionError()
-
-                when(type) {
-                    TYPE_GET_ALL_FAVORITES -> favoriteViewModel.setResultGetAllFavorite(result = ErrorResult(exception = currentException), errorType = errorType)
-                    TYPE_REMOVE_FAVORITES -> favoriteViewModel.setResultRemoveFavorite(result = ErrorResult(exception = currentException), errorType = errorType)
-                    TYPE_ADD_PRODUCT_IN_BASKET -> favoriteViewModel.setResultAddProductInBasket(result = ErrorResult(exception = currentException), errorType = errorType)
-                    TYPE_GET_IDS_PRODUCTS_FROM_BASKET -> favoriteViewModel.setResultGetIdsProductsFromBasket(result = ErrorResult(exception = currentException), errorType = errorType)
-                }
-
-            }
-        )
-    }
-
-    override fun updateUI(flag: String, messageError: String?) = with(binding.layoutPendingResultFavorite){
+    fun updateUI(flag: String, messageError: String? = null) = with(binding.layoutPendingResultFavorite){
         when(flag) {
             FLAG_PENDING_RESULT -> {
                 Log.i("TAG","FLAG_PENDING_RESULT")
@@ -372,108 +231,38 @@ class FavoriteFragment : Fragment(), ProfileResult {
         }
     }
 
-    /**
-     * Отправка запросов для получения необходимых данных
-     */
-    private fun sendingRequests(){
-
-        val isShownGetAllFavorites = favoriteViewModel.isShownGetAllFavorites
-        val isShownGetIdsProductsFromBasket = favoriteViewModel.isShownGetIdsProductsFromBasket
-
-        // Если запросы "не показаны", то отправить запросы
-        if (!isShownGetAllFavorites) {
-            onSuccessfulEvent(type = TYPE_GET_ALL_FAVORITES) {
-                favoriteViewModel.getAllFavorites()
+    private fun installUI(mutableListFavouriteBasketModel: MutableList<FavouriteBasketModel>) = with(binding) {
+        favoriteViewModel.installUI(listFavouriteBasketModel = mutableListFavouriteBasketModel){ isEmpty ->
+            // Если список с товарами пусто, то показать "Список пуст"
+            if (isEmpty) {
+                tvEmptyListFavorites.visibility = View.VISIBLE
+                rvFavorite.visibility = View.GONE
             }
-        }
+            else {
+                tvEmptyListFavorites.visibility = View.GONE
+                rvFavorite.visibility = View.VISIBLE
 
-        if (!isShownGetIdsProductsFromBasket) {
-            onSuccessfulEvent(type = TYPE_GET_IDS_PRODUCTS_FROM_BASKET) {
-                favoriteViewModel.getIdsProductsFromBasket(userId = userId)
-            }
-        }
-    }
+                favoriteViewModel.installAdapter {
 
-    /**
-     * Установка списка избранных товаров для экрана.
-     *
-     * Параметры:
-     * [listAllFavorite] - список всех избранных товаров;
-     * [listIdsProductsFromBasket] - список идентификаторов товаров из корзины.
-     */
-    private fun installListFavourites(listAllFavorite: List<FavoriteModel>,listIdsProductsFromBasket: List<Int>) = with(binding) {
-
-        // Если список с товарами пусто, то показать "Список пуст"
-        if (listAllFavorite.isEmpty()) {
-            tvEmptyListFavorites.visibility = View.VISIBLE
-        }
-        else {
-            tvEmptyListFavorites.visibility = View.GONE
-
-            val mutableListFavoriteBasket = mutableListOf<FavouriteBasketModel>()
-
-            // Заполнение и установка списка для вывода на экран
-            listAllFavorite.forEach { favoriteModel ->
-                val isInBasket = listIdsProductsFromBasket.any { it == favoriteModel.productId }
-
-                mutableListFavoriteBasket.add(
-                    FavouriteBasketModel(
-                        favoriteModel = favoriteModel,
-                        isInBasket = isInBasket
+                    favoriteAdapter = FavoriteAdapter(
+                        mutableListFavouriteBasketModel = mutableListFavouriteBasketModel,
+                        deleteFromFavoritesListener = ::onClickDeleteFromFavorites,
+                        addInBasketFromFavoritesListener = ::onClickAddInBasketFromFavorites,
+                        textCategory = getString(R.string.category)
                     )
-                )
+
+                    rvFavorite.adapter = favoriteAdapter
+                    rvFavorite.layoutManager = LinearLayoutManager(requireContext())
+                }
             }
-
-            val favoriteAdapter = FavoriteAdapter(
-                listItems = mutableListFavoriteBasket,
-                deleteFromFavoritesListener = ::onClickDeleteFromFavorites,
-                addInBasketFromFavoritesListener = ::onClickAddInBasketFromFavorites,
-                textCategory = getString(R.string.category)
-            )
-
-            val isShownFavoriteAdapter = favoriteViewModel.isShownFavoriteAdapter
-
-            // Если адаптер не установлен, то установить
-            if (!isShownFavoriteAdapter) {
-                rvFavorite.adapter = favoriteAdapter
-                rvFavorite.layoutManager = LinearLayoutManager(requireContext())
-                favoriteViewModel.setIsShownFavoriteAdapter(isShown = true)
-            }
-
         }
-
     }
 
-    /**
-     * Обработка удаления из списка избранных товаров.
-     *
-     * Параметры:
-     * [productId] - идентификатор товара, который будет удален;
-     * [favoriteModel] - данные товара, который будет удален.
-     */
-    private fun onClickDeleteFromFavorites(productId: Int, favoriteModel: FavoriteModel) {
-        onSuccessfulEvent(type = TYPE_REMOVE_FAVORITES) {
-            // Установка значения "не показано", чтобы запрос был обработан
-            favoriteViewModel.setIsShownRemoveFavorites(isShown = false)
-            // Отправка запроса на удаление товара
-            favoriteViewModel.removeFavorite(productId = productId)
-        }
-        // Установка данных товара, который будет удален. Для получения этих данных в обработке запроса
-        favoriteViewModel.setCurrentFavoriteModelForRemove(currentFavoriteModelForRemove = favoriteModel)
+    private fun onClickDeleteFromFavorites(deletedProductId: Int) {
+        favoriteViewModel.onClickDeleteFromFavorites(deletedProductId = deletedProductId)
     }
 
-    /**
-     * Обработка добавления товара в корзину
-     *
-     * Параметры:
-     * [productId] - идентификатор товара, который будет добавлен в корзину.
-     */
     private fun onClickAddInBasketFromFavorites(productId: Int) {
-        // Отправка запроса на добавление в корзину
-        onSuccessfulEvent(type = TYPE_ADD_PRODUCT_IN_BASKET){
-            favoriteViewModel.addProductInBasket(userId = userId,productId = productId)
-        }
-        // Установка идентификатора товара, который будет добавлен в корзину. Для получения этого идентификатора в обработке запроса
-        favoriteViewModel.setCurrentProductIdForAddInBasket(currentProductIdForAddInBasket = productId)
+        favoriteViewModel.onClickAddInBasketFromFavorites(productId = productId)
     }
 }

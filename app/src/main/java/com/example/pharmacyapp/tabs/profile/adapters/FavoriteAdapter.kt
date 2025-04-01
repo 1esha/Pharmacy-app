@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import coil.load
-import com.example.domain.favorite.models.FavoriteModel
 import com.example.domain.models.FavouriteBasketModel
 import com.example.pharmacyapp.CLUB_DISCOUNT
 import com.example.pharmacyapp.databinding.ItemFavoriteBinding
@@ -18,30 +17,18 @@ import kotlin.math.roundToInt
  * Класс [FavoriteAdapter] является адаптером для списка избранных товаров во фрагиенте FavoriteFragment.
  *
  * Параметры:
- * listItems - список товаров;
+ * [mutableListFavouriteBasketModel] - список товаров;
  * [deleteFromFavoritesListener] - обработка удаления из "Избранного";
- * [addInBasketFromFavoritesListener] - обработка добавления в корзину.
+ * [addInBasketFromFavoritesListener] - обработка добавления в корзину;
+ * [textCategory] - текст категории товара.
  */
 class FavoriteAdapter(
-    listItems: List<FavouriteBasketModel>,
-    private val deleteFromFavoritesListener: (Int, FavoriteModel) -> Unit,
+    private val mutableListFavouriteBasketModel: MutableList<FavouriteBasketModel>,
+    private val deleteFromFavoritesListener: (Int) -> Unit,
     private val addInBasketFromFavoritesListener: (Int) -> Unit,
     private val textCategory: String
     ): RecyclerView.Adapter<FavoriteAdapter.FavoriteHolder>() {
 
-    /**
-     * Изменяемый список товаров, который будет отрисовываться на экране.
-     */
-    private val mutableListFavorite = mutableListOf<FavouriteBasketModel>()
-
-    /**
-     * Заполнение mutableListFavorite при инициализации класса.
-     */
-    init {
-        listItems.forEach { favoriteBasketModel ->
-            mutableListFavorite.add(favoriteBasketModel)
-        }
-    }
 
     class FavoriteHolder(val binding: ItemFavoriteBinding): ViewHolder(binding.root)
 
@@ -52,12 +39,12 @@ class FavoriteAdapter(
         return FavoriteHolder(binding = binding)
     }
 
-    override fun getItemCount(): Int = mutableListFavorite.size
+    override fun getItemCount(): Int = mutableListFavouriteBasketModel.size
 
     override fun onBindViewHolder(holder: FavoriteHolder, position: Int): Unit = with(holder.binding) {
 
         // Заполнение переменных данными товара, вычисление необходимых значений
-        val item = mutableListFavorite[position]
+        val item = mutableListFavouriteBasketModel[position]
         val originalPrice = item.favoriteModel.price
         val discount = item.favoriteModel.discount
         val sumDiscount = ((discount / 100) * originalPrice)
@@ -101,9 +88,9 @@ class FavoriteAdapter(
         // Оюработка удаления из списка
         bDeleteFromFavorites.setOnClickListener {
             try {
-                mutableListFavorite.remove(item)
+                mutableListFavouriteBasketModel.remove(item)
 
-                deleteFromFavoritesListener(item.favoriteModel.productId, item.favoriteModel)
+                deleteFromFavoritesListener(item.favoriteModel.productId)
 
                 notifyItemRemoved(position)
             }
@@ -118,14 +105,14 @@ class FavoriteAdapter(
         bAddInBasketFromFavorites.setOnClickListener {
             try {
                 // Обновление значения isInBasket текущего товара на значение true
-                val index = mutableListFavorite.indexOf(item)
+                val index = mutableListFavouriteBasketModel.indexOf(item)
 
-                mutableListFavorite.removeAt(index)
-                mutableListFavorite.add(index,item.copy(isInBasket = true))
+                mutableListFavouriteBasketModel.removeAt(index)
+                mutableListFavouriteBasketModel.add(index,item.copy(isInBasket = true))
 
                 addInBasketFromFavoritesListener(item.favoriteModel.productId)
 
-                notifyItemChanged(index)
+                notifyItemChanged(position)
             }
             catch (e: Exception){
                 Log.e("TAG",e.stackTraceToString())
