@@ -1,7 +1,6 @@
 package com.example.pharmacyapp.tabs.profile.viewmodels.factories
 
 import android.content.Context
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.data.favorite.FavoriteRepositoryImpl
@@ -14,11 +13,8 @@ class AuthorizedUserViewModelFactory(context: Context): ViewModelProvider.Factor
 
     private val profileRepositoryImpl = ProfileRepositoryImpl()
 
-    private val savedStateHandle = SavedStateHandle()
-
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return AuthorizedUserViewModel(
-            savedStateHandle = savedStateHandle,
             favoriteRepositoryImpl = favoriteRepositoryImpl,
             profileRepositoryImpl = profileRepositoryImpl) as T
     }

@@ -1,156 +1,158 @@
 package com.example.pharmacyapp.tabs.profile.viewmodels
 
-import android.os.Bundle
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.favorite.FavoriteRepositoryImpl
 import com.example.data.profile.ProfileRepositoryImpl
-import com.example.domain.ErrorResult
-import com.example.domain.ErrorType
-import com.example.domain.OtherError
+import com.example.domain.DisconnectionException
+import com.example.domain.IdentificationException
+import com.example.domain.Network
 import com.example.domain.Result
 import com.example.domain.favorite.usecases.DeleteAllFavoriteUseCase
-import com.example.domain.models.MediatorResultsModel
-import com.example.domain.profile.models.ResponseModel
-import com.example.domain.profile.models.ResponseValueModel
-import com.example.domain.profile.models.UserInfoModel
+import com.example.domain.models.RequestModel
 import com.example.domain.profile.models.UserModel
 import com.example.domain.profile.usecases.GetUserByIdUseCase
 import com.example.pharmacyapp.TYPE_DELETE_ALL_FAVORITES
 import com.example.pharmacyapp.TYPE_GET_USER_BY_ID
 import com.example.pharmacyapp.UNAUTHORIZED_USER
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class AuthorizedUserViewModel(
-    private val savedStateHandle: SavedStateHandle,
     private val favoriteRepositoryImpl: FavoriteRepositoryImpl,
     private val profileRepositoryImpl: ProfileRepositoryImpl
 ): ViewModel() {
 
-    companion object {
-        const val KEY_IS_SHOWN_GET_USER_BY_ID = "KEY_IS_SHOWN_GET_USER_BY_ID"
-        const val KEY_IS_SHOWN_DELETE_ALL_FAVORITES = "KEY_IS_SHOWN_DELETE_ALL_FAVORITES"
-    }
+    private val _stateScreen = MutableStateFlow<Result>(Result.Loading())
+    val stateScreen: StateFlow<Result> = _stateScreen
 
-    val mediatorAuthorizedUser = MediatorLiveData<MediatorResultsModel<*>>()
+    private val _userModel = MutableStateFlow<UserModel?>(null)
+    val userModel = _userModel.asStateFlow()
 
-    private val resultGetUserById = MutableLiveData<MediatorResultsModel<Result<ResponseValueModel<UserModel>>>>()
+    private var isShownSendingRequests = true
 
-    private val resultDeleteAllFavorites = MutableLiveData<MediatorResultsModel<Result<ResponseModel>>>()
+    private var isShownFillData = true
 
-    val isShownGetUserById: Boolean get() = savedStateHandle[KEY_IS_SHOWN_GET_USER_BY_ID] ?: false
+    private var isInit = true
 
-    val isShownDeleteAllFavorites: Boolean get() = savedStateHandle[KEY_IS_SHOWN_DELETE_ALL_FAVORITES] ?: false
+    private val network = Network()
 
-    private val _errorType = MutableLiveData<ErrorType>(OtherError())
-    val errorType: LiveData<ErrorType> = _errorType
+    private var userId = UNAUTHORIZED_USER
 
-    private val _userModelLiveData = MutableLiveData<UserModel>()
-    val userModelLivedata: LiveData<UserModel> = _userModelLiveData
+    fun initValues(userId: Int){
+        if (isInit) {
+            this.userId = userId
 
-    init {
-        mediatorAuthorizedUser.addSource(resultGetUserById) { result ->
-            mediatorAuthorizedUser.value = result
-        }
-
-        mediatorAuthorizedUser.addSource(resultDeleteAllFavorites) { result ->
-            mediatorAuthorizedUser.value = result
+            isInit = false
         }
     }
 
-    fun getUserById(userId: Int){
-        if (userId == UNAUTHORIZED_USER){
+    fun sendingRequests(isNetworkStatus: Boolean){
+        if (isShownSendingRequests) {
+            network.checkNetworkStatus(
+                isNetworkStatus = isNetworkStatus,
+                connectionListener = {
 
-            resultGetUserById.value = MediatorResultsModel(
-                type = TYPE_GET_USER_BY_ID,
-                result = ErrorResult(exception = Exception())
+                    onLoading()
+
+                    if (userId == UNAUTHORIZED_USER) {
+                        _stateScreen.value = Result.Error(exception = IdentificationException())
+                        return@checkNetworkStatus
+                    }
+
+                    val getUserByIdUseCase = GetUserByIdUseCase(
+                        profileRepository = profileRepositoryImpl,
+                        userId = userId
+                    )
+                    viewModelScope.launch {
+                        getUserByIdUseCase.execute().collect { result ->
+                            val requestModel = RequestModel(
+                                type = TYPE_GET_USER_BY_ID,
+                                result = result
+                            )
+
+                            if (result is Result.Error){
+                                _stateScreen.value = result
+                                return@collect
+                            }
+
+                            _stateScreen.value = Result.Success(
+                                data = listOf(requestModel)
+                            )
+                        }
+                    }
+                },
+                disconnectionListener = ::onDisconnect
             )
-            return
         }
-        viewModelScope.launch {
-            val getUserByIdUseCase = GetUserByIdUseCase(
-                profileRepository = profileRepositoryImpl,
-                userId = userId
-            )
+        isShownSendingRequests = false
+    }
 
-            val result = getUserByIdUseCase.execute()
+    private fun onLoading(){
+        _stateScreen.value = Result.Loading()
+    }
 
-            resultGetUserById.value = MediatorResultsModel(
-                type = TYPE_GET_USER_BY_ID,
-                result = result
-            )
+    private fun onDisconnect(){
+        _stateScreen.value = Result.Error(exception = DisconnectionException())
+    }
 
-        }
+    fun tryAgain(isNetworkStatus: Boolean){
+        isShownSendingRequests = true
+        isShownFillData = true
+        sendingRequests(isNetworkStatus = isNetworkStatus)
+    }
+
+    fun fillData(userModel: UserModel){
+        if (isShownFillData) _userModel.value = userModel
+        isShownFillData = false
     }
 
     fun deleteAllFavorites() {
+        onLoading()
+
         val deleteAllFavoriteUseCase = DeleteAllFavoriteUseCase(favoriteRepository = favoriteRepositoryImpl)
 
         viewModelScope.launch {
-            val result = deleteAllFavoriteUseCase.execute()
+            deleteAllFavoriteUseCase.execute().collect { result ->
+                val requestModel = RequestModel(
+                    type = TYPE_DELETE_ALL_FAVORITES,
+                    result = result
+                )
 
-            resultDeleteAllFavorites.value = MediatorResultsModel(
-                type = TYPE_DELETE_ALL_FAVORITES,
-                result = result
-            )
+                if (result is Result.Error){
+                    _stateScreen.value = result
+                    return@collect
+                }
+
+                _stateScreen.value = Result.Success(
+                    data = listOf(requestModel)
+                )
+            }
         }
-
     }
 
-    fun setResultGetUserById(result: Result<ResponseValueModel<UserModel>>, errorType: ErrorType? = null) {
-        if (result is ErrorResult && errorType != null) {
-            _errorType.value = errorType ?: throw NullPointerException("AuthorizedUserViewModel setResult errorType = null")
-        }
-        resultGetUserById.value = MediatorResultsModel(
-            type = TYPE_GET_USER_BY_ID,
-            result = result
-        )
-    }
+    fun listenResultFromEditUser(firstName: String?, lastName: String?, city: String?){
+        try {
 
-    fun clearErrorType() {
-        _errorType.value = OtherError()
-    }
-
-    fun setIsShownGetUserById(isShown: Boolean){
-        savedStateHandle[KEY_IS_SHOWN_GET_USER_BY_ID] = isShown
-    }
-
-    fun setIsShownDeleteAllFavorites(isShown: Boolean){
-        savedStateHandle[KEY_IS_SHOWN_DELETE_ALL_FAVORITES] = isShown
-    }
-
-    fun updateUserModel(firstName: String, lastName: String, city: String) {
-        val currentUserModel = _userModelLiveData.value
-
-        if (currentUserModel != null) {
+            val oldUserInfoModel = _userModel.value!!.userInfoModel
             val newUserModel = UserModel(
-                userId = currentUserModel.userId,
-                userInfoModel = UserInfoModel(
-                    firstName = firstName,
-                    lastName = lastName,
-                    email = currentUserModel.userInfoModel.email,
-                    phoneNumber = currentUserModel.userInfoModel.phoneNumber,
-                    userPassword = currentUserModel.userInfoModel.userPassword,
-                    city = city
+                userId = userId,
+                userInfoModel = oldUserInfoModel.copy(
+                    firstName = firstName!!,
+                    lastName = lastName!!,
+                    city = city!!
                 )
             )
 
-            _userModelLiveData.value = newUserModel
+            _userModel.value = null
+            _userModel.value = newUserModel
         }
-
-    }
-
-    fun setUserModel(userModel: UserModel){
-        _userModelLiveData.value = userModel
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        Log.i("TAG","AuthorizedUserViewModel onCleared")
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+            _stateScreen.value = Result.Error(exception = e)
+        }
     }
 }
