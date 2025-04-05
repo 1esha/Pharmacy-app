@@ -17,6 +17,8 @@ interface CatalogRepositoryDataSourceRemote {
 
     fun getProductAvailabilityByProductIdFlow(productId: Int): Flow<ResultDataSource>
 
+    fun getProductAvailabilityByIdsProductsFlow(listIdsProducts: List<Int>): Flow<ResultDataSource>
+
     fun getPharmacyAddressesDetailsFlow(): Flow<ResultDataSource>
 
     fun getOperatingModeFlow(): Flow<ResultDataSource>

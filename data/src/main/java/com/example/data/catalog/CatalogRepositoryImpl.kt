@@ -302,6 +302,45 @@ class CatalogRepositoryImpl() : CatalogRepository{
     }.flowOn(Dispatchers.IO)
 
     /**
+     * Получение списка наличия товаров по списку идентификаторов.
+     * При успешном результате эмитится список наличия товаров о аптеках ( List<[ProductAvailabilityModel]> ).
+     *
+     * Параметры:
+     * [listIdsProducts] - список идентификаторов по которому будет получен список данных о наличии товаров в аптеках.
+     */
+    override fun getProductAvailabilityByIdsProductsFlow(listIdsProducts: List<Int>): Flow<Result> = flow {
+        try {
+            catalogRepositoryDataSourceRemoteImpl.getProductAvailabilityByIdsProductsFlow(listIdsProducts = listIdsProducts).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
+
+                if (response != null) {
+                    val _listProductAvailabilityDataSourceModel = response.value as List<*>
+                    val listProductAvailabilityDataSourceModel = _listProductAvailabilityDataSourceModel.map { it as ProductAvailabilityDataSourceModel }
+                    val listProductAvailabilityModel = listProductAvailabilityDataSourceModel.toListProductAvailabilityModel()
+
+                    val data = ResponseValueModel(
+                        value = listProductAvailabilityModel,
+                        responseModel = response.responseDataSourceModel.toResponseModel()
+                    )
+
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
      * Получение списка наличия товаров в аптеках.
      * При успешном результате эмитится список наличия товаров в аптеках ( List<[ProductAvailabilityModel]> ).
      */

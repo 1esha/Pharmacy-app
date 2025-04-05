@@ -2,6 +2,7 @@ package com.example.data.catalog.datasource.remote
 
 import android.util.Log
 import com.example.data.ResultDataSource
+import com.example.data.catalog.datasource.models.IdsProductsDataSourceModel
 import com.example.data.catalog.datasource.models.OperatingModeDataSourceModel
 import com.example.data.catalog.datasource.models.PharmacyAddressesDataSourceModel
 import com.example.data.catalog.datasource.models.PharmacyAddressesDetailsDataSourceModel
@@ -16,8 +17,11 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.parameter
 import io.ktor.client.request.request
+import io.ktor.client.request.setBody
 import io.ktor.client.request.url
+import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
+import io.ktor.http.contentType
 import io.ktor.serialization.gson.gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -256,6 +260,40 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote{
     }.flowOn(Dispatchers.IO)
 
     /**
+     * Получение списка наличия товаров по списку идентификаторов.
+     *
+     * Параметры:
+     * [listIdsProducts] - список идентификаторов по которому будет получен список данных о наличии товаров в аптеках.
+     */
+    override fun getProductAvailabilityByIdsProductsFlow(listIdsProducts: List<Int>): Flow<ResultDataSource> = flow{
+        Log.d("TAG", "getProductAvailabilityByIdsProductsFlow")
+        try {
+            val response = client.request {
+                url(GET_PRODUCT_AVAILABILITY_BY_IDS_PRODUCTS)
+                method = HttpMethod.Post
+                setBody(IdsProductsDataSourceModel(listIdsProducts = listIdsProducts))
+                contentType(type = ContentType.Application.Json)
+            }
+
+            val data = response.body<ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>>>()
+
+            if (
+                data.responseDataSourceModel.status in 200..299 &&
+                data.value != null
+                ){
+                val result = ResultDataSource.Success(data = data)
+                emit(result)
+            }
+            else{
+                emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.responseDataSourceModel.message)))
+            }
+        }
+        catch (e: Exception){
+            emit(ResultDataSource.Error(exception = e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
      * Получение списка наличия товаров в аптеках.
      */
     override fun getProductAvailabilityFlow(): Flow<ResultDataSource> = flow{
@@ -322,6 +360,7 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote{
         const val GET_PRODUCT_AVAILABILITY_BY_PATH = "/availability"
         const val GET_PRODUCT_BY_ID = "/product/id"
         const val GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID = "/availability/product_id"
+        const val GET_PRODUCT_AVAILABILITY_BY_IDS_PRODUCTS = "/availability/ids_products"
         const val GET_OPERATING_MODE = "/operating_mode"
         const val GET_PRODUCT_AVAILABILITY = "/availability/all"
     }
