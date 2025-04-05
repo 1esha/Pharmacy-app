@@ -182,6 +182,11 @@
     <string name="invalid_value">Invalid value</string>
     <string name="the_basket_is_empty">The basket is empty</string>
     <string name="place_an_order">Place an order</string>
+    <string name="on_the_map">On the map</string>
+    <string name="choose">Choose</string>
+    <string name="available_out_of">Available</string>
+    <string name="all_products_are_in_stock">All products are in stock</string>
+    <string name="making_an_order">Making an order</string>
     <string name="select_all">Select all</string>
     <string name="delete_selected_ones">Delete selected ones</string>
     <string name="increase_the_quantity_of_goods_by_one">Increase the quantity of goods by one</string>

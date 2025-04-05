@@ -36,7 +36,6 @@
     <color name="gray800">#444444</color>
     <color name="gray900">#232323</color>
 
-    <color name="discount">#C6013F</color>
     <color name="red50">#FFEBEE</color>
     <color name="red100">#FFCDD2</color>
     <color name="red200">#EF9A9A</color>
@@ -47,4 +46,9 @@
     <color name="red700">#D32F2F</color>
     <color name="red800">#C62828</color>
     <color name="red900">#B71C1C</color>
+
+
+    <color name="discount">@color/red700</color>
+    <color name="favourite">#D40636</color>
+    <color name="warning">#C09106</color>
 </resources>

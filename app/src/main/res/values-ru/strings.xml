@@ -181,6 +181,13 @@
     <string name="invalid_value">Недопустимое значение</string>
     <string name="the_basket_is_empty">Корзина пуста</string>
     <string name="place_an_order">Оформить заказ</string>
+    <string name="on_the_map">На карте</string>
+    <string name="choose">Выбрать</string>
+    <string name="available_out_of">В наличии</string>
+    <string name="all_products_are_in_stock">Все товары в наличии</string>
+    <string name="making_an_order">Оформление заказа</string>
     <string name="select_all">Выбрать всё</string>
     <string name="delete_selected_ones">Удалить выбранные</string>
+    <string name="increase_the_quantity_of_goods_by_one">Увеличить количество товара на один</string>
+    <string name="reduce_the_number_of_items_by_one">Уменьшить количество товара на один</string>
 </resources>

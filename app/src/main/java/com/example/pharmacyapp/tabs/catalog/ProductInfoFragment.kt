@@ -36,7 +36,8 @@ import com.example.pharmacyapp.FLAG_ERROR_RESULT
 import com.example.pharmacyapp.FLAG_PENDING_RESULT
 import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
 import com.example.pharmacyapp.KEY_ARRAY_LIST_BODY_INSTRUCTION
-import com.example.pharmacyapp.KEY_ARRAY_LIST_IDS_AVAILABILITY_PHARMACY_ADDRESSES_DETAILS
+import com.example.pharmacyapp.KEY_ARRAY_LIST_IDS_PRODUCTS_FOR_MAP
+import com.example.pharmacyapp.KEY_ARRAY_LIST_NUMBER_PRODUCTS_FOR_MAP
 import com.example.pharmacyapp.KEY_ARRAY_LIST_TITLES_INSTRUCTION
 import com.example.pharmacyapp.KEY_FLAGS_FOR_MAP
 import com.example.pharmacyapp.KEY_IS_FAVORITES
@@ -222,17 +223,13 @@ class ProductInfoFragment : Fragment(), ResultProcessing {
 
         // Обработка нажатия на поле "Наличие"
         cardAvailability.setOnClickListener {
-            productInfoViewModel.onClickCardAvailability { arrayListIdsAvailabilityPharmacyAddresses ->
+            productInfoViewModel.onClickCardAvailability { arrayListIdsProducts, arrayListNumberProducts ->
 
                 val bundle = Bundle().apply {
-                    putIntegerArrayList(
-                        KEY_ARRAY_LIST_IDS_AVAILABILITY_PHARMACY_ADDRESSES_DETAILS,
-                        arrayListIdsAvailabilityPharmacyAddresses
-                    )
+                    putString(KEY_FLAGS_FOR_MAP, FLAG_CURRENT_PRODUCT)
+                    putIntegerArrayList(KEY_ARRAY_LIST_IDS_PRODUCTS_FOR_MAP,arrayListIdsProducts)
+                    putIntegerArrayList(KEY_ARRAY_LIST_NUMBER_PRODUCTS_FOR_MAP,arrayListNumberProducts)
                 }
-
-                // Передача флага для отрисовки разметки карты
-                bundle.putString(KEY_FLAGS_FOR_MAP, FLAG_CURRENT_PRODUCT)
 
                 // Открытие экрана карты с аптеками
                 navControllerMain.navigate(R.id.mapFragment, bundle)

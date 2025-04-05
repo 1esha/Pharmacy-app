@@ -488,8 +488,17 @@ class ProductInfoViewModel(
         navigate(arrayListTitles,arrayListBody)
     }
 
-    fun onClickCardAvailability(navigate: (ArrayList<Int>) -> Unit){
-        navigate(arrayListIdsAvailabilityPharmacyAddresses)
+    fun onClickCardAvailability(navigate: (ArrayList<Int>,ArrayList<Int>) -> Unit){
+        try {
+            val productId = _productModel.value!!.productId
+            val arrayListIdsProducts = arrayListOf(productId)
+            val arrayListNumberProducts = arrayListOf(1)
+            navigate(arrayListIdsProducts, arrayListNumberProducts)
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+            _stateScreen.value = Result.Error(exception = e)
+        }
     }
 
     fun onClickFavorite(isNetworkStatus: Boolean, itemId: Int, navigate: () -> Unit){
