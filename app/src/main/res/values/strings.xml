@@ -180,4 +180,8 @@
     <string name="unknown_error">Unknown error</string>
     <string name="account_deleted">Account deleted</string>
     <string name="invalid_value">Invalid value</string>
+    <string name="the_basket_is_empty">The basket is empty</string>
+    <string name="place_an_order">Place an order</string>
+    <string name="select_all">Select all</string>
+    <string name="delete_selected_ones">Delete selected ones</string>
 </resources>

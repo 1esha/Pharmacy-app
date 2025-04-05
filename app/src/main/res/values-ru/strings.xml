@@ -179,4 +179,8 @@
     <string name="unknown_error">Неизвестная ошибка</string>
     <string name="account_deleted">Аккаунт удален</string>
     <string name="invalid_value">Недопустимое значение</string>
+    <string name="the_basket_is_empty">Корзина пуста</string>
+    <string name="place_an_order">Оформить заказ</string>
+    <string name="select_all">Выбрать всё</string>
+    <string name="delete_selected_ones">Удалить выбранные</string>
 </resources>

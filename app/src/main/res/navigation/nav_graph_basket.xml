@@ -7,7 +7,16 @@
 
     <fragment
         android:id="@+id/basketFragment"
-        android:name="com.example.pharmacyapp.tabs.BasketFragment"
+        android:name="com.example.pharmacyapp.tabs.basket.BasketFragment"
         android:label="fragment_basket"
-        tools:layout="@layout/fragment_basket" />
+        tools:layout="@layout/fragment_basket" >
+        <action
+            android:id="@+id/action_basketFragment_to_orderMakingFragment"
+            app:destination="@id/orderMakingFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/orderMakingFragment"
+        android:name="com.example.pharmacyapp.tabs.basket.ChooseAddressForOrderMakingFragment"
+        android:label="fragment_order_making"
+        tools:layout="@layout/fragment_order_making" />
 </navigation>
