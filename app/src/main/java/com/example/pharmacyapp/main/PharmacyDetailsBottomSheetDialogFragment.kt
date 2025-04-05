@@ -6,13 +6,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.viewModels
 import coil.load
 import com.example.domain.catalog.models.PharmacyAddressesDetailsModel
-import com.example.pharmacyapp.FLAG_ALL_PHARMACIES
-import com.example.pharmacyapp.FLAG_CURRENT_PRODUCT
 import com.example.pharmacyapp.KEY_FLAGS_FOR_MAP
-import com.example.pharmacyapp.R
 import com.example.pharmacyapp.databinding.FragmentPharmacyDetailsBottomSheetDialogBinding
+import com.example.pharmacyapp.main.viewmodels.PharmacyDetailsBottomSheetViewModel
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 /**
@@ -23,6 +22,8 @@ class PharmacyDetailsBottomSheetDialogFragment : BottomSheetDialogFragment() {
 
     private var _binding: FragmentPharmacyDetailsBottomSheetDialogBinding? = null
     private val binding get() = _binding!!
+
+    private val pharmacyDetailsBottomSheetViewModel: PharmacyDetailsBottomSheetViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -36,12 +37,6 @@ class PharmacyDetailsBottomSheetDialogFragment : BottomSheetDialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) = with(binding){
 
-        // Получение флага для отрисовки разметки
-        val flag = arguments?.getString(KEY_FLAGS_FOR_MAP) ?: FLAG_ALL_PHARMACIES
-
-        // Получение значения в наличии товар или нет
-        val isAvailability = arguments?.getBoolean(KEY_IS_AVAILABILITY)
-
         // Получение подробной информации о аптеке
         val pharmacyAddressesDetails: PharmacyAddressesDetailsModel = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             arguments?.getSerializable(KEY_PHARMACY_ADDRESSES_DETAILS, PharmacyAddressesDetailsModel::class.java)
@@ -50,12 +45,16 @@ class PharmacyDetailsBottomSheetDialogFragment : BottomSheetDialogFragment() {
             arguments?.getSerializable(KEY_PHARMACY_ADDRESSES_DETAILS) as PharmacyAddressesDetailsModel
         } ?: throw NullPointerException("PharmacyDetailsBottomSheetDialogFragment pharmacyAddressesDetails = null")
 
-        // получение списков с графиками работы текущей аптеки
-        val arrayListOperatingModesTimeFrom = arguments?.getStringArrayList(KEY_ARRAY_LIST_OPERATING_MODES_TIME_FROM)?:
-        throw NullPointerException("PharmacyDetailsBottomSheetDialogFragment arrayListOperatingModesTimeFrom = null")
 
-        val arrayListOperatingModesTimeBefore = arguments?.getStringArrayList(KEY_ARRAY_LIST_OPERATING_MODES_TIME_BEFORE)?:
-        throw NullPointerException("PharmacyDetailsBottomSheetDialogFragment arrayListOperatingModesTimeBefore = null")
+        pharmacyDetailsBottomSheetViewModel.initValues(
+            flag = arguments?.getString(KEY_FLAGS_FOR_MAP),
+            flagStatus = arguments?.getInt(KEY_FLAG_STATUS_NUMBER_PRODUCT),
+            pharmacyAddressesDetails = pharmacyAddressesDetails,
+            arrayListOperatingModesTimeFrom = arguments?.getStringArrayList(KEY_ARRAY_LIST_OPERATING_MODES_TIME_FROM),
+            arrayListOperatingModesTimeBefore = arguments?.getStringArrayList(KEY_ARRAY_LIST_OPERATING_MODES_TIME_BEFORE),
+            availableQuantity = arguments?.getInt(KEY_AVAILABLE_QUANTITY),
+            totalNumber = arguments?.getInt(KEY_TOTAL_NUMBER)
+        )
 
         // Установка изображения аптеки
         ivPharmacy.load(pharmacyAddressesDetails.image)
@@ -65,95 +64,47 @@ class PharmacyDetailsBottomSheetDialogFragment : BottomSheetDialogFragment() {
         tvCityAddressPharmacyForMap.text = pharmacyAddressesDetails.pharmacyAddressesModel.city
 
         // Заолнение режима работы
-        fillingOperatingMode(
-            arrayListOperatingModesTimeFrom = arrayListOperatingModesTimeFrom,
-            arrayListOperatingModesTimeBefore = arrayListOperatingModesTimeBefore
-        )
+        fillingOperatingMode()
 
-        // Проверка как сейчас надо отрисовывать разметку
-        when (flag) {
-            FLAG_CURRENT_PRODUCT -> {
-
-                layoutAvailabilityInPharmacy.visibility = View.VISIBLE
-
-                when(isAvailability) {
-                    true -> {
-                        val color = ContextCompat.getColor(requireContext(), R.color.green800)
-
-                        tvAvailabilityStatus.setTextColor(color)
-                        tvAvailabilityStatus.text = getString(R.string.in_stock)
-                        ivAvailabilityStatus.setImageResource(R.drawable.ic_check_circle)
-                    }
-
-                    false -> {
-                        val color = ContextCompat.getColor(requireContext(), R.color.discount)
-
-                        tvAvailabilityStatus.setTextColor(color)
-                        tvAvailabilityStatus.text = getString(R.string.out_of_stock)
-                        ivAvailabilityStatus.setImageResource(R.drawable.ic_remove_circle)
-                    }
-
-                    else -> throw IllegalArgumentException()
-                }
-
-            }
-            FLAG_ALL_PHARMACIES -> {
-                layoutAvailabilityInPharmacy.visibility = View.GONE
-            }
+        pharmacyDetailsBottomSheetViewModel.installMap { isVisibilityLayoutStatus, isVisibilityButton, isEnabledButton ->
+            layoutAvailabilityInPharmacy.visibility = if (isVisibilityLayoutStatus) View.VISIBLE else View.GONE
+            bChooseAddressOnMap.visibility = if (isVisibilityButton) View.VISIBLE else View.GONE
+            bChooseAddressOnMap.isEnabled = isEnabledButton
         }
 
+        installUI()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+        dismiss()
     }
 
-    /**
-     * Заполнение режима работы, выбранной аптеки.
-     *
-     * Параметры:
-     * [arrayListOperatingModesTimeFrom] - список с временем начала работы;
-     * [arrayListOperatingModesTimeBefore] - список с временем окончания работы.
-     */
-    private fun fillingOperatingMode(
-        arrayListOperatingModesTimeFrom: ArrayList<String>,
-        arrayListOperatingModesTimeBefore: ArrayList<String>
-        ) = with(binding) {
+    private fun installUI() = with(binding){
+        pharmacyDetailsBottomSheetViewModel.installUI { colorInt,textInt,image,availableQuantity,totalNumber ->
+            val color = ContextCompat.getColor(requireContext(), colorInt)
 
-            for (day in 1..7) {
+            val text = if (availableQuantity in 1..< totalNumber){
+                getString(textInt)+" $availableQuantity / $totalNumber"
+            } else getString(textInt)
 
-                val index = day-1
-
-                val textTimeFrom = arrayListOperatingModesTimeFrom[index].toHourAndMinutes()
-                val textTimeBefore = arrayListOperatingModesTimeBefore[index].toHourAndMinutes()
-
-                val fullTime = "$textTimeFrom-$textTimeBefore"
-
-                when(day) {
-                    1 -> tvMo.text = fullTime
-                    2 -> tvTu.text = fullTime
-                    3 -> tvWe.text = fullTime
-                    4 -> tvTh.text = fullTime
-                    5 -> tvFr.text = fullTime
-                    6 -> tvSa.text = fullTime
-                    7 -> tvSu.text = fullTime
-                }
-
-            }
-    }
-
-    /**
-     * Преобразование сторки времени к формату ЧЧ:ММ.
-     */
-    private fun String.toHourAndMinutes(): String{
-        var time = ""
-        var counter = 0
-        this.forEach {
-            if (it == ':') counter++
-            if (counter <= 1) time += it
+            tvAvailabilityStatus.setTextColor(color)
+            tvAvailabilityStatus.text = text
+            ivAvailabilityStatus.setImageResource(image)
         }
-        return time
+    }
+
+    private fun fillingOperatingMode() = with(binding) {
+        pharmacyDetailsBottomSheetViewModel.fillingOperatingMode { textMo,textTu,textWe,textTh,textFr,textSa,textSu ->
+            tvMo.text = textMo
+            tvTu.text = textTu
+            tvWe.text = textWe
+            tvTh.text = textTh
+            tvFr.text = textFr
+            tvSa.text = textSa
+            tvSu.text = textSu
+        }
     }
 
     companion object {
@@ -163,7 +114,9 @@ class PharmacyDetailsBottomSheetDialogFragment : BottomSheetDialogFragment() {
 
         // Ключи для передачи и получения аргуметов
         const val KEY_PHARMACY_ADDRESSES_DETAILS = "KEY_PHARMACY_ADDRESSES_DETAILS"
-        const val KEY_IS_AVAILABILITY = "KEY_IS_AVAILABILITY"
+        const val KEY_AVAILABLE_QUANTITY = "KEY_AVAILABLE_QUANTITY"
+        const val KEY_TOTAL_NUMBER = "KEY_TOTAL_NUMBER"
+        const val KEY_FLAG_STATUS_NUMBER_PRODUCT = "KEY_FLAG_STATUS_NUMBER_PRODUCT"
         const val KEY_ARRAY_LIST_OPERATING_MODES_TIME_FROM = "KEY_ARRAY_LIST_OPERATING_MODES_TIME_FROM"
         const val KEY_ARRAY_LIST_OPERATING_MODES_TIME_BEFORE = "KEY_ARRAY_LIST_OPERATING_MODES_TIME_BEFORE"
 
@@ -171,7 +124,9 @@ class PharmacyDetailsBottomSheetDialogFragment : BottomSheetDialogFragment() {
             pharmacyAddressesDetailsModel: PharmacyAddressesDetailsModel,
             arrayListOperatingModesTimeFrom: ArrayList<String>,
             arrayListOperatingModesTimeBefore: ArrayList<String>,
-            isAvailability: Boolean,
+            flagStatus: Int,
+            availableQuantity: Int? = null,
+            totalNumber: Int? = null,
             flag: String
         ): PharmacyDetailsBottomSheetDialogFragment {
             val args = Bundle()
@@ -179,7 +134,13 @@ class PharmacyDetailsBottomSheetDialogFragment : BottomSheetDialogFragment() {
                 putSerializable(KEY_PHARMACY_ADDRESSES_DETAILS,pharmacyAddressesDetailsModel)
                 putStringArrayList(KEY_ARRAY_LIST_OPERATING_MODES_TIME_FROM,arrayListOperatingModesTimeFrom)
                 putStringArrayList(KEY_ARRAY_LIST_OPERATING_MODES_TIME_BEFORE,arrayListOperatingModesTimeBefore)
-                putBoolean(KEY_IS_AVAILABILITY,isAvailability)
+                putInt(KEY_FLAG_STATUS_NUMBER_PRODUCT,flagStatus)
+
+                if (availableQuantity != null && totalNumber != null){
+                    putInt(KEY_AVAILABLE_QUANTITY,availableQuantity)
+                    putInt(KEY_TOTAL_NUMBER,totalNumber)
+                }
+
                 putString(KEY_FLAGS_FOR_MAP,flag)
             }
 
