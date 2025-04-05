@@ -173,10 +173,11 @@
 
                 <Button
                     android:id="@+id/bRemoveNumberProduct"
+                    style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
-                    app:icon="@drawable/ic_remove"/>
+                    android:contentDescription="@string/reduce_the_number_of_items_by_one"
+                    app:icon="@drawable/ic_remove" />
 
                 <TextView
                     android:id="@+id/tvNumberProduct"
@@ -191,6 +192,7 @@
                     android:id="@+id/bAddNumberProduct"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:contentDescription="@string/increase_the_quantity_of_goods_by_one"
                     style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
                     app:icon="@drawable/ic_add"/>
 

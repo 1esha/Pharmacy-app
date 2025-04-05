@@ -184,4 +184,6 @@
     <string name="place_an_order">Place an order</string>
     <string name="select_all">Select all</string>
     <string name="delete_selected_ones">Delete selected ones</string>
+    <string name="increase_the_quantity_of_goods_by_one">Increase the quantity of goods by one</string>
+    <string name="reduce_the_number_of_items_by_one">Reduce the number of items by one</string>
 </resources>
