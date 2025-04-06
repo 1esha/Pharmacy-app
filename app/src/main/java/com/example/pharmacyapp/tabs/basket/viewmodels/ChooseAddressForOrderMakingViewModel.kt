@@ -199,24 +199,35 @@ class ChooseAddressForOrderMakingViewModel(
 
             listPharmacyAddressesModel.forEach { pharmacyAddressesModel ->
 
-                val mutableListCurrentNumberProducts = mutableListOf<NumberProductsModel>()
+                val mutableListAvailableQuantity = mutableListOf<Int>()
+
                 mapProductAvailabilityModel.forEach { (addressId, listProductAvailabilityModel) ->
                     if (addressId == pharmacyAddressesModel.addressId) {
 
                         listProductAvailabilityModel.forEach { productAvailabilityModel ->
 
                             mutableListNumberProductsModel.forEach { numberProductsModel ->
+
                                 if (numberProductsModel.productId == productAvailabilityModel.productId){
-                                    if (numberProductsModel.numberProducts <= productAvailabilityModel.numberProducts){
-                                        mutableListCurrentNumberProducts.add(numberProductsModel)
-                                    }
+
+                                    Log.d("TAG","addressId = ${productAvailabilityModel.addressId}")
+                                    Log.d("TAG","productId = ${numberProductsModel.productId}")
+                                    Log.d("TAG","productAvailabilityModel.numberProducts = ${productAvailabilityModel.numberProducts}\nnumberProductsModel.numberProducts = ${numberProductsModel.numberProducts}")
+
+                                    val currentAvailableQuantity =  if (
+                                        productAvailabilityModel.numberProducts < numberProductsModel.numberProducts
+                                        ) productAvailabilityModel.numberProducts
+                                    else numberProductsModel.numberProducts
+                                    Log.d("TAG","currentAvailableQuantity = $currentAvailableQuantity")
+                                    mutableListAvailableQuantity.add(currentAvailableQuantity)
                                 }
+
                             }
                         }
 
                     }
                 }
-                val availableQuantity = mutableListCurrentNumberProducts.sumOf { it.numberProducts }
+                val availableQuantity = mutableListAvailableQuantity.sum()
 
                 val currentCity = pharmacyAddressesModel.city.substringAfterLast(' ')
                 if (currentCity == city) {

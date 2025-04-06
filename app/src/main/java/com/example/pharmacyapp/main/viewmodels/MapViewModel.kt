@@ -255,35 +255,46 @@ class MapViewModel(
                     pharmacyAddressesDetailsModel.longitude
                 )
 
+                val mapProductAvailabilityModel = listProductAvailabilityModel.groupBy { it.addressId }
+
                 when(flag){
                     FLAG_ALL_PHARMACIES -> {
                         block(FLAG_IN_STOCK,R.drawable.ic_location,geoPoint,pharmacyAddressesDetailsModel,null,null)
                     }
                     else -> {
-                        val mapProductAvailabilityModel = listProductAvailabilityModel.groupBy { it.addressId }
-
-                        val mutableListCurrentNumberProducts = mutableListOf<NumberProductsModel>()
+                        val mutableListAvailableQuantity = mutableListOf<Int>()
 
                         mapProductAvailabilityModel.forEach { (addressId, listProductAvailabilityModel) ->
                             if (addressId == pharmacyAddressesDetailsModel.pharmacyAddressesModel.addressId) {
 
                                 listProductAvailabilityModel.forEach { productAvailabilityModel ->
+
                                     mutableListNumberProductsModel.forEach { numberProductsModel ->
+
                                         if (numberProductsModel.productId == productAvailabilityModel.productId){
-                                            if (numberProductsModel.numberProducts <= productAvailabilityModel.numberProducts){
-                                                mutableListCurrentNumberProducts.add(numberProductsModel)
-                                            }
+
+                                            Log.d("TAG","addressId = ${productAvailabilityModel.addressId}")
+                                            Log.d("TAG","productId = ${numberProductsModel.productId}")
+                                            Log.d("TAG","productAvailabilityModel.numberProducts = ${productAvailabilityModel.numberProducts}\nnumberProductsModel.numberProducts = ${numberProductsModel.numberProducts}")
+
+                                            val currentAvailableQuantity =  if (
+                                                productAvailabilityModel.numberProducts < numberProductsModel.numberProducts
+                                            ) productAvailabilityModel.numberProducts
+                                            else numberProductsModel.numberProducts
+                                            Log.d("TAG","currentAvailableQuantity = $currentAvailableQuantity")
+                                            mutableListAvailableQuantity.add(currentAvailableQuantity)
                                         }
+
                                     }
                                 }
 
                             }
                         }
-                        val availableQuantity = mutableListCurrentNumberProducts.sumOf { it.numberProducts }
+                        val availableQuantity = mutableListAvailableQuantity.sum()
 
                         val totalNumber = mutableListNumberProductsModel.sumOf { it.numberProducts }
 
-                        val flagStatus = when{
+                        val flagStatus = when {
                             totalNumber == availableQuantity -> FLAG_IN_STOCK
                             availableQuantity in 1..< totalNumber -> FLAG_WARNING
                             availableQuantity == 0 -> FLAG_OUT_OF_STOCK
