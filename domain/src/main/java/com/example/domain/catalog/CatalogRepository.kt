@@ -19,6 +19,8 @@ interface CatalogRepository{
 
     fun getProductAvailabilityByProductIdFlow(productId: Int): Flow<Result>
 
+    fun getProductAvailabilityByAddressIdFlow(addressId: Int, listIdsProducts: List<Int>): Flow<Result>
+
     fun getProductAvailabilityByIdsProductsFlow(listIdsProducts: List<Int>): Flow<Result>
 
     fun getProductAvailabilityFlow(): Flow<Result>

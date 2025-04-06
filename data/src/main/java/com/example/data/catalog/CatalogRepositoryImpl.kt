@@ -302,6 +302,52 @@ class CatalogRepositoryImpl() : CatalogRepository{
     }.flowOn(Dispatchers.IO)
 
     /**
+     * Получение списка наличия товаров в текущей аптеке.
+     * При успешном результате эмитится список наличия товаров о аптеках ( List<[ProductAvailabilityModel]> ).
+     *
+     * Параметры:
+     * [addressId] - идентификатор аптеки из которой будет получен список наличия товаров;
+     * [listIdsProducts] - список идентификаторов товаров.
+     */
+    override fun getProductAvailabilityByAddressIdFlow(
+        addressId: Int,
+        listIdsProducts: List<Int>
+    ): Flow<Result> = flow {
+        try {
+            catalogRepositoryDataSourceRemoteImpl.getProductAvailabilityByAddressIdFlow(
+                addressId = addressId,
+                listIdsProducts = listIdsProducts
+            ).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
+
+                if (response != null) {
+                    val _listProductAvailabilityDataSourceModel = response.value as List<*>
+                    val listProductAvailabilityDataSourceModel = _listProductAvailabilityDataSourceModel.map { it as ProductAvailabilityDataSourceModel }
+                    val listProductAvailabilityModel = listProductAvailabilityDataSourceModel.toListProductAvailabilityModel()
+
+                    val data = ResponseValueModel(
+                        value = listProductAvailabilityModel,
+                        responseModel = response.responseDataSourceModel.toResponseModel()
+                    )
+
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
      * Получение списка наличия товаров по списку идентификаторов.
      * При успешном результате эмитится список наличия товаров о аптеках ( List<[ProductAvailabilityModel]> ).
      *

@@ -2,6 +2,7 @@ package com.example.data.catalog.datasource.remote
 
 import android.util.Log
 import com.example.data.ResultDataSource
+import com.example.data.catalog.datasource.models.AddressIdAndIdsProductsDataSourceModel
 import com.example.data.catalog.datasource.models.IdsProductsDataSourceModel
 import com.example.data.catalog.datasource.models.OperatingModeDataSourceModel
 import com.example.data.catalog.datasource.models.PharmacyAddressesDataSourceModel
@@ -251,6 +252,45 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote{
                 emit(result)
             }
             else {
+                emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.responseDataSourceModel.message)))
+            }
+        }
+        catch (e: Exception){
+            emit(ResultDataSource.Error(exception = e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Получение списка наличия товаров в текущей аптеке.
+     *
+     * Параметры:
+     * [addressId] - идентификатор аптеки из которой будет получен список наличия товаров;
+     * [listIdsProducts] - список идентификаторов товаров.
+     */
+    override fun getProductAvailabilityByAddressIdFlow(
+        addressId: Int,
+        listIdsProducts: List<Int>
+    ): Flow<ResultDataSource> = flow{
+        Log.d("TAG", "getProductAvailabilityByAddressIdFlow")
+        try {
+            val response = client.request {
+                url(GET_PRODUCT_AVAILABILITY_BY_ADDRESS_ID)
+                method = HttpMethod.Post
+                Log.d("TAG", "AddressIdAndIdsProductsDataSourceModel ${   AddressIdAndIdsProductsDataSourceModel(addressId = addressId, listIdsProducts = listIdsProducts)}")
+                setBody(AddressIdAndIdsProductsDataSourceModel(addressId = addressId, listIdsProducts = listIdsProducts))
+                contentType(type = ContentType.Application.Json)
+            }
+
+            val data = response.body<ResponseValueDataSourceModel<List<ProductAvailabilityDataSourceModel>>>()
+
+            if (
+                data.responseDataSourceModel.status in 200..299 &&
+                data.value != null
+            ){
+                val result = ResultDataSource.Success(data = data)
+                emit(result)
+            }
+            else{
                 emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.responseDataSourceModel.message)))
             }
         }
