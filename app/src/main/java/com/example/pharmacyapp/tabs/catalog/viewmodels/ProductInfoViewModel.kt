@@ -1,7 +1,6 @@
 package com.example.pharmacyapp.tabs.catalog.viewmodels
 
 import android.util.Log
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.basket.BasketRepositoryImpl
@@ -12,11 +11,15 @@ import com.example.domain.Network
 import com.example.domain.Result
 import com.example.domain.basket.usecases.AddProductInBasketUseCase
 import com.example.domain.basket.usecases.DeleteProductFromBasketUseCase
+import com.example.domain.basket.usecases.GetIdsProductsFromBasketUseCase
 import com.example.domain.catalog.models.ProductAvailabilityModel
 import com.example.domain.catalog.models.ProductModel
+import com.example.domain.catalog.usecases.GetProductAvailabilityByProductIdUseCase
+import com.example.domain.catalog.usecases.GetProductByIdUseCase
 import com.example.domain.favorite.models.FavoriteModel
 import com.example.domain.favorite.usecases.AddFavoriteUseCase
 import com.example.domain.favorite.usecases.DeleteByIdUseCase
+import com.example.domain.favorite.usecases.GetAllFavoritesUseCase
 import com.example.domain.models.ButtonModel
 import com.example.domain.models.CurrentButtonModel
 import com.example.domain.models.ProductInfoModel
@@ -124,29 +127,48 @@ class ProductInfoViewModel(
 
                     onLoading()
 
+                    val getProductByIdUseCase = GetProductByIdUseCase(
+                        catalogRepository = catalogRepositoryImpl,
+                        productId = productId
+                    )
+
+                    val getProductAvailabilityByProductId = GetProductAvailabilityByProductIdUseCase(
+                        catalogRepository = catalogRepositoryImpl,
+                        productId = productId
+                    )
+
+                    val getIdsProductsFromBasket = GetIdsProductsFromBasketUseCase(
+                        basketRepository = basketRepositoryImpl,
+                        userId = userId
+                    )
+
+                    val getAllFavoritesUseCase = GetAllFavoritesUseCase(
+                        favoriteRepository = favoriteRepositoryImpl
+                    )
+
                     viewModelScope.launch {
-                        val resultGetProductById = catalogRepositoryImpl.getProductByIdFlow(productId = productId).map { result ->
+                        val resultGetProductById = getProductByIdUseCase.execute().map { result ->
                             return@map RequestModel(
                                 type = TYPE_GET_PRODUCT_BY_ID,
                                 result = result
                             )
                         }
 
-                        val resultGetProductAvailabilityByProductId = catalogRepositoryImpl.getProductAvailabilityByProductIdFlow(productId = productId).map { result ->
+                        val resultGetProductAvailabilityByProductId = getProductAvailabilityByProductId.execute().map { result ->
                             return@map RequestModel(
                                 type = TYPE_GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID,
                                 result = result
                             )
                         }
 
-                        val resultGetIdsProductsFromBasket = basketRepositoryImpl.getIdsProductsFromBasketFlow(userId = userId).map { result ->
+                        val resultGetIdsProductsFromBasket = getIdsProductsFromBasket.execute().map { result ->
                             return@map RequestModel(
                                 type = TYPE_GET_IDS_PRODUCTS_FROM_BASKET,
                                 result = result
                             )
                         }
 
-                        val resultGetAllFavorites = favoriteRepositoryImpl.getAllFavoritesFlow().map { result ->
+                        val resultGetAllFavorites = getAllFavoritesUseCase.execute().map { result ->
                             return@map RequestModel(
                                 type = TYPE_GET_ALL_FAVORITES,
                                 result = result
