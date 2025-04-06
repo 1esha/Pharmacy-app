@@ -11,7 +11,16 @@
         android:label="fragment_basket"
         tools:layout="@layout/fragment_basket" >
         <action
-            android:id="@+id/action_basketFragment_to_orderMakingFragment"
+            android:id="@+id/action_basketFragment_to_chooseAddressForOrderMakingFragment"
+            app:destination="@id/chooseAddressForOrderMakingFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/chooseAddressForOrderMakingFragment"
+        android:name="com.example.pharmacyapp.tabs.basket.ChooseAddressForOrderMakingFragment"
+        android:label="fragment_choose_address_for_order_making"
+        tools:layout="@layout/fragment_choose_address_for_order_making" >
+        <action
+            android:id="@+id/action_chooseAddressForOrderMakingFragment_to_orderMakingFragment"
             app:destination="@id/orderMakingFragment" />
     </fragment>
     <fragment

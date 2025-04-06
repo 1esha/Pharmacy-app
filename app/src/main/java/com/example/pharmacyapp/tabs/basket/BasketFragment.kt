@@ -166,7 +166,7 @@ class BasketFragment : Fragment(), ResultProcessing {
                     putIntegerArrayList(KEY_ARRAY_LIST_IDS_PRODUCTS_FOR_MAP,arrayListIdsSelectedBasketModel)
                     putIntegerArrayList(KEY_ARRAY_LIST_NUMBER_PRODUCTS_FOR_MAP,arrayListNumberProductsSelectedBasketModels)
                 }
-                navControllerBasket.navigate(R.id.action_basketFragment_to_orderMakingFragment, bundle)
+                navControllerBasket.navigate(R.id.action_basketFragment_to_chooseAddressForOrderMakingFragment, bundle)
             }
         }
     }

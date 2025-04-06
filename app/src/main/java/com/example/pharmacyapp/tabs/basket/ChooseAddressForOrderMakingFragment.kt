@@ -264,8 +264,8 @@ class ChooseAddressForOrderMakingFragment() : Fragment(), ResultProcessing {
                 onClick = ::chooseAddress
             )
 
-            rvOrderMaking.adapter = chooseAddressForOrderMakingAdapter
-            rvOrderMaking.layoutManager = LinearLayoutManager(requireContext())
+            rvChooseAddressForOrderMaking.adapter = chooseAddressForOrderMakingAdapter
+            rvChooseAddressForOrderMaking.layoutManager = LinearLayoutManager(requireContext())
         }
 
     }
@@ -273,6 +273,7 @@ class ChooseAddressForOrderMakingFragment() : Fragment(), ResultProcessing {
     fun chooseAddress(addressId: Int){
         chooseAddressForOrderMakingViewModel.chooseAddress { arrayListIdsSelectedBasketModels, arrayListNumberProductsSelectedBasketModels ->
 
+    fun chooseAddress(availabilityProductsForOrderMakingModel: AvailabilityProductsForOrderMakingModel){
         }
     }
 

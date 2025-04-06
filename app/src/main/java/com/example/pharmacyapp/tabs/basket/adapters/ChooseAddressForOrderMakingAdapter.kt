@@ -13,21 +13,21 @@ class ChooseAddressForOrderMakingAdapter(
     private val listAvailabilityProductsForOrderMakingModel: List<AvailabilityProductsForOrderMakingModel>,
     private val totalNumber: Int,
     private val availabilityInPharmacyModel: AvailabilityInPharmacyModel,
-    private val onClick: (Int) -> Unit
-): Adapter<ChooseAddressForOrderMakingAdapter.OrderMakingHolder>() {
+    private val onClick: (AvailabilityProductsForOrderMakingModel) -> Unit
+): Adapter<ChooseAddressForOrderMakingAdapter.ChooseAddressForOrderMakingHolder>() {
 
-    class OrderMakingHolder(val binding: ItemAddressForOrderMakingBinding): ViewHolder(binding.root)
+    class ChooseAddressForOrderMakingHolder(val binding: ItemAddressForOrderMakingBinding): ViewHolder(binding.root)
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OrderMakingHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ChooseAddressForOrderMakingHolder {
         val inflater = LayoutInflater.from(parent.context)
         val binding = ItemAddressForOrderMakingBinding.inflate(inflater,parent,false)
 
-        return OrderMakingHolder(binding)
+        return ChooseAddressForOrderMakingHolder(binding)
     }
 
     override fun getItemCount(): Int = listAvailabilityProductsForOrderMakingModel.size
 
-    override fun onBindViewHolder(holder: OrderMakingHolder, position: Int) = with(holder.binding) {
+    override fun onBindViewHolder(holder: ChooseAddressForOrderMakingHolder, position: Int) = with(holder.binding) {
         val item = listAvailabilityProductsForOrderMakingModel[position]
 
         tvAddressPharmacyForOrderMaking.text = item.address
@@ -59,7 +59,7 @@ class ChooseAddressForOrderMakingAdapter(
         }
 
         bChooseAddressForOrderMaking.setOnClickListener {
-            onClick(item.addressId)
+            onClick(item)
         }
     }
 }
