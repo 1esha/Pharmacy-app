@@ -1,6 +1,7 @@
 package com.example.data.basket.datasource
 
 import com.example.data.ResultDataSource
+import com.example.data.basket.datasource.models.NumberProductsDataSourceModel
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -19,4 +20,6 @@ interface BasketRepositoryDataSourceRemote{
     fun deleteProductsFromBasketFlow(userId: Int, listIdsProducts: List<Int>): Flow<ResultDataSource>
 
     fun updateNumberProductsInBasketFlow(userId: Int, productId: Int, numberProducts: Int): Flow<ResultDataSource>
+
+    fun updateNumbersProductsInBasketFlow(userId: Int, listNumberProductsDataSourceModel: List<NumberProductsDataSourceModel>): Flow<ResultDataSource>
 }

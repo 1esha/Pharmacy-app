@@ -1,6 +1,7 @@
 package com.example.domain.basket
 
 import com.example.domain.Result
+import com.example.domain.models.NumberProductsModel
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -19,4 +20,6 @@ interface BasketRepository {
     fun deleteProductsFromBasketFlow(userId: Int, listIdsProducts: List<Int>): Flow<Result>
 
     fun updateNumberProductsInBasketFlow(userId: Int, productId: Int, numberProducts: Int): Flow<Result>
+
+    fun updateNumbersProductsInBasketFlow(userId: Int, listNumberProductsModel: List<NumberProductsModel>): Flow<Result>
 }

@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.data.ResultDataSource
 import com.example.data.basket.datasource.models.BasketDataSourceModel
 import com.example.data.basket.datasource.models.DeleteProductsFromBasketDataSourceModel
+import com.example.data.basket.datasource.models.NumberProductsDataSourceModel
 import com.example.data.profile.datasource.models.ResponseDataSourceModel
 import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
 import com.example.domain.ServerException
@@ -253,7 +254,7 @@ class BasketRepositoryDataSourceRemoteImpl: BasketRepositoryDataSourceRemote {
         productId: Int,
         numberProducts: Int
     ): Flow<ResultDataSource> = flow {
-        Log.d("TAG", "deleteProductFromBasketFlow")
+        Log.d("TAG", "updateNumberProductsInBasketFlow")
         try {
             val response = client.request {
                 url(UPDATE_NUMBER_PRODUCTS_IN_BASKET)
@@ -261,6 +262,46 @@ class BasketRepositoryDataSourceRemoteImpl: BasketRepositoryDataSourceRemote {
                 parameter("product_id",productId)
                 parameter("number_products",numberProducts)
                 method = HttpMethod.Get
+            }
+
+            val data = response.body<ResponseDataSourceModel>()
+
+            if (data.status in 200..299){
+                val result = ResultDataSource.Success(data = data)
+                emit(result)
+            }
+            else{
+                emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.message)))
+            }
+        }
+        catch (e: Exception){
+            emit(ResultDataSource.Error(exception = e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Обновление количества товаров в корзине.
+     *
+     * Параметры:
+     * [userId] - идентификатор пользователя;
+     * [listNumberProductsDataSourceModel] - список с новым количеством товаров.
+     */
+    override fun updateNumbersProductsInBasketFlow(
+        userId: Int,
+        listNumberProductsDataSourceModel: List<NumberProductsDataSourceModel>
+    ): Flow<ResultDataSource> = flow {
+        Log.d("TAG", "updateNumbersProductsInBasketFlow")
+        try {
+            val response = client.request {
+                url(UPDATE_NUMBERS_PRODUCTS_IN_BASKET)
+                method = HttpMethod.Post
+                setBody(
+                    object {
+                        val userId = userId
+                        val listNumberProducts = listNumberProductsDataSourceModel
+                    }
+                )
+                contentType(ContentType.Application.Json)
             }
 
             val data = response.body<ResponseDataSourceModel>()
@@ -287,5 +328,6 @@ class BasketRepositoryDataSourceRemoteImpl: BasketRepositoryDataSourceRemote {
         private const val GET_IDS_PRODUCTS_FROM_BASKET = "/basket/user/products_id"
         private const val GET_PRODUCTS_FROM_BASKET = "/basket/user"
         private const val UPDATE_NUMBER_PRODUCTS_IN_BASKET = "/basket/update"
+        private const val UPDATE_NUMBERS_PRODUCTS_IN_BASKET = "/basket/update/products"
     }
 }

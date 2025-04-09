@@ -7,11 +7,13 @@ import com.example.data.basket.datasource.BasketRepositoryDataSourceRemoteImpl
 import com.example.data.basket.datasource.models.BasketDataSourceModel
 import com.example.data.profile.datasource.models.ResponseDataSourceModel
 import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
+import com.example.data.toListNumberProductsDataSourceModel
 import com.example.data.toProductModel
 import com.example.data.toResponseModel
 import com.example.domain.Result
 import com.example.domain.basket.BasketRepository
 import com.example.domain.basket.models.BasketModel
+import com.example.domain.models.NumberProductsModel
 import com.example.domain.profile.models.ResponseValueModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -65,7 +67,7 @@ class BasketRepositoryImpl: BasketRepository {
         catch (e: Exception){
             Log.e("TAG",e.stackTraceToString())
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
     /**
      * Удаление товара из коризины.
@@ -104,7 +106,7 @@ class BasketRepositoryImpl: BasketRepository {
         catch (e: Exception){
             Log.e("TAG",e.stackTraceToString())
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
     /**
      * Получение списка товаров из корзины пользователя.
@@ -186,7 +188,7 @@ class BasketRepositoryImpl: BasketRepository {
         catch (e: Exception){
             Log.e("TAG",e.stackTraceToString())
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
     /**
      * Удаление нескольких товаров из коризины.
@@ -223,7 +225,7 @@ class BasketRepositoryImpl: BasketRepository {
         catch (e: Exception){
             Log.e("TAG",e.stackTraceToString())
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
     /**
      * Обновление количество товара в корзине.
@@ -265,7 +267,47 @@ class BasketRepositoryImpl: BasketRepository {
         catch (e: Exception){
             Log.e("TAG",e.stackTraceToString())
         }
-    }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Обновление количества товаров в корзине.
+     * При успешном результате эмитится успешный ответ (объект типа [ResponseModel]).
+     *
+     * Параметры:
+     * [userId] - идентификатор пользователя;
+     * [listNumberProductsModel] - список с новым количеством товаров.
+     */
+    override fun updateNumbersProductsInBasketFlow(
+        userId: Int,
+        listNumberProductsModel: List<NumberProductsModel>
+    ): Flow<Result> = flow{
+        try {
+            val listNumberProductsDataSourceModel = listNumberProductsModel.toListNumberProductsDataSourceModel()
+            basketRepositoryDataSourceRemoteImpl.updateNumbersProductsInBasketFlow(
+                userId = userId,
+                listNumberProductsDataSourceModel = listNumberProductsDataSourceModel
+            ).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseDataSourceModel?
+
+                if (response != null) {
+                    val data = response.toResponseModel()
+
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
 
     /**
      * Преобразование [BasketDataSourceModel] в [BasketModel].
@@ -289,4 +331,5 @@ class BasketRepositoryImpl: BasketRepository {
 
         return mutableListBasket
     }
+
 }
