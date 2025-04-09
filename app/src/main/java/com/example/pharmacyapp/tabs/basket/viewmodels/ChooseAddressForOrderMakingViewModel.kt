@@ -21,6 +21,7 @@ import com.example.pharmacyapp.TYPE_GET_CITY_BY_USER_ID
 import com.example.pharmacyapp.TYPE_GET_PHARMACY_ADDRESSES
 import com.example.pharmacyapp.TYPE_GET_PRODUCT_AVAILABILITY_BY_IDS_PRODUCTS
 import com.example.pharmacyapp.UNAUTHORIZED_USER
+import com.example.pharmacyapp.toArrayListInt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,11 +48,9 @@ class ChooseAddressForOrderMakingViewModel(
 
     private var city: String? = null
 
-    private var arrayListIdsSelectedBasketModels: ArrayList<Int>? = null
-
-    private var arrayListNumberProductsSelectedBasketModels: ArrayList<Int>? = null
-
     private val mutableListNumberProductsModel = mutableListOf<NumberProductsModel>()
+
+    private var mutableListAllAvailabilityProductsForOrderMakingModel = mutableListOf<AvailabilityProductsForOrderMakingModel>()
 
     private var isInit = true
 
@@ -67,8 +66,9 @@ class ChooseAddressForOrderMakingViewModel(
         try {
             if (isInit){
                 this.userId = userId
-                this.arrayListIdsSelectedBasketModels = arrayListIdsSelectedBasketModels!!
-                this.arrayListNumberProductsSelectedBasketModels = arrayListNumberProductsSelectedBasketModels!!
+
+                arrayListIdsSelectedBasketModels!!
+                arrayListNumberProductsSelectedBasketModels!!
 
                 for (i in 0..< arrayListIdsSelectedBasketModels.size){
                     val productId = arrayListIdsSelectedBasketModels[i]
@@ -95,9 +95,11 @@ class ChooseAddressForOrderMakingViewModel(
                 connectionListener = {
                     onLoading()
 
+                    val listIdsProducts = mutableListNumberProductsModel.map { it.productId }
+
                     val getProductAvailabilityUseCase = GetProductAvailabilityByIdsProductsUseCase(
                         catalogRepository = catalogRepositoryImpl,
-                        listIdsProducts = arrayListIdsSelectedBasketModels?: arrayListOf()
+                        listIdsProducts = listIdsProducts
                     )
 
                     val getPharmacyAddressesUseCase = GetPharmacyAddressesUseCase(
@@ -173,6 +175,10 @@ class ChooseAddressForOrderMakingViewModel(
         _stateScreen.value = Result.Loading()
     }
 
+    fun onSuccess(){
+        _stateScreen.value = Result.Success(data = null)
+    }
+
     fun onDisconnect(){
         _stateScreen.value = Result.Error(exception = DisconnectionException())
     }
@@ -192,8 +198,6 @@ class ChooseAddressForOrderMakingViewModel(
 
             this.listProductAvailabilityModel = listProductAvailabilityModel
             this.city = city
-
-            val mutableListAvailabilityProductsForOrderMakingModel = mutableListOf<AvailabilityProductsForOrderMakingModel>()
 
             val mapProductAvailabilityModel = listProductAvailabilityModel.groupBy { it.addressId }
 
@@ -229,18 +233,18 @@ class ChooseAddressForOrderMakingViewModel(
                 }
                 val availableQuantity = mutableListAvailableQuantity.sum()
 
-                val currentCity = pharmacyAddressesModel.city.substringAfterLast(' ')
-                if (currentCity == city) {
-                    mutableListAvailabilityProductsForOrderMakingModel.add(AvailabilityProductsForOrderMakingModel(
-                        addressId = pharmacyAddressesModel.addressId,
-                        address = pharmacyAddressesModel.address,
-                        city = pharmacyAddressesModel.city,
-                        availableQuantity = availableQuantity
-                    ))
-                }
+                mutableListAllAvailabilityProductsForOrderMakingModel.add(AvailabilityProductsForOrderMakingModel(
+                    addressId = pharmacyAddressesModel.addressId,
+                    address = pharmacyAddressesModel.address,
+                    city = pharmacyAddressesModel.city,
+                    availableQuantity = availableQuantity
+                   )
+                )
             }
 
-            _listAvailabilityProductsForOrderMakingModel.value = mutableListAvailabilityProductsForOrderMakingModel
+            _listAvailabilityProductsForOrderMakingModel.value = mutableListAllAvailabilityProductsForOrderMakingModel.filter {
+                it.city.substringAfterLast(' ') == city
+            }
 
         }
         isShownFillData = false
@@ -252,11 +256,27 @@ class ChooseAddressForOrderMakingViewModel(
 
     fun navigateOnMap(navigate: (String,ArrayList<Int>,ArrayList<Int>) -> Unit){
         try {
+            val arrayListIdsSelectedBasketModels = mutableListNumberProductsModel.map { it.productId }.toArrayListInt()
+            val arrayListNumberProductsSelectedBasketModels = mutableListNumberProductsModel.map { it.numberProducts }.toArrayListInt()
             navigate(
                 FLAG_SELECT_ADDRESS_FOR_ORDER_MAKING,
-                arrayListIdsSelectedBasketModels!!,
-                arrayListNumberProductsSelectedBasketModels!!
+                arrayListIdsSelectedBasketModels,
+                arrayListNumberProductsSelectedBasketModels
             )
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+            _stateScreen.value = Result.Error(exception = e)
+        }
+    }
+
+    fun listenResultFromMap(addressId: Int, block: (AvailabilityProductsForOrderMakingModel) -> Unit){
+        try {
+            onLoading()
+
+            val availabilityProductsForOrderMakingModel = mutableListAllAvailabilityProductsForOrderMakingModel.find { it.addressId == addressId }
+            block(availabilityProductsForOrderMakingModel!!)
+
         }
         catch (e: Exception){
             Log.e("TAG",e.stackTraceToString())
@@ -266,7 +286,9 @@ class ChooseAddressForOrderMakingViewModel(
 
     fun chooseAddress(block: (ArrayList<Int>,ArrayList<Int>) -> Unit){
         try {
-            block(arrayListIdsSelectedBasketModels!!,arrayListNumberProductsSelectedBasketModels!!)
+            val arrayListIdsSelectedBasketModels = mutableListNumberProductsModel.map { it.productId }.toArrayListInt()
+            val arrayListNumberProductsSelectedBasketModels = mutableListNumberProductsModel.map { it.numberProducts }.toArrayListInt()
+            block(arrayListIdsSelectedBasketModels,arrayListNumberProductsSelectedBasketModels)
         }
         catch (e: Exception){
             Log.e("TAG",e.stackTraceToString())

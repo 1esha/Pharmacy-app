@@ -13,6 +13,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import com.example.domain.Result
 import com.example.domain.asSuccess
 import com.example.domain.catalog.models.PharmacyAddressesDetailsModel
@@ -40,6 +41,7 @@ import com.example.pharmacyapp.getErrorMessage
 import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.MapViewModel
 import com.example.pharmacyapp.main.viewmodels.factories.MapViewModelFactory
+import com.example.pharmacyapp.tabs.basket.ChooseAddressForOrderMakingFragment
 import kotlinx.coroutines.launch
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -72,6 +74,11 @@ class MapFragment : Fragment() {
         with(mapViewModel){
 
             sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
+
+            getSupportActivity().setFragmentResultListener(KEY_RESULT_FROM_PHARMACY_DETAILS) { _, bundle ->
+                getSupportActivity().setFragmentResult(ChooseAddressForOrderMakingFragment.KEY_RESULT_FROM_MAP,bundle)
+                findNavController().navigateUp()
+            }
 
             initValues(
                 userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER),
@@ -335,5 +342,9 @@ class MapFragment : Fragment() {
 
             pharmacyDetailsBottomSheetDialogFragment.show(parentFragmentManager, TAG_PHARMACY_DETAILS_BOTTOM_SHEET)
         }
+    }
+
+    companion object {
+        const val KEY_RESULT_FROM_PHARMACY_DETAILS = "KEY_RESULT_FROM_PHARMACY_DETAILS"
     }
 }

@@ -11,7 +11,9 @@ import coil.load
 import com.example.domain.catalog.models.PharmacyAddressesDetailsModel
 import com.example.pharmacyapp.KEY_FLAGS_FOR_MAP
 import com.example.pharmacyapp.databinding.FragmentPharmacyDetailsBottomSheetDialogBinding
+import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.PharmacyDetailsBottomSheetViewModel
+import com.example.pharmacyapp.tabs.basket.OrderMakingFragment
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 /**
@@ -73,6 +75,16 @@ class PharmacyDetailsBottomSheetDialogFragment : BottomSheetDialogFragment() {
         }
 
         installUI()
+
+        bChooseAddressOnMap.setOnClickListener {
+            pharmacyDetailsBottomSheetViewModel.chooseAddress { addressId ->
+                val bundle = Bundle().apply {
+                    putInt(OrderMakingFragment.KEY_CURRENT_ADDRESS_ID,addressId)
+                }
+                getSupportActivity().setFragmentResult(MapFragment.KEY_RESULT_FROM_PHARMACY_DETAILS,bundle)
+                dismiss()
+            }
+        }
     }
 
     override fun onDestroyView() {

@@ -47,6 +47,7 @@ import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 import com.example.pharmacyapp.tabs.basket.adapters.ChooseAddressForOrderMakingAdapter
 import com.example.pharmacyapp.tabs.basket.viewmodels.ChooseAddressForOrderMakingViewModel
 import com.example.pharmacyapp.tabs.basket.viewmodels.factories.ChooseAddressForOrderMakingViewModelFactory
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class ChooseAddressForOrderMakingFragment() : Fragment(), ResultProcessing {
@@ -74,6 +75,17 @@ class ChooseAddressForOrderMakingFragment() : Fragment(), ResultProcessing {
         super.onCreate(savedInstanceState)
 
         sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
+
+        getSupportActivity().setFragmentResultListener(KEY_RESULT_FROM_MAP) { _, bundle ->
+            val addressId = bundle.getInt(OrderMakingFragment.KEY_CURRENT_ADDRESS_ID)
+            chooseAddressForOrderMakingViewModel.listenResultFromMap(addressId = addressId) { availabilityProductsForOrderMakingModel ->
+
+                checkIsStateSaved {
+                    chooseAddress(availabilityProductsForOrderMakingModel = availabilityProductsForOrderMakingModel)
+                }
+
+            }
+        }
 
         chooseAddressForOrderMakingViewModel.initValues(
             userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER),
@@ -128,7 +140,8 @@ class ChooseAddressForOrderMakingFragment() : Fragment(), ResultProcessing {
 
         toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(
             title = getString(R.string.making_an_order),
-            icon = R.drawable.ic_back
+            icon = R.drawable.ic_back,
+            subTitle = getString(R.string.step_of, 1, 2)
         ){
             navControllerBasket.navigateUp()
         })
@@ -159,6 +172,10 @@ class ChooseAddressForOrderMakingFragment() : Fragment(), ResultProcessing {
 
     override fun <T> onSuccessResultListener(data: T) {
         try {
+            if (data == null){
+                updateUI(flag = FLAG_SUCCESS_RESULT)
+                return
+            }
             Log.i("TAG","onSuccessResultListener")
             val _listRequests = data as List<*>
             val listRequests = _listRequests.map { request ->
@@ -270,11 +287,39 @@ class ChooseAddressForOrderMakingFragment() : Fragment(), ResultProcessing {
 
     }
 
-    fun chooseAddress(addressId: Int){
-        chooseAddressForOrderMakingViewModel.chooseAddress { arrayListIdsSelectedBasketModels, arrayListNumberProductsSelectedBasketModels ->
-
     fun chooseAddress(availabilityProductsForOrderMakingModel: AvailabilityProductsForOrderMakingModel){
+        chooseAddressForOrderMakingViewModel.chooseAddress { arrayListIdsProducts, arrayListNumberProducts ->
+            with(OrderMakingFragment){
+                val addressId = availabilityProductsForOrderMakingModel.addressId
+                val city = availabilityProductsForOrderMakingModel.city
+                val address = availabilityProductsForOrderMakingModel.address
+                val bundle = Bundle().apply {
+                    putInt(KEY_CURRENT_ADDRESS_ID,addressId)
+                    putString(KEY_CURRENT_CITY,city)
+                    putString(KEY_CURRENT_ADDRESS,address)
+                    putIntegerArrayList(KEY_ARRAY_LIST_IDS_PRODUCTS_FOR_ORDER_MAKING,arrayListIdsProducts)
+                    putIntegerArrayList(KEY_ARRAY_LIST_NUMBER_PRODUCTS_FOR_ORDER_MAKING,arrayListNumberProducts)
+                }
+                navControllerBasket.navigate(R.id.action_chooseAddressForOrderMakingFragment_to_orderMakingFragment, bundle)
+            }
         }
+    }
+
+    private fun checkIsStateSaved(block: () -> Unit){
+        lifecycleScope.launch {
+            if (!isStateSaved()) {
+                block()
+                chooseAddressForOrderMakingViewModel.onSuccess()
+            }
+            else{
+                delay(100)
+                checkIsStateSaved(block = block)
+            }
+        }
+    }
+
+    companion object {
+        const val KEY_RESULT_FROM_MAP = "KEY_RESULT_FROM_MAP"
     }
 
 }

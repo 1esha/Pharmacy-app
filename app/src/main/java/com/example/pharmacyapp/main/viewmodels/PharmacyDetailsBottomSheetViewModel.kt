@@ -94,6 +94,15 @@ class PharmacyDetailsBottomSheetViewModel: ViewModel() {
         }
     }
 
+    fun chooseAddress(block: (Int) -> Unit){
+        try {
+            block(pharmacyAddressesDetails!!.pharmacyAddressesModel.addressId)
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }
+
     /**
      * Заполнение режима работы, выбранной аптеки.
      *
