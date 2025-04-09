@@ -200,4 +200,6 @@
     <string name="the_missing_items_will_remain_in_the_shopping_cart_and_you_can_order_them_at_another_address">The missing items will remain in the shopping cart, and you can order them at another address.</string>
     <string name="out_of_products_are_available">Products are available %1$d out %2$d</string>
     <string name="step_of">Step %1$d of %2$d</string>
+    <string name="the_order_has_been_successfully_booked">The order has been successfully booked!</string>
+    <string name="to_the_main_screen">To the main screen</string>
 </resources>

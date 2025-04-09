@@ -311,7 +311,7 @@ class OrderMakingFragment: Fragment(), ResultProcessing {
     }
 
     private fun navigateToReadyOrder(){
-
+        navControllerMain.navigate(R.id.readyOrderFragment)
     }
 
     companion object {

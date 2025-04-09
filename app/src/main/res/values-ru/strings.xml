@@ -199,4 +199,6 @@
     <string name="the_missing_items_will_remain_in_the_shopping_cart_and_you_can_order_them_at_another_address">Недостающие товары останутся в корзине, и вы сможете заказать их по другому адресу.</string>
     <string name="out_of_products_are_available">В наличии %1$d из %2$d товаров</string>
     <string name="step_of">Шаг %1$d из %2$d</string>
+    <string name="the_order_has_been_successfully_booked">Заказ успешно забронирован!</string>
+    <string name="to_the_main_screen">На главный экран</string>
 </resources>

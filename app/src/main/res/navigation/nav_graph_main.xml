@@ -48,4 +48,8 @@
         android:id="@+id/mapFragment"
         android:name="com.example.pharmacyapp.main.MapFragment"
         android:label="MapFragment" />
+    <fragment
+        android:id="@+id/readyOrderFragment"
+        android:name="com.example.pharmacyapp.main.ReadyOrderFragment"
+        android:label="ReadyOrderFragment" />
 </navigation>
