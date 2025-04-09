@@ -25,7 +25,6 @@
     </fragment>
     <fragment
         android:id="@+id/orderMakingFragment"
-        android:name="com.example.pharmacyapp.tabs.basket.ChooseAddressForOrderMakingFragment"
-        android:label="fragment_order_making"
-        tools:layout="@layout/fragment_order_making" />
+        android:name="com.example.pharmacyapp.tabs.basket.OrderMakingFragment"
+        android:label="OrderMakingFragment" />
 </navigation>

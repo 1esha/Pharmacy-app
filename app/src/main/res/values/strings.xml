@@ -191,4 +191,13 @@
     <string name="delete_selected_ones">Delete selected ones</string>
     <string name="increase_the_quantity_of_goods_by_one">Increase the quantity of goods by one</string>
     <string name="reduce_the_number_of_items_by_one">Reduce the number of items by one</string>
+    <string name="pcs">pcs.</string>
+    <string name="number_of_products">Number of products</string>
+    <string name="order_amount">Order amount</string>
+    <string name="club_discount">Club discount</string>
+    <string name="total">Total</string>
+    <string name="your_order">Your order</string>
+    <string name="the_missing_items_will_remain_in_the_shopping_cart_and_you_can_order_them_at_another_address">The missing items will remain in the shopping cart, and you can order them at another address.</string>
+    <string name="out_of_products_are_available">Products are available %1$d out %2$d</string>
+    <string name="step_of">Step %1$d of %2$d</string>
 </resources>
