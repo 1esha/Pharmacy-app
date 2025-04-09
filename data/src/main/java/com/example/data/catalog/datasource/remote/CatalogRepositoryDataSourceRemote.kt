@@ -1,6 +1,7 @@
 package com.example.data.catalog.datasource.remote
 
 import com.example.data.ResultDataSource
+import com.example.data.basket.datasource.models.NumberProductsDataSourceModel
 import kotlinx.coroutines.flow.Flow
 
 interface CatalogRepositoryDataSourceRemote {
@@ -28,4 +29,6 @@ interface CatalogRepositoryDataSourceRemote {
     fun getProductAvailabilityFlow(): Flow<ResultDataSource>
 
     fun getOperatingModeFlow(): Flow<ResultDataSource>
+
+    fun updateNumbersProductsInPharmacyFlow(addressId: Int, listNumberProductsDataSourceModel: List<NumberProductsDataSourceModel>): Flow<ResultDataSource>
 }

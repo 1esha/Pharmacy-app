@@ -1,5 +1,6 @@
 package com.example.data
 
+import com.example.data.basket.datasource.models.NumberProductsDataSourceModel
 import com.example.data.catalog.datasource.models.OperatingModeDataSourceModel
 import com.example.data.favorite.datasource.entity.FavoriteEntity
 import com.example.data.catalog.datasource.models.PharmacyAddressesDataSourceModel
@@ -15,6 +16,7 @@ import com.example.domain.favorite.models.FavoriteModel
 import com.example.domain.catalog.models.ProductAvailabilityModel
 import com.example.domain.catalog.models.ProductModel
 import com.example.domain.catalog.models.PharmacyAddressesModel
+import com.example.domain.models.NumberProductsModel
 import com.example.domain.models.OperatingModeModel
 import com.example.domain.profile.models.LogInModel
 import com.example.domain.profile.models.ResponseModel
@@ -34,6 +36,25 @@ fun ResponseDataSourceModel.toResponseModel():ResponseModel{
     return ResponseModel(
         message = this.message,
         status = this.status
+    )
+}
+
+fun List<NumberProductsModel>.toListNumberProductsDataSourceModel(): List<NumberProductsDataSourceModel> {
+    val mutableListNumberProductsDataSourceModel = mutableListOf<NumberProductsDataSourceModel>()
+
+    this.forEach {
+        mutableListNumberProductsDataSourceModel.add(
+            it.toNumberProductsDataSourceModel()
+        )
+    }
+
+    return mutableListNumberProductsDataSourceModel
+}
+
+private fun NumberProductsModel.toNumberProductsDataSourceModel(): NumberProductsDataSourceModel {
+    return NumberProductsDataSourceModel(
+        productId = this.productId,
+        numberProducts = this.numberProducts
     )
 }
 

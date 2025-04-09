@@ -2,6 +2,7 @@ package com.example.data.catalog.datasource.remote
 
 import android.util.Log
 import com.example.data.ResultDataSource
+import com.example.data.basket.datasource.models.NumberProductsDataSourceModel
 import com.example.data.catalog.datasource.models.AddressIdAndIdsProductsDataSourceModel
 import com.example.data.catalog.datasource.models.IdsProductsDataSourceModel
 import com.example.data.catalog.datasource.models.OperatingModeDataSourceModel
@@ -9,6 +10,7 @@ import com.example.data.catalog.datasource.models.PharmacyAddressesDataSourceMod
 import com.example.data.catalog.datasource.models.PharmacyAddressesDetailsDataSourceModel
 import com.example.data.catalog.datasource.models.ProductAvailabilityDataSourceModel
 import com.example.data.catalog.datasource.models.ProductDataSourceModel
+import com.example.data.profile.datasource.models.ResponseDataSourceModel
 import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
 import com.example.domain.ServerException
 import io.ktor.client.HttpClient
@@ -130,6 +132,40 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote{
                 emit(result)
             }
             else {
+                emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.responseDataSourceModel.message)))
+            }
+        }
+        catch (e: Exception){
+            emit(ResultDataSource.Error(exception = e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Получение товаров по их идентификаторам.
+     *
+     * Параметры:
+     * [listIdsProducts] - список идентификаторов по которому будет получен список товаров.
+     */
+    override fun getProductsByIdsFlow(listIdsProducts: List<Int>): Flow<ResultDataSource> = flow{
+        Log.d("TAG", "getProductsByIdsFlow")
+        try {
+            val response = client.request {
+                url(GET_PRODUCTS_BY_IDS)
+                method = HttpMethod.Post
+                setBody(IdsProductsDataSourceModel(listIdsProducts = listIdsProducts))
+                contentType(type = ContentType.Application.Json)
+            }
+
+            val data = response.body<ResponseValueDataSourceModel<List<ProductDataSourceModel>>>()
+
+            if (
+                data.responseDataSourceModel.status in 200..299 &&
+                data.value != null
+            ){
+                val result = ResultDataSource.Success(data = data)
+                emit(result)
+            }
+            else{
                 emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.responseDataSourceModel.message)))
             }
         }
@@ -390,6 +426,46 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote{
         }
     }.flowOn(Dispatchers.IO)
 
+    /**
+     * Обновление количества товаров в аптеке.
+     *
+     * Параметры:
+     * [addressId] - идентификатор аптеки;
+     * [listNumberProductsDataSourceModel] - список с новым количеством товаров.
+     */
+    override fun updateNumbersProductsInPharmacyFlow(
+        addressId: Int,
+        listNumberProductsDataSourceModel: List<NumberProductsDataSourceModel>
+    ): Flow<ResultDataSource> = flow {
+        Log.d("TAG", "updateNumbersProductsInPharmacyFlow")
+        try {
+            val response = client.request {
+                url(UPDATE_NUMBER_PRODUCTS)
+                method = HttpMethod.Post
+                setBody(
+                    object {
+                        val addressId = addressId
+                        val listNumberProducts = listNumberProductsDataSourceModel
+                    }
+                )
+                contentType(ContentType.Application.Json)
+            }
+
+            val data = response.body<ResponseDataSourceModel>()
+
+            if (data.status in 200..299){
+                val result = ResultDataSource.Success(data = data)
+                emit(result)
+            }
+            else{
+                emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.message)))
+            }
+        }
+        catch (e: Exception){
+            emit(ResultDataSource.Error(exception = e))
+        }
+    }.flowOn(Dispatchers.IO)
+
     companion object {
         private const val PORT = "4000"
         private const val BASE_URL = "http://192.168.0.114:$PORT"
@@ -401,7 +477,10 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote{
         const val GET_PRODUCT_BY_ID = "/product/id"
         const val GET_PRODUCT_AVAILABILITY_BY_PRODUCT_ID = "/availability/product_id"
         const val GET_PRODUCT_AVAILABILITY_BY_IDS_PRODUCTS = "/availability/ids_products"
+        const val GET_PRODUCT_AVAILABILITY_BY_ADDRESS_ID = "/availability/address_id"
         const val GET_OPERATING_MODE = "/operating_mode"
         const val GET_PRODUCT_AVAILABILITY = "/availability/all"
+        const val GET_PRODUCTS_BY_IDS = "/products/ids_products"
+        const val UPDATE_NUMBER_PRODUCTS = "/products/update_number_products"
     }
 }

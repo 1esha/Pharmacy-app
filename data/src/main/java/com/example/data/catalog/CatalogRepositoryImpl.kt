@@ -9,7 +9,9 @@ import com.example.data.catalog.datasource.models.PharmacyAddressesDetailsDataSo
 import com.example.data.catalog.datasource.models.ProductAvailabilityDataSourceModel
 import com.example.data.catalog.datasource.models.ProductDataSourceModel
 import com.example.data.catalog.datasource.remote.CatalogRepositoryDataSourceRemoteImpl
+import com.example.data.profile.datasource.models.ResponseDataSourceModel
 import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
+import com.example.data.toListNumberProductsDataSourceModel
 import com.example.data.toListOperatingModeModel
 import com.example.data.toListPharmacyAddressesDetailsModel
 import com.example.data.toListPharmacyAddressesModel
@@ -23,6 +25,7 @@ import com.example.domain.catalog.models.PharmacyAddressesDetailsModel
 import com.example.domain.catalog.models.ProductAvailabilityModel
 import com.example.domain.catalog.models.ProductModel
 import com.example.domain.catalog.models.PharmacyAddressesModel
+import com.example.domain.models.NumberProductsModel
 import com.example.domain.models.OperatingModeModel
 import com.example.domain.profile.models.ResponseValueModel
 import kotlinx.coroutines.Dispatchers
@@ -141,6 +144,45 @@ class CatalogRepositoryImpl() : CatalogRepository{
                     }
                     else throw IllegalArgumentException("Несуществующий тип результата")
                 }
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Получение товаров по их идентификаторам.
+     * При успешном результате эмитится список товаров ( List<[ProductModel]> ).
+     *
+     * Параметры:
+     * [listIdsProducts] - список идентификаторов по которому будет получен список товаров.
+     */
+    override fun getProductsByIdsFlow(listIdsProducts: List<Int>): Flow<Result> = flow {
+        try {
+            catalogRepositoryDataSourceRemoteImpl.getProductsByIdsFlow(listIdsProducts = listIdsProducts).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
+
+                if (response != null) {
+                    val _listProductDataSourceModel = response.value as List<*>
+                    val listProductDataSourceModel = _listProductDataSourceModel.map { it as ProductDataSourceModel }
+                    val listProductModel = listProductDataSourceModel.toListProductModel()
+
+                    val data = ResponseValueModel(
+                        value = listProductModel,
+                        responseModel = response.responseDataSourceModel.toResponseModel()
+                    )
+
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+
             }
         }
         catch (e: Exception){
@@ -452,6 +494,45 @@ class CatalogRepositoryImpl() : CatalogRepository{
                     else throw IllegalArgumentException("Несуществующий тип результата")
                 }
 
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
+     * Обновление количества товаров в аптеке.
+     * При успешном результате эмитится успешный ответ (объект типа [ResponseModel]).
+     *
+     * Параметры:
+     * [addressId] - идентификатор аптеки;
+     * [listNumberProductsModel] - список с новым количеством товаров.
+     */
+    override fun updateNumbersProductsInPharmacyFlow(
+        addressId: Int,
+        listNumberProductsModel: List<NumberProductsModel>
+    ): Flow<Result> = flow{
+        try {
+            val listNumberProductsDataSourceModel = listNumberProductsModel.toListNumberProductsDataSourceModel()
+            catalogRepositoryDataSourceRemoteImpl.updateNumbersProductsInPharmacyFlow(
+                addressId = addressId,
+                listNumberProductsDataSourceModel = listNumberProductsDataSourceModel
+            ).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseDataSourceModel?
+
+                if (response != null) {
+                    val data = response.toResponseModel()
+
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
             }
         }
         catch (e: Exception){

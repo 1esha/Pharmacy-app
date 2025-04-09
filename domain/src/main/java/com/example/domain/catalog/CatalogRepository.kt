@@ -1,6 +1,7 @@
 package com.example.domain.catalog
 
 import com.example.domain.Result
+import com.example.domain.models.NumberProductsModel
 import kotlinx.coroutines.flow.Flow
 
 interface CatalogRepository{
@@ -10,6 +11,8 @@ interface CatalogRepository{
     fun getProductsByPathFlow(path: String): Flow<Result>
 
     fun getProductByIdFlow(productId: Int): Flow<Result>
+
+    fun getProductsByIdsFlow(listIdsProducts: List<Int>): Flow<Result>
 
     fun getPharmacyAddressesFlow(): Flow<Result>
 
@@ -26,5 +29,7 @@ interface CatalogRepository{
     fun getProductAvailabilityFlow(): Flow<Result>
 
     fun getOperatingModeFlow(): Flow<Result>
+
+    fun updateNumbersProductsInPharmacyFlow(addressId: Int, listNumberProductsModel: List<NumberProductsModel>): Flow<Result>
 
 }
