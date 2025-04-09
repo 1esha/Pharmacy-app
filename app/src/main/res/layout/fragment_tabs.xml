@@ -4,8 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
-    tools:context=".main.TabsFragment">
+    android:fitsSystemWindows="true">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarTabs"
@@ -17,6 +16,7 @@
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbarTabs"
+            app:subtitleTextAppearance="@style/TextAppearance.Material3.BodyMedium"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 

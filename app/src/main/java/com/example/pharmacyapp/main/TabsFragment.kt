@@ -36,7 +36,8 @@ class TabsFragment : Fragment() {
 
         toolbarViewModel.toolbarSettings.observe(viewLifecycleOwner) { toolbarSettingsModel ->
             with(toolbarSettingsModel) {
-                toolbarTabs.setTitle(title)
+                toolbarTabs.title = title
+                toolbarTabs.subtitle = subTitle
                 if (icon != null) toolbarTabs.setNavigationIcon(icon) else toolbarTabs.navigationIcon =
                     null
 

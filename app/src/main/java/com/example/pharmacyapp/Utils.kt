@@ -151,6 +151,7 @@ class ToolbarSettings(private val toolbar: MaterialToolbar) {
 data class ToolbarSettingsModel(
     val title: String? = null,
     val icon: Int? = null,
+    val subTitle: String? = null,
     val onClickNavigationIcon: OnClickNavigationIcon
 )
 
