@@ -72,6 +72,9 @@ dependencies {
     implementation(libs.osmdroid.android)
     implementation(libs.osmbonuspack)
 
+    //QR generator
+    implementation(libs.zxing.android.embedded)
+
     implementation(project(":domain"))
     implementation(project(":data"))
 
