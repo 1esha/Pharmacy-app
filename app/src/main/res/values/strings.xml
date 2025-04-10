@@ -202,4 +202,6 @@
     <string name="step_of">Step %1$d of %2$d</string>
     <string name="the_order_has_been_successfully_booked">The order has been successfully booked!</string>
     <string name="to_the_main_screen">To the main screen</string>
+    <string name="to_apply_the_discount_show_the_qr_code_at_the_checkout">To apply the discount, show the QR code at the checkout</string>
+    <string name="log_in_to_your_account_to_receive_club_discounts_and_great_deals">Log in to your account to receive club discounts and great deals!</string>
 </resources>

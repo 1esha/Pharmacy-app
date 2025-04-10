@@ -201,4 +201,6 @@
     <string name="step_of">Шаг %1$d из %2$d</string>
     <string name="the_order_has_been_successfully_booked">Заказ успешно забронирован!</string>
     <string name="to_the_main_screen">На главный экран</string>
+    <string name="to_apply_the_discount_show_the_qr_code_at_the_checkout">Для применения скидки покажите QR код на кассе</string>
+    <string name="log_in_to_your_account_to_receive_club_discounts_and_great_deals">Войдите в учетную запись для получения клубной скидки и выгодных предложений!</string>
 </resources>

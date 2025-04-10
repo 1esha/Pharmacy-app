@@ -1,16 +1,80 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".tabs.CardFragment">
+    android:orientation="vertical">
 
-
-    <TextView
+    <FrameLayout
+        android:id="@+id/layoutUnauthorizedUserForCard"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:textSize="30sp"
-        android:gravity="center"
-        android:text="Card" />
+        tools:visibility="visible">
 
-</FrameLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="32dp"
+            android:layout_gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="@string/log_in_to_your_account_to_receive_club_discounts_and_great_deals"
+                android:textAppearance="@style/TextAppearance.Material3.TitleLarge" />
+
+            <Button
+                android:id="@+id/bGoToLogInForCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/log_in" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+
+    <LinearLayout
+        android:id="@+id/layoutAuthorizedUserForCard"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="32dp"
+            android:gravity="center"
+            android:text="@string/to_apply_the_discount_show_the_qr_code_at_the_checkout"
+            android:textAppearance="@style/TextAppearance.Material3.TitleLarge" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:id="@+id/ivQRCodeClubDiscount"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:adjustViewBounds="true"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_default"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHeight_max="250dp"
+                app:layout_constraintHeight_min="100dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintWidth_max="250dp"
+                app:layout_constraintWidth_min="100dp" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </LinearLayout>
+
+</LinearLayout>
