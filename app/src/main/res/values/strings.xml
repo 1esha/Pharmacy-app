@@ -204,4 +204,10 @@
     <string name="to_the_main_screen">To the main screen</string>
     <string name="to_apply_the_discount_show_the_qr_code_at_the_checkout">To apply the discount, show the QR code at the checkout</string>
     <string name="log_in_to_your_account_to_receive_club_discounts_and_great_deals">Log in to your account to receive club discounts and great deals!</string>
+    <string name="pharmacy_addresses">Pharmacy addresses</string>
+    <string name="booked_items">Booked items</string>
+    <string name="purchase_history">Purchase history</string>
+    <string name="my_data">My data</string>
+    <string name="contacts">Contacts</string>
+    <string name="privacy_policy">Privacy policy</string>
 </resources>
