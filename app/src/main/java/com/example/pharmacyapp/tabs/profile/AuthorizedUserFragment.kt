@@ -170,6 +170,10 @@ class AuthorizedUserFragment : Fragment(), ResultProcessing {
             navControllerProfile.navigate(R.id.action_authorizedUserFragment_to_favoriteFragment)
         }
 
+        layoutPharmacyAddresses.setOnClickListener {
+            navControllerMain.navigate(R.id.mapFragment)
+        }
+
         cardUserInfo.setOnClickListener {
             navControllerMain.navigate(R.id.editFragment)
         }

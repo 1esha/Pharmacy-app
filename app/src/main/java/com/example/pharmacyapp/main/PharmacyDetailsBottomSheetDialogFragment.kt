@@ -90,7 +90,6 @@ class PharmacyDetailsBottomSheetDialogFragment : BottomSheetDialogFragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-        dismiss()
     }
 
     private fun installUI() = with(binding){

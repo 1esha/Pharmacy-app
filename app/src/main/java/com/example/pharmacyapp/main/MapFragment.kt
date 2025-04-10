@@ -184,16 +184,35 @@ class MapFragment : Fragment() {
                     val _listProductAvailabilityModel = responseGetProductAvailability.value as List<*>
                     val listProductAvailabilityModel = _listProductAvailabilityModel.map { it as ProductAvailabilityModel }
 
-                    listProductAvailabilityModel.forEach {
-                        Log.d("TAG","it = $it")
-                    }
                     mapViewModel.fillData(
                         city = city,
                         listAllPharmacyAddressesDetails = listAllPharmacyAddressesDetails,
                         listOperatingMode = listOperatingMode,
                         listProductAvailabilityModel = listProductAvailabilityModel
                     )
+                }
+                TYPE_GET_CITY_BY_USER_ID + TYPE_GET_PHARMACY_ADDRESSES_DETAILS + TYPE_GET_OPERATING_MODE -> {
+                    val resultGetCityByUserId = listRequests.find { it.type == TYPE_GET_CITY_BY_USER_ID }?.result!!.asSuccess()!!
+                    val resultGetPharmacyAddressesDetails = listRequests.find { it.type == TYPE_GET_PHARMACY_ADDRESSES_DETAILS }?.result!!.asSuccess()!!
+                    val resultGetOperatingMode = listRequests.find { it.type == TYPE_GET_OPERATING_MODE }?.result!!.asSuccess()!!
 
+                    val responseGetCityByUserId = resultGetCityByUserId.data as ResponseValueModel<*>
+                    val responseGetPharmacyAddressesDetails = resultGetPharmacyAddressesDetails.data as ResponseValueModel<*>
+                    val responseGetOperatingMode = resultGetOperatingMode.data as ResponseValueModel<*>
+
+                    val city = responseGetCityByUserId.value as String
+
+                    val _listAllPharmacyAddressesDetails = responseGetPharmacyAddressesDetails.value as List<*>
+                    val listAllPharmacyAddressesDetails = _listAllPharmacyAddressesDetails.map { it as PharmacyAddressesDetailsModel }
+
+                    val _listOperatingMode = responseGetOperatingMode.value as List<*>
+                    val listOperatingMode = _listOperatingMode.map { it as OperatingModeModel }
+
+                    mapViewModel.fillData(
+                        city = city,
+                        listAllPharmacyAddressesDetails = listAllPharmacyAddressesDetails,
+                        listOperatingMode = listOperatingMode
+                    )
                 }
 
             }

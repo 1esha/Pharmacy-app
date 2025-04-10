@@ -102,91 +102,105 @@ class MapViewModel(
     }
 
     fun sendingRequests(isNetworkStatus: Boolean){
-        if (isShownSendingRequests) {
+        try {
+            if (isShownSendingRequests) {
 
-            network.checkNetworkStatus(
-                isNetworkStatus = isNetworkStatus,
-                connectionListener = {
-                    onLoading()
+                network.checkNetworkStatus(
+                    isNetworkStatus = isNetworkStatus,
+                    connectionListener = {
+                        onLoading()
 
-                    val getCityByUserIdUseCase = GetCityByUserIdUseCase(
-                        profileRepository = profileRepositoryImpl,
-                        userId = userId
-                    )
-                    val getPharmacyAddressesDetailsUseCase = GetPharmacyAddressesDetailsUseCase(
-                        catalogRepository = catalogRepositoryImpl
-                    )
-                    val getOperatingModeUseCase = GetOperatingModeUseCase(
-                        catalogRepository = catalogRepositoryImpl
-                    )
-                    val listIdsProducts = mutableListNumberProductsModel.map { it.productId }
-                    val getProductAvailability = GetProductAvailabilityByIdsProductsUseCase(
-                        catalogRepository = catalogRepositoryImpl,
-                        listIdsProducts = listIdsProducts
-                    )
-                    viewModelScope.launch {
-                        val resultGetCityByUserId = getCityByUserIdUseCase.execute().map { result ->
-                            return@map RequestModel(
-                                type = TYPE_GET_CITY_BY_USER_ID,
-                                result = result
-                            )
-                        }
+                        val getCityByUserIdUseCase = GetCityByUserIdUseCase(
+                            profileRepository = profileRepositoryImpl,
+                            userId = userId
+                        )
+                        val getPharmacyAddressesDetailsUseCase = GetPharmacyAddressesDetailsUseCase(
+                            catalogRepository = catalogRepositoryImpl
+                        )
+                        val getOperatingModeUseCase = GetOperatingModeUseCase(
+                            catalogRepository = catalogRepositoryImpl
+                        )
+                        val listIdsProducts = mutableListNumberProductsModel.map { it.productId }
+                        val getProductAvailability = GetProductAvailabilityByIdsProductsUseCase(
+                            catalogRepository = catalogRepositoryImpl,
+                            listIdsProducts = listIdsProducts
+                        )
+                        viewModelScope.launch {
+                            val resultGetCityByUserId = getCityByUserIdUseCase.execute().map { result ->
+                                return@map RequestModel(
+                                    type = TYPE_GET_CITY_BY_USER_ID,
+                                    result = result
+                                )
+                            }
 
-                        val resultGetPharmacyAddressesDetails = getPharmacyAddressesDetailsUseCase.execute().map { result ->
-                            return@map RequestModel(
-                                type = TYPE_GET_PHARMACY_ADDRESSES_DETAILS,
-                                result = result
-                            )
-                        }
+                            val resultGetPharmacyAddressesDetails = getPharmacyAddressesDetailsUseCase.execute().map { result ->
+                                return@map RequestModel(
+                                    type = TYPE_GET_PHARMACY_ADDRESSES_DETAILS,
+                                    result = result
+                                )
+                            }
 
-                        val resultGetOperatingMode = getOperatingModeUseCase.execute().map { result ->
-                            return@map RequestModel(
-                                type = TYPE_GET_OPERATING_MODE,
-                                result = result
-                            )
-                        }
+                            val resultGetOperatingMode = getOperatingModeUseCase.execute().map { result ->
+                                return@map RequestModel(
+                                    type = TYPE_GET_OPERATING_MODE,
+                                    result = result
+                                )
+                            }
 
-                        val resultGetProductAvailability = getProductAvailability.execute().map { result ->
-                            return@map RequestModel(
-                                type = TYPE_GET_PRODUCT_AVAILABILITY_BY_IDS_PRODUCTS,
-                                result = result
-                            )
-                        }
+                            val resultGetProductAvailability = getProductAvailability.execute().map { result ->
+                                return@map RequestModel(
+                                    type = TYPE_GET_PRODUCT_AVAILABILITY_BY_IDS_PRODUCTS,
+                                    result = result
+                                )
+                            }
 
-                        val combinedFlow = combine(
-                            resultGetCityByUserId,
-                            resultGetPharmacyAddressesDetails,
-                            resultGetOperatingMode,
-                            resultGetProductAvailability
-                        ) { cityByUserId, pharmacyAddressesDetail, operatingMode, getProductAvailability ->
+                            val combinedFlow = combine(
+                                resultGetCityByUserId,
+                                resultGetPharmacyAddressesDetails,
+                                resultGetOperatingMode,
+                                resultGetProductAvailability
+                            ) { cityByUserId, pharmacyAddressesDetail, operatingMode, getProductAvailability ->
 
-                            return@combine listOf(
-                                cityByUserId,
-                                pharmacyAddressesDetail,
-                                operatingMode,
-                                getProductAvailability
-                            )
-                        }
-
-                        combinedFlow.collect{ listResults ->
-                            listResults.forEach { requestModel ->
-                                if (requestModel.result is Result.Error){
-                                    _stateScreen.value = requestModel.result
-                                    return@collect
+                                return@combine if (flag == FLAG_ALL_PHARMACIES){
+                                    listOf(
+                                        cityByUserId,
+                                        pharmacyAddressesDetail,
+                                        operatingMode
+                                    )
+                                }
+                                else {
+                                    listOf(
+                                        cityByUserId,
+                                        pharmacyAddressesDetail,
+                                        operatingMode,
+                                        getProductAvailability
+                                    )
                                 }
                             }
-                            _stateScreen.value = Result.Success(
-                                data = listResults
-                            )
-                        }
-                    }
 
-                },
-                disconnectionListener = ::onDisconnect
-            )
+                            combinedFlow.collect{ listResults ->
+                                listResults.forEach { requestModel ->
+                                    if (requestModel.result is Result.Error){
+                                        _stateScreen.value = requestModel.result
+                                        return@collect
+                                    }
+                                }
+                                _stateScreen.value = Result.Success(
+                                    data = listResults
+                                )
+                            }
+                        }
+
+                    },
+                    disconnectionListener = ::onDisconnect
+                )
+            }
             isShownSendingRequests = false
         }
-
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+            _stateScreen.value = Result.Error(exception = e)
+        }
     }
 
     private fun onLoading(){
@@ -201,6 +215,20 @@ class MapViewModel(
         isShownSendingRequests = true
         isShownFillData = true
         sendingRequests(isNetworkStatus = isNetworkStatus)
+    }
+
+    fun fillData(
+        city: String,
+        listAllPharmacyAddressesDetails: List<PharmacyAddressesDetailsModel>,
+        listOperatingMode: List<OperatingModeModel>
+    ){
+        if (isShownFillData){
+            _city.value = city
+            _lisAllPharmacyAddressesDetails.value = listAllPharmacyAddressesDetails
+            this.listOperatingMode = listOperatingMode
+        }
+
+        isShownFillData = false
     }
 
     fun fillData(
