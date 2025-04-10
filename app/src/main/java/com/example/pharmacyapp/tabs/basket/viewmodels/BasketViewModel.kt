@@ -45,6 +45,8 @@ class BasketViewModel(
 
     private var isShownFillData = true
 
+    private var isShownRemoveProducts = true
+
     private var currentSelectedBasketModel: SelectedBasketModel? = null
 
     private var userId = UNAUTHORIZED_USER
@@ -143,6 +145,8 @@ class BasketViewModel(
         network.checkNetworkStatus(
             isNetworkStatus = isNetworkStatus,
             connectionListener = {
+                isShownRemoveProducts = true
+
                 val listIdsProducts = _listSelectedBasketModel.value.filter { it.isSelect }.map { it.basketModel.productModel.productId }
 
                 deleteProductsFromBasket(listIdsProducts = listIdsProducts)
@@ -236,11 +240,14 @@ class BasketViewModel(
     fun removeProductsByIds(){
         try {
             val mutableListSelectedBasketModel = _listSelectedBasketModel.value.toMutableList()
-            val listIdsProducts = mutableListSelectedBasketModel.filter { it.isSelect }.map { it.basketModel.productModel.productId }
-            listIdsProducts.forEach { productId ->
-                val selectedBasketModel = _listSelectedBasketModel.value.find { it.basketModel.productModel.productId == productId }
-                mutableListSelectedBasketModel.remove(selectedBasketModel)
+            if (isShownRemoveProducts) {
+                val listIdsProducts = _listSelectedBasketModel.value.filter { it.isSelect }.map { it.basketModel.productModel.productId }
+                listIdsProducts.forEach { productId ->
+                    val selectedBasketModel = mutableListSelectedBasketModel.find { it.basketModel.productModel.productId == productId }
+                    mutableListSelectedBasketModel.remove(selectedBasketModel)
+                }
             }
+            isShownRemoveProducts = false
 
             isInstallAdapter = true
 
