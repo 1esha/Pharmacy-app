@@ -27,6 +27,7 @@ import com.example.pharmacyapp.FLAG_PENDING_RESULT
 import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
 import com.example.pharmacyapp.KEY_IS_INIT
 import com.example.pharmacyapp.KEY_USER_ID
+import com.example.pharmacyapp.KEY_USER_NUMBER_PHONE
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.TYPE_GET_USER_ID
@@ -165,8 +166,15 @@ class RegistrationFragment() : Fragment(), ResultProcessing {
 
                     val userId = responseGetUserId.value as Int
 
-                    sharedPreferences.edit().putBoolean(KEY_IS_INIT, false).apply()
-                    sharedPreferences.edit().putInt(KEY_USER_ID, userId).apply()
+                    registrationViewModel.saveNumberPhone { numberPhone ->
+                        sharedPreferences.edit().putString(KEY_USER_NUMBER_PHONE, numberPhone).apply()
+                    }
+
+                    sharedPreferences.edit().apply {
+                        putBoolean(KEY_IS_INIT, false).apply()
+                        putInt(KEY_USER_ID, userId).apply()
+                    }
+
                     navControllerMain.navigate(R.id.tabsFragment, null, navOptions {
                         popUpTo(R.id.nav_graph_log_in) {
                             inclusive = true

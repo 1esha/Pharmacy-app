@@ -31,6 +31,7 @@ import com.example.pharmacyapp.KEY_FIRST_NAME
 import com.example.pharmacyapp.KEY_LAST_NAME
 import com.example.pharmacyapp.KEY_RESULT_FROM_EDIT_USER
 import com.example.pharmacyapp.KEY_USER_ID
+import com.example.pharmacyapp.KEY_USER_NUMBER_PHONE
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.TYPE_DELETE_USER
@@ -207,6 +208,9 @@ class EditFragment : Fragment(), ResultProcessing{
                     Log.i("TAG","fullType = TYPE_EDIT_USER")
 
                     editViewModel.onSuccessfullyEdited { userModel ->
+
+                        sharedPreferences.edit().putString(KEY_USER_NUMBER_PHONE,userModel.userInfoModel.phoneNumber).apply()
+
                         val bundle = Bundle().apply {
                             putString(KEY_FIRST_NAME,userModel.userInfoModel.firstName)
                             putString(KEY_LAST_NAME,userModel.userInfoModel.lastName)
@@ -221,6 +225,7 @@ class EditFragment : Fragment(), ResultProcessing{
                 TYPE_DELETE_USER -> {
                     Log.i("TAG","fullType = TYPE_DELETE_USER")
                     sharedPreferences.edit().putInt(KEY_USER_ID, UNAUTHORIZED_USER).apply()
+                    sharedPreferences.edit().putString(KEY_USER_NUMBER_PHONE, null).apply()
                     navControllerMain.popBackStack()
                     getSupportActivity().showToast(getString(R.string.account_deleted))
                 }

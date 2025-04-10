@@ -34,6 +34,8 @@ class RegistrationViewModel(
 
     val isSetupCityText = MutableStateFlow(true)
 
+    private var numberPhone: String? = null
+
     fun register(isNetworkStatus: Boolean,userInfoModel: UserInfoModel){
         try {
             network.checkNetworkStatus(
@@ -72,6 +74,8 @@ class RegistrationViewModel(
                                     _stateScreen.value = resultGetUserId
                                 }
                                 else{
+                                    numberPhone = userInfoModel.phoneNumber
+
                                     _stateScreen.value = Result.Success(
                                         data = listOf(RequestModel(
                                             type = TYPE_GET_USER_ID,
@@ -130,6 +134,10 @@ class RegistrationViewModel(
             },
             disconnectionListener = ::onDisconnect
         )
+    }
+
+    fun saveNumberPhone(block: (String?) -> Unit){
+        block(numberPhone)
     }
 
     fun setIsShownToast(){

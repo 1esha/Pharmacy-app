@@ -27,6 +27,7 @@ import com.example.pharmacyapp.FLAG_PENDING_RESULT
 import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
 import com.example.pharmacyapp.KEY_IS_INIT
 import com.example.pharmacyapp.KEY_USER_ID
+import com.example.pharmacyapp.KEY_USER_NUMBER_PHONE
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.TYPE_GET_USER
@@ -150,10 +151,12 @@ class LoginFragment : Fragment(), ResultProcessing {
                     val userModel = responseGetUser.value as UserModel
 
                     val userId = userModel.userId
+                    val numberPhone = userModel.userInfoModel.phoneNumber
 
-                    sharedPreferences.apply {
-                        edit().putBoolean(KEY_IS_INIT, false).apply()
-                        edit().putInt(KEY_USER_ID, userId).apply()
+                    sharedPreferences.edit().apply {
+                        putBoolean(KEY_IS_INIT, false).apply()
+                        putString(KEY_USER_NUMBER_PHONE, numberPhone).apply()
+                        putInt(KEY_USER_ID, userId).apply()
                     }
 
                     Log.i("TAG","LoginFragment onSuccessResultListener userId = ${sharedPreferences.getInt(KEY_USER_ID,-1)}")

@@ -31,6 +31,7 @@ import com.example.pharmacyapp.KEY_FIRST_NAME
 import com.example.pharmacyapp.KEY_LAST_NAME
 import com.example.pharmacyapp.KEY_RESULT_FROM_EDIT_USER
 import com.example.pharmacyapp.KEY_USER_ID
+import com.example.pharmacyapp.KEY_USER_NUMBER_PHONE
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.TYPE_DELETE_ALL_FAVORITES
@@ -107,7 +108,6 @@ class AuthorizedUserFragment : Fragment(), ResultProcessing {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED){
                 authorizedUserViewModel.userModel.collect{ userModel ->
-                    Log.i("TAG","!!!!!!!!userModel!!!!!!!!!!!! = ${userModel?.userInfoModel?.firstName}")
                     if (userModel != null){
                         with(binding){
                             val fullName = "${userModel.userInfoModel.firstName} ${userModel.userInfoModel.lastName}"
@@ -141,13 +141,13 @@ class AuthorizedUserFragment : Fragment(), ResultProcessing {
 
         tvVersionName.text = getSupportActivity().getVersionName()
 
-        // при выходе из аккаунта отчистится список избранного
+        // При выходе из аккаунта отчистится список избранного и номер телефона
         val dialogListener = DialogInterface.OnClickListener { dialogInterface, currentButton ->
             when(currentButton){
                 DialogInterface.BUTTON_POSITIVE -> {
 
                     authorizedUserViewModel.deleteAllFavorites()
-
+                    sharedPreferences.edit().putString(KEY_USER_NUMBER_PHONE, null).apply()
                 }
                 DialogInterface.BUTTON_NEGATIVE -> {
                     dialogInterface.dismiss()
