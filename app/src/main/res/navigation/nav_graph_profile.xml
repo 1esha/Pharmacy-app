@@ -12,6 +12,9 @@
         <action
             android:id="@+id/action_authorizedUserFragment_to_favoriteFragment"
             app:destination="@id/favoriteFragment" />
+        <action
+            android:id="@+id/action_authorizedUserFragment_to_bookedGoodsFragment"
+            app:destination="@id/bookedGoodsFragment" />
     </fragment>
     <fragment
         android:id="@+id/unauthorizedUserFragment"
@@ -22,4 +25,8 @@
         android:id="@+id/favoriteFragment"
         android:name="com.example.pharmacyapp.tabs.profile.FavoriteFragment"
         android:label="FavoriteFragment" />
+    <fragment
+        android:id="@+id/bookedGoodsFragment"
+        android:name="com.example.pharmacyapp.tabs.profile.BookedGoodsFragment"
+        android:label="BookedGoodsFragment" />
 </navigation>

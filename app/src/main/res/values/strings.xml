@@ -210,4 +210,6 @@
     <string name="my_data">My data</string>
     <string name="contacts">Contacts</string>
     <string name="privacy_policy">Privacy policy</string>
+    <string name="quantity">Quantity:</string>
+    <string name="the_order_has_been_placed">The order has been placed: %1$s</string>
 </resources>

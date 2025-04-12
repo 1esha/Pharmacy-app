@@ -59,6 +59,7 @@ const val KEY_RESULT_FROM_EDIT_USER = "KEY_RESULT_FROM_EDIT_USER"
 const val KEY_RESULT_FROM_PRODUCT_INFO = "KEY_RESULT_FROM_PRODUCT_INFO"
 const val KEY_FLAGS_FOR_MAP = "KEY_FLAGS_FOR_MAP"
 
+const val TYPE_EMPTY_RESULT = "TYPE_EMPTY_RESULT"
 const val TYPE_GET_USER = "TYPE_GET_USER"
 const val TYPE_GET_USER_ID = "TYPE_GET_USER_ID"
 const val TYPE_GET_USER_BY_ID = "TYPE_GET_USER_BY_ID"
@@ -88,6 +89,7 @@ const val TYPE_UPDATE_NUMBER_PRODUCTS_IN_BASKET = "TYPE_UPDATE_NUMBER_PRODUCTS_I
 const val TYPE_UPDATE_NUMBERS_PRODUCTS_IN_BASKET = "TYPE_UPDATE_NUMBERS_PRODUCTS_IN_BASKET"
 const val TYPE_UPDATE_NUMBERS_PRODUCTS_IN_PHARMACY = "TYPE_UPDATE_NUMBERS_PRODUCTS_IN_PHARMACY"
 const val TYPE_CREATE_ORDER= "TYPE_CREATE_ORDER"
+const val TYPE_GET_CURRENT_ORDERS = "TYPE_GET_CURRENT_ORDERS"
 
 const val FLAG_PENDING_RESULT = "FLAG_PENDING_RESULT"
 const val FLAG_ERROR_RESULT = "FLAG_ERROR_RESULT"
@@ -210,7 +212,16 @@ class ColorUtils(private val context: Context){
     fun getColor(@ColorRes color: Int): Int{
         return ContextCompat.getColor(context,color)
     }
+}
 
+fun String.toDateTime(): String{
+    val year = this.substringBefore('-')
+    val month = this.substringBeforeLast('-').substringAfter('-')
+    val date = this.substringAfterLast('-').substringBefore(' ')
+    val time = this.substringAfter(' ').substringBeforeLast(':')
+
+    val dateTime = "$date.$month.$year $time"
+    return dateTime
 }
 
 

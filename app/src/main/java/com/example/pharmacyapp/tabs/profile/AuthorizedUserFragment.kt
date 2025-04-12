@@ -166,6 +166,10 @@ class AuthorizedUserFragment : Fragment(), ResultProcessing {
             authorizedUserViewModel.tryAgain(isNetworkStatus = isNetworkStatus)
         }
 
+        layoutBookedItems.setOnClickListener {
+            navControllerProfile.navigate(R.id.action_authorizedUserFragment_to_bookedGoodsFragment)
+        }
+
         layoutFavorites.setOnClickListener {
             navControllerProfile.navigate(R.id.action_authorizedUserFragment_to_favoriteFragment)
         }
