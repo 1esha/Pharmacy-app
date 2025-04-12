@@ -209,6 +209,8 @@
     <string name="my_data">Мои данные</string>
     <string name="contacts">Контакты</string>
     <string name="privacy_policy">Политика конфиденциальности</string>
+    <string name="registration_date">Дата оформления:</string>
+    <string name="date_of_purchase">Дата покупки:</string>
     <string name="quantity">Количество:</string>
     <string name="the_order_has_been_placed">Заказ оформлен: %1$s</string>
 </resources>

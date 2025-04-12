@@ -13,6 +13,9 @@
             android:id="@+id/action_authorizedUserFragment_to_favoriteFragment"
             app:destination="@id/favoriteFragment" />
         <action
+            android:id="@+id/action_authorizedUserFragment_to_purchaseHistoryFragment"
+            app:destination="@id/purchaseHistoryFragment" />
+        <action
             android:id="@+id/action_authorizedUserFragment_to_bookedGoodsFragment"
             app:destination="@id/bookedGoodsFragment" />
     </fragment>
@@ -25,6 +28,10 @@
         android:id="@+id/favoriteFragment"
         android:name="com.example.pharmacyapp.tabs.profile.FavoriteFragment"
         android:label="FavoriteFragment" />
+    <fragment
+        android:id="@+id/purchaseHistoryFragment"
+        android:name="com.example.pharmacyapp.tabs.profile.PurchaseHistoryFragment"
+        android:label="PurchaseHistoryFragment" />
     <fragment
         android:id="@+id/bookedGoodsFragment"
         android:name="com.example.pharmacyapp.tabs.profile.BookedGoodsFragment"
