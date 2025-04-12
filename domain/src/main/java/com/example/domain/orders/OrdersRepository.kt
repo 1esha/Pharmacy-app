@@ -8,4 +8,6 @@ interface OrdersRepository {
 
     fun createOrderFlow(userId: Int,addressId: Int,listNumberProductsModel: List<NumberProductsModel>): Flow<Result>
 
+    fun getPurchaseHistoryFlow(userId: Int): Flow<Result>
+
 }

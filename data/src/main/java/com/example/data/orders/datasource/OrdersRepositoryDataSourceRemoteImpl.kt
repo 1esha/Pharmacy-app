@@ -3,13 +3,16 @@ package com.example.data.orders.datasource
 import android.util.Log
 import com.example.data.ResultDataSource
 import com.example.data.basket.datasource.models.NumberProductsDataSourceModel
+import com.example.data.orders.datasource.models.OrderDataSourceModel
 import com.example.data.profile.datasource.models.ResponseDataSourceModel
+import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
 import com.example.domain.ServerException
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.parameter
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.request.url
@@ -21,8 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+
 
 class OrdersRepositoryDataSourceRemoteImpl: OrdersRepositoryDataSourceRemote {
 
@@ -52,9 +54,6 @@ class OrdersRepositoryDataSourceRemoteImpl: OrdersRepositoryDataSourceRemote {
         Log.d("TAG", "createOrderFlow")
         try {
 
-            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-            val orderDate = LocalDateTime.now().format(formatter)
-
             val response = client.request {
                 url(CREATE_ORDER)
                 method = HttpMethod.Post
@@ -62,7 +61,6 @@ class OrdersRepositoryDataSourceRemoteImpl: OrdersRepositoryDataSourceRemote {
                     object {
                         val userId = userId
                         val addressId = addressId
-                        val orderDate = orderDate
                         val listNumberProducts = listNumberProductsDataSourceModel
                     }
                 )
@@ -86,9 +84,43 @@ class OrdersRepositoryDataSourceRemoteImpl: OrdersRepositoryDataSourceRemote {
         }
     }.flowOn(Dispatchers.IO)
 
+    /**
+     * Получение списка истории покупок.
+     *
+     * Параметры:
+     * [userId] - идентификатор пользователя, чья история покупок будет получена.
+     */
+    override fun getPurchaseHistoryFlow(userId: Int): Flow<ResultDataSource> = flow{
+        Log.d("TAG","getPurchaseHistoryFlow")
+        try {
+            val response = client.request {
+                url(GET_PURCHASE_HISTORY)
+                parameter("user_id",userId)
+                method = HttpMethod.Get
+            }
+
+            val data = response.body<ResponseValueDataSourceModel<List<OrderDataSourceModel>>>()
+
+            if (
+                data.responseDataSourceModel.status in 200..299 &&
+                data.value != null
+            ) {
+                val result = ResultDataSource.Success(data = data)
+                emit(result)
+            }
+            else {
+                emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.responseDataSourceModel.message)))
+            }
+        }
+        catch (e: Exception){
+            emit(ResultDataSource.Error(exception = e))
+        }
+    }.flowOn(Dispatchers.IO)
+
     companion object {
         private const val PORT = "4000"
         private const val BASE_URL = "http://192.168.0.114:$PORT"
         const val CREATE_ORDER = "/orders/make"
+        const val GET_PURCHASE_HISTORY = "/orders/purchase_history"
     }
 }
