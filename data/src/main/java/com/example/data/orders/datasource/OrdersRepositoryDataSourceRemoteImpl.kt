@@ -117,10 +117,44 @@ class OrdersRepositoryDataSourceRemoteImpl: OrdersRepositoryDataSourceRemote {
         }
     }.flowOn(Dispatchers.IO)
 
+    /**
+     * Получение списка текущих заказов.
+     *
+     * Параметры:
+     * [userId] - идентификатор пользователя, чей списка текущих заказов будет получен.
+     */
+    override fun getCurrentOrdersFlow(userId: Int): Flow<ResultDataSource> = flow{
+        Log.d("TAG","getCurrentOrdersFlow")
+        try {
+            val response = client.request {
+                url(GET_CURRENT_ORDERS)
+                parameter("user_id",userId)
+                method = HttpMethod.Get
+            }
+
+            val data = response.body<ResponseValueDataSourceModel<List<OrderDataSourceModel>>>()
+
+            if (
+                data.responseDataSourceModel.status in 200..299 &&
+                data.value != null
+            ) {
+                val result = ResultDataSource.Success(data = data)
+                emit(result)
+            }
+            else {
+                emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.responseDataSourceModel.message)))
+            }
+        }
+        catch (e: Exception){
+            emit(ResultDataSource.Error(exception = e))
+        }
+    }.flowOn(Dispatchers.IO)
+
     companion object {
         private const val PORT = "4000"
         private const val BASE_URL = "http://192.168.0.114:$PORT"
         const val CREATE_ORDER = "/orders/make"
         const val GET_PURCHASE_HISTORY = "/orders/purchase_history"
+        const val GET_CURRENT_ORDERS = "/orders/current"
     }
 }

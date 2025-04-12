@@ -10,4 +10,5 @@ interface OrdersRepository {
 
     fun getPurchaseHistoryFlow(userId: Int): Flow<Result>
 
+    fun getCurrentOrdersFlow(userId: Int): Flow<Result>
 }

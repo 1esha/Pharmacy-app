@@ -107,6 +107,45 @@ class OrdersRepositoryImpl: OrdersRepository {
         }
     }.flowOn(Dispatchers.IO)
 
+    /**
+     * Получение списка текущих заказов.
+     * При успешном результате эмитится список заказов (List<[OrderModel]>).
+     *
+     * Параметры:
+     * [userId] - идентификатор пользователя, чей списка текущих заказов будет получен.
+     */
+    override fun getCurrentOrdersFlow(userId: Int): Flow<Result> = flow {
+        try {
+            ordersRepositoryDataSourceRemoteImpl.getCurrentOrdersFlow(userId = userId).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
+
+                if (response != null) {
+                    val _listOrderDataSourceModel = response.value as List<*>
+                    val listOrderDataSourceModel = _listOrderDataSourceModel.map { it as OrderDataSourceModel }
+
+                    val listOrderModel = listOrderDataSourceModel.toListOrderModel()
+
+                    val data = ResponseValueModel(
+                        value = listOrderModel,
+                        responseModel = response.responseDataSourceModel.toResponseModel()
+                    )
+
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
 
     private fun List<OrderDataSourceModel>.toListOrderModel(): List<OrderModel>{
         val mutableListOrderModel = mutableListOf<OrderModel>()

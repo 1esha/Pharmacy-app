@@ -9,4 +9,6 @@ interface OrdersRepositoryDataSourceRemote {
     fun createOrderFlow(userId: Int, addressId: Int, listNumberProductsDataSourceModel: List<NumberProductsDataSourceModel>): Flow<ResultDataSource>
 
     fun getPurchaseHistoryFlow(userId: Int): Flow<ResultDataSource>
+
+    fun getCurrentOrdersFlow(userId: Int): Flow<ResultDataSource>
 }
