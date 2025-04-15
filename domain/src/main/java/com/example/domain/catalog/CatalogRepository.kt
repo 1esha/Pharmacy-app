@@ -14,6 +14,8 @@ interface CatalogRepository{
 
     fun getProductsByIdsFlow(listIdsProducts: List<Int>): Flow<Result>
 
+    fun getProductsBySearchFlow(searchText: String): Flow<Result>
+
     fun getPharmacyAddressesFlow(): Flow<Result>
 
     fun getPharmacyAddressesDetailsFlow(): Flow<Result>

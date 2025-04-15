@@ -191,6 +191,45 @@ class CatalogRepositoryImpl() : CatalogRepository{
     }.flowOn(Dispatchers.IO)
 
     /**
+     * Получение товаров с помощью поиска.
+     * При успешном результате эмитится список товаров ( List<[ProductModel]> ).
+     *
+     * Параметры:
+     * [searchText] - текст поиска.
+     */
+    override fun getProductsBySearchFlow(searchText: String): Flow<Result> = flow {
+        try {
+            catalogRepositoryDataSourceRemoteImpl.getProductsBySearchFlow(searchText = searchText).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseValueDataSourceModel<*>?
+
+                if (response != null) {
+                    val _listProductDataSourceModel = response.value as List<*>
+                    val listProductDataSourceModel = _listProductDataSourceModel.map { it as ProductDataSourceModel }
+
+                    val listProductModel = listProductDataSourceModel.toListProductModel()
+
+                    val data = ResponseValueModel(
+                        value = listProductModel,
+                        responseModel = response.responseDataSourceModel.toResponseModel()
+                    )
+
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
+    /**
      * Получение списка данных о аптеках.
      * При успешном результате эмитится список данных о аптеках ( List<[PharmacyAddressesModel]> ).
      */

@@ -175,6 +175,38 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote{
     }.flowOn(Dispatchers.IO)
 
     /**
+     * Получение товаров с помощью поиска.
+     *
+     * Параметры:
+     * [searchText] - текст поиска.
+     */
+    override fun getProductsBySearchFlow(searchText: String): Flow<ResultDataSource>  = flow{
+        Log.d("TAG","getProductsBySearchFlow")
+        try {
+            val response = client.request {
+                url(GET_PRODUCT_BY_SEARCH)
+                parameter("search",searchText)
+                method = HttpMethod.Get
+            }
+            val data = response.body<ResponseValueDataSourceModel<List<ProductDataSourceModel>>>()
+
+            if (
+                data.responseDataSourceModel.status in 200..299 &&
+                data.value != null
+            ) {
+                val result = ResultDataSource.Success(data = data)
+                emit(result)
+            }
+            else {
+                emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.responseDataSourceModel.message)))
+            }
+        }
+        catch (e: Exception){
+            emit(ResultDataSource.Error(exception = e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    /**
      * Получение списка данных о аптеках.
      */
     override fun getPharmacyAddressesFlow(): Flow<ResultDataSource> = flow{
@@ -482,5 +514,6 @@ class CatalogRepositoryDataSourceRemoteImpl: CatalogRepositoryDataSourceRemote{
         const val GET_PRODUCT_AVAILABILITY = "/availability/all"
         const val GET_PRODUCTS_BY_IDS = "/products/ids_products"
         const val UPDATE_NUMBER_PRODUCTS = "/products/update_number_products"
+        const val GET_PRODUCT_BY_SEARCH = "/products/search"
     }
 }
