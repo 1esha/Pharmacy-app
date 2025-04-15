@@ -166,6 +166,10 @@ class AuthorizedUserFragment : Fragment(), ResultProcessing {
             authorizedUserViewModel.tryAgain(isNetworkStatus = isNetworkStatus)
         }
 
+        cardUserInfo.setOnClickListener {
+            navControllerMain.navigate(R.id.editFragment)
+        }
+
         layoutBookedItems.setOnClickListener {
             navControllerProfile.navigate(R.id.action_authorizedUserFragment_to_bookedGoodsFragment)
         }
@@ -182,9 +186,18 @@ class AuthorizedUserFragment : Fragment(), ResultProcessing {
             navControllerMain.navigate(R.id.mapFragment)
         }
 
-        cardUserInfo.setOnClickListener {
+        layoutMyData.setOnClickListener {
             navControllerMain.navigate(R.id.editFragment)
         }
+
+        layoutContacts.setOnClickListener {
+            navControllerProfile.navigate(R.id.action_authorizedUserFragment_to_contactsFragment)
+        }
+
+        layoutPrivacyPolicy.setOnClickListener {
+            navControllerProfile.navigate(R.id.action_authorizedUserFragment_to_privacyPolicyFragment)
+        }
+
 
         bExit.setOnClickListener {
             dialogExit.show()
