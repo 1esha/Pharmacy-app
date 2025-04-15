@@ -15,6 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.example.domain.Result
+import com.example.domain.ResultProcessing
 import com.example.domain.asSuccess
 import com.example.domain.catalog.models.PharmacyAddressesDetailsModel
 import com.example.domain.catalog.models.ProductAvailabilityModel
@@ -56,7 +57,7 @@ import kotlin.Exception
  * [FLAG_CURRENT_PRODUCT] для отрисовки карты текущего товара с наличием его в аптеках;
  * [FLAG_SELECT_ADDRESS_FOR_ORDER_MAKING] для отрисовки карты выбора аптеки для оформления заказа.
  */
-class MapFragment : Fragment() {
+class MapFragment : Fragment(), ResultProcessing {
 
     private var _binding: FragmentMapBinding? = null
     private val binding get() = _binding!!
@@ -147,7 +148,7 @@ class MapFragment : Fragment() {
     }
 
 
-    fun <T> onSuccessResultListener(data: T) {
+    override fun <T> onSuccessResultListener(data: T) {
         Log.i("TAG","MapFragment onSuccessResultListener")
         try {
             val _listRequests = data as List<*>
@@ -225,18 +226,18 @@ class MapFragment : Fragment() {
         }
     }
 
-    fun onErrorResultListener(exception: Exception) {
+    override fun onErrorResultListener(exception: Exception) {
         binding.mapView.visibility = View.GONE
         val message = getErrorMessage(exception = exception)
         updateUI(FLAG_ERROR_RESULT, messageError = getString(message))
     }
 
-    fun onLoadingResultListener() {
+    override fun onLoadingResultListener() {
         binding.mapView.visibility = View.GONE
         updateUI(flag = FLAG_PENDING_RESULT)
     }
 
-    fun updateUI(flag: String, messageError: String? = null) = with(binding.layoutPendingResultMap) {
+    override fun updateUI(flag: String, messageError: String?) = with(binding.layoutPendingResultMap) {
         when(flag) {
             FLAG_PENDING_RESULT -> {
                 Log.i("TAG","FLAG_PENDING_RESULT")

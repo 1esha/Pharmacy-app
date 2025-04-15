@@ -17,6 +17,7 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.domain.Result
+import com.example.domain.ResultProcessing
 import com.example.domain.asSuccess
 import com.example.domain.favorite.models.FavoriteModel
 import com.example.domain.models.FavouriteBasketModel
@@ -47,7 +48,7 @@ import java.lang.Exception
 /**
  * Класс [FavoriteFragment] является экраном со списком избранных товаров.
  */
-class FavoriteFragment : Fragment() {
+class FavoriteFragment : Fragment(), ResultProcessing {
 
     private var _binding: FragmentFavoriteBinding? = null
     private val binding get() = _binding!!
@@ -140,7 +141,7 @@ class FavoriteFragment : Fragment() {
         favoriteViewModel.setIsInstallAdapter(isInstallAdapter = true)
     }
 
-    fun <T> onSuccessResultListener(data: T) {
+    override fun <T> onSuccessResultListener(data: T) {
         Log.i("TAG","FavoriteFragment onSuccessResultListener")
         try {
             val _listRequests = data as List<*>
@@ -193,18 +194,18 @@ class FavoriteFragment : Fragment() {
         }
     }
 
-    fun onErrorResultListener(exception: Exception) {
+    override fun onErrorResultListener(exception: Exception) {
         Log.i("TAG","FavoriteFragment onErrorResultListener")
         val message = getErrorMessage(exception = exception)
         updateUI(flag = FLAG_ERROR_RESULT, messageError = getString(message))
     }
 
-    fun onLoadingResultListener() {
+    override fun onLoadingResultListener() {
         Log.i("TAG","FavoriteFragment onLoadingResultListener")
         updateUI(flag = FLAG_PENDING_RESULT)
     }
 
-    fun updateUI(flag: String, messageError: String? = null) = with(binding.layoutPendingResultFavorite){
+    override fun updateUI(flag: String, messageError: String?) = with(binding.layoutPendingResultFavorite){
         when(flag) {
             FLAG_PENDING_RESULT -> {
                 Log.i("TAG","FLAG_PENDING_RESULT")
