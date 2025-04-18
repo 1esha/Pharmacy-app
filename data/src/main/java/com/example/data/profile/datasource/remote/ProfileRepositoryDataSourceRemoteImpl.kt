@@ -10,9 +10,6 @@ import com.example.data.profile.datasource.models.UserInfoDataSourceModel
 import com.example.domain.ServerException
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.parameter
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
@@ -20,7 +17,6 @@ import io.ktor.client.request.url
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
-import io.ktor.serialization.gson.gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -29,17 +25,9 @@ import kotlinx.coroutines.flow.flowOn
 /**
  * Класс [ProfileRepositoryDataSourceRemoteImpl] является реализацией интерфейса [ProfileRepositoryDataSourceRemote].
  */
-class ProfileRepositoryDataSourceRemoteImpl : ProfileRepositoryDataSourceRemote {
-
-    private val client = HttpClient(OkHttp) {
-        // URL запроса по умолчанию
-        defaultRequest {
-            url(BASE_URL)
-        }
-        install(ContentNegotiation) {
-            gson()
-        }
-    }
+class ProfileRepositoryDataSourceRemoteImpl(
+    private val client: HttpClient
+) : ProfileRepositoryDataSourceRemote {
 
     /**
      * Создание нового пользователя.
@@ -288,8 +276,6 @@ class ProfileRepositoryDataSourceRemoteImpl : ProfileRepositoryDataSourceRemote 
         const val SUCCESS_CODE = 200
         const val NOT_SELECTED = "NOT_SELECTED"
 
-        private const val PORT = "4000"
-        private const val BASE_URL = "http://192.168.0.114:$PORT"
         const val CREATE_USER_URL = "/create/user"
         const val GET_USER_URL = "/user"
         const val GET_USER_ID_URL = "/user_id"

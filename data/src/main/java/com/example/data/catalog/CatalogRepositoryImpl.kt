@@ -1,6 +1,7 @@
 package com.example.data.catalog
 
 import android.util.Log
+import com.example.data.HttpClient
 import com.example.data.asError
 import com.example.data.asSuccess
 import com.example.data.catalog.datasource.models.OperatingModeDataSourceModel
@@ -35,7 +36,9 @@ import kotlinx.coroutines.flow.flowOn
 
 class CatalogRepositoryImpl() : CatalogRepository{
 
-    private val catalogRepositoryDataSourceRemoteImpl = CatalogRepositoryDataSourceRemoteImpl()
+    private val client = HttpClient().client
+
+    private val catalogRepositoryDataSourceRemoteImpl = CatalogRepositoryDataSourceRemoteImpl(client = client)
 
     /**
      * Получение всех товаров.

@@ -1,6 +1,7 @@
 package com.example.data.profile
 
 import android.util.Log
+import com.example.data.HttpClient
 import com.example.data.asError
 import com.example.data.asSuccess
 import com.example.data.profile.datasource.models.ResponseDataSourceModel
@@ -29,7 +30,9 @@ import kotlinx.coroutines.flow.flowOn
  */
 class ProfileRepositoryImpl : ProfileRepository {
 
-    private val profileRepositoryDataSourceRemote = ProfileRepositoryDataSourceRemoteImpl()
+    private val client = HttpClient().client
+
+    private val profileRepositoryDataSourceRemote = ProfileRepositoryDataSourceRemoteImpl(client = client)
 
     /**
      * Создание нового пользователя.

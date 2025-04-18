@@ -1,6 +1,7 @@
 package com.example.data.basket
 
 import android.util.Log
+import com.example.data.HttpClient
 import com.example.data.asError
 import com.example.data.asSuccess
 import com.example.data.basket.datasource.BasketRepositoryDataSourceRemoteImpl
@@ -25,7 +26,9 @@ import kotlinx.coroutines.flow.flowOn
  */
 class BasketRepositoryImpl: BasketRepository {
 
-    private val basketRepositoryDataSourceRemoteImpl = BasketRepositoryDataSourceRemoteImpl()
+    private val client = HttpClient().client
+
+    private val basketRepositoryDataSourceRemoteImpl = BasketRepositoryDataSourceRemoteImpl(client = client)
 
     /**
      * Добавление товрара в корзину.

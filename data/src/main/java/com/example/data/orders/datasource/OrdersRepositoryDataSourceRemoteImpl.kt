@@ -26,17 +26,9 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 
 
-class OrdersRepositoryDataSourceRemoteImpl: OrdersRepositoryDataSourceRemote {
-
-    private val client = HttpClient(OkHttp) {
-        // URL запроса по умолчанию
-        defaultRequest {
-            url(BASE_URL)
-        }
-        install(ContentNegotiation) {
-            gson()
-        }
-    }
+class OrdersRepositoryDataSourceRemoteImpl(
+    private val client: HttpClient
+): OrdersRepositoryDataSourceRemote {
 
     /**
      * Создание заказа.
@@ -151,8 +143,6 @@ class OrdersRepositoryDataSourceRemoteImpl: OrdersRepositoryDataSourceRemote {
     }.flowOn(Dispatchers.IO)
 
     companion object {
-        private const val PORT = "4000"
-        private const val BASE_URL = "http://192.168.0.114:$PORT"
         const val CREATE_ORDER = "/orders/make"
         const val GET_PURCHASE_HISTORY = "/orders/purchase_history"
         const val GET_CURRENT_ORDERS = "/orders/current"

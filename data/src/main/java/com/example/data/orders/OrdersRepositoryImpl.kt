@@ -1,6 +1,7 @@
 package com.example.data.orders
 
 import android.util.Log
+import com.example.data.HttpClient
 import com.example.data.asError
 import com.example.data.asSuccess
 import com.example.data.orders.datasource.OrdersRepositoryDataSourceRemoteImpl
@@ -22,7 +23,9 @@ import kotlinx.coroutines.flow.flowOn
 
 class OrdersRepositoryImpl: OrdersRepository {
 
-    private val ordersRepositoryDataSourceRemoteImpl = OrdersRepositoryDataSourceRemoteImpl()
+    private val client = HttpClient().client
+
+    private val ordersRepositoryDataSourceRemoteImpl = OrdersRepositoryDataSourceRemoteImpl(client = client)
 
     /**
      * Создание заказа.

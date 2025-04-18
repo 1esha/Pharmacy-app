@@ -10,9 +10,6 @@ import com.example.data.profile.datasource.models.ResponseValueDataSourceModel
 import com.example.domain.ServerException
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.parameter
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
@@ -20,7 +17,6 @@ import io.ktor.client.request.url
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
-import io.ktor.serialization.gson.gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -29,20 +25,9 @@ import kotlinx.coroutines.flow.flowOn
 /**
  * Класс [BasketRepositoryDataSourceRemoteImpl] является реализацией интерфейса [BasketRepositoryDataSourceRemote].
  */
-class BasketRepositoryDataSourceRemoteImpl: BasketRepositoryDataSourceRemote {
-
-    /**
-     * Создание клиента.
-     */
-    private val client = HttpClient(OkHttp) {
-        // URL запроса по умолчанию
-        defaultRequest {
-            url(BASE_URL)
-        }
-        install(ContentNegotiation) {
-            gson()
-        }
-    }
+class BasketRepositoryDataSourceRemoteImpl(
+    private val client: HttpClient
+): BasketRepositoryDataSourceRemote {
 
     /**
      * Добавление товара в корзину.
@@ -320,8 +305,6 @@ class BasketRepositoryDataSourceRemoteImpl: BasketRepositoryDataSourceRemote {
     }.flowOn(Dispatchers.IO)
 
     companion object {
-        private const val PORT = "4000"
-        private const val BASE_URL = "http://192.168.0.114:$PORT"
         private const val ADD_PRODUCT_IN_BASKET = "/basket/add"
         private const val DELETE_PRODUCT_FROM_BASKET = "/basket/delete"
         private const val DELETE_PRODUCTS_FROM_BASKET = "/basket/delete/products"
