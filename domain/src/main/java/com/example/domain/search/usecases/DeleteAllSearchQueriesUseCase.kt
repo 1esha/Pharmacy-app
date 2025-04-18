@@ -1,0 +1,17 @@
+package com.example.domain.search.usecases
+
+import com.example.domain.Result
+import com.example.domain.search.SearchRepository
+import kotlinx.coroutines.flow.Flow
+
+class DeleteAllSearchQueriesUseCase(
+    private val searchRepository: SearchRepository
+) {
+
+    fun execute(): Flow<Result> {
+        val result = searchRepository.deleteAllSearchQueries()
+
+        return result
+    }
+
+}
