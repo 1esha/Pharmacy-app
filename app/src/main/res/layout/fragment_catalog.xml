@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".tabs.CatalogFragment">
+    tools:context=".tabs.catalog.CatalogFragment">
 
 
     <androidx.recyclerview.widget.RecyclerView

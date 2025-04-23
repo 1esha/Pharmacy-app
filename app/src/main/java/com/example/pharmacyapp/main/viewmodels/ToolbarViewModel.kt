@@ -16,7 +16,19 @@ class ToolbarViewModel: ViewModel() {
     private val _menuClickListener = MutableLiveData<((Int) -> Unit)?>()
     val menuClickListener: LiveData<((Int) -> Unit)?> = _menuClickListener
 
-    fun installToolbar(toolbarSettingsModel: ToolbarSettingsModel) {
+    private val _isInstallSearchBar = MutableLiveData<Boolean>(false)
+    val isInstallSearchBar: LiveData<Boolean> = _isInstallSearchBar
+
+    private val _isVisibleToolbar = MutableLiveData<Boolean>(true)
+    val isVisibleToolbar: LiveData<Boolean> = _isVisibleToolbar
+
+    fun installToolbar(
+        isVisibleToolbar: Boolean = true,
+        isInstallSearchBar: Boolean = false,
+        toolbarSettingsModel: ToolbarSettingsModel
+    ) {
+        _isVisibleToolbar.value = isVisibleToolbar
+        _isInstallSearchBar.value = isInstallSearchBar
         _toolbarSettings.value = toolbarSettingsModel
     }
 

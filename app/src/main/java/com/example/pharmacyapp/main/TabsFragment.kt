@@ -10,6 +10,7 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.databinding.FragmentTabsBinding
+import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 
 class TabsFragment : Fragment() {
@@ -45,7 +46,6 @@ class TabsFragment : Fragment() {
                     onClickNavigationIcon()
                 }
             }
-
         }
 
         toolbarViewModel.menu.observe(viewLifecycleOwner) { menu ->
@@ -62,6 +62,18 @@ class TabsFragment : Fragment() {
                     true
                 }
             }
+        }
+
+        toolbarViewModel.isVisibleToolbar.observe(viewLifecycleOwner) { isVisibleToolbar ->
+            toolbarTabs.visibility = if (isVisibleToolbar) View.VISIBLE else View.GONE
+        }
+
+        toolbarViewModel.isInstallSearchBar.observe(viewLifecycleOwner) { isInstallSearchBar ->
+            searchBar.visibility = if (isInstallSearchBar) View.VISIBLE else View.GONE
+        }
+
+        searchBar.setOnClickListener {
+            getSupportActivity().getNavControllerMain().navigate(R.id.searchFragment)
         }
     }
 

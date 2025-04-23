@@ -33,6 +33,7 @@ import com.example.pharmacyapp.KEY_ARRAY_LIST_IDS_FILTERED
 import com.example.pharmacyapp.KEY_ARRAY_LIST_SELECTED_ADDRESSES
 import com.example.pharmacyapp.KEY_DEFAULT_PRICE_FROM
 import com.example.pharmacyapp.KEY_DEFAULT_PRICE_UP_TO
+import com.example.pharmacyapp.KEY_FLAGS_FOR_PRODUCTS
 import com.example.pharmacyapp.KEY_IS_CHECKED_DISCOUNT
 import com.example.pharmacyapp.KEY_IS_FAVORITES
 import com.example.pharmacyapp.KEY_IS_IN_BASKET
@@ -42,6 +43,7 @@ import com.example.pharmacyapp.KEY_PRICE_UP_TO
 import com.example.pharmacyapp.KEY_PRODUCT_ID
 import com.example.pharmacyapp.KEY_RESULT_ARRAY_LIST_IDS_FILTERED
 import com.example.pharmacyapp.KEY_RESULT_FROM_PRODUCT_INFO
+import com.example.pharmacyapp.KEY_SEARCH_TEXT
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
@@ -50,7 +52,6 @@ import com.example.pharmacyapp.TYPE_ADD_PRODUCT_IN_BASKET
 import com.example.pharmacyapp.TYPE_DELETE_PRODUCT_FROM_BASKET
 import com.example.pharmacyapp.TYPE_GET_ALL_FAVORITES
 import com.example.pharmacyapp.TYPE_GET_IDS_PRODUCTS_FROM_BASKET
-import com.example.pharmacyapp.TYPE_GET_PRODUCTS_BY_PATH
 import com.example.pharmacyapp.TYPE_REMOVE_FAVORITES
 import com.example.pharmacyapp.ToolbarSettingsModel
 import com.example.pharmacyapp.UNAUTHORIZED_USER
@@ -60,6 +61,7 @@ import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 import com.example.pharmacyapp.tabs.catalog.adapters.ProductsAdapter
 import com.example.pharmacyapp.tabs.catalog.viewmodels.ProductsViewModel
+import com.example.pharmacyapp.tabs.catalog.viewmodels.ProductsViewModel.Companion.TYPE_GET_PRODUCTS
 import com.example.pharmacyapp.tabs.catalog.viewmodels.factories.ProductsViewModelFactory
 import kotlinx.coroutines.launch
 
@@ -97,8 +99,10 @@ class ProductsFragment : Fragment(), ResultProcessing {
             sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
 
             initValues(
+                flag = arguments?.getString(KEY_FLAGS_FOR_PRODUCTS),
                 userId = sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER),
-                path = arguments?.getString(KEY_PATH)
+                path = arguments?.getString(KEY_PATH),
+                searchText = arguments?.getString(KEY_SEARCH_TEXT)
             )
 
             getSupportActivity().setFragmentResultListener(requestKey = KEY_RESULT_FROM_PRODUCT_INFO) { requestKey, bundle ->
@@ -148,7 +152,7 @@ class ProductsFragment : Fragment(), ResultProcessing {
             lifecycleScope.launch {
                 repeatOnLifecycle(Lifecycle.State.STARTED) {
                     listProductsInCatalog.collect{ listProductsInCatalog ->
-                        installAdapter(mutableListProductsInCatalog = listProductsInCatalog.toMutableList())
+                        installUI(mutableListProductsInCatalog = listProductsInCatalog.toMutableList())
                     }
                 }
             }
@@ -244,18 +248,18 @@ class ProductsFragment : Fragment(), ResultProcessing {
             }
 
             when(fullType){
-                TYPE_GET_PRODUCTS_BY_PATH + TYPE_GET_ALL_FAVORITES + TYPE_GET_IDS_PRODUCTS_FROM_BASKET -> {
-                    Log.i("TAG","fullType =  TYPE_GET_PRODUCTS_BY_PATH + TYPE_GET_ALL_FAVORITES + TYPE_GET_IDS_PRODUCTS_FROM_BASKET")
-                    val resultGetProductsByPath = listRequests.find { it.type == TYPE_GET_PRODUCTS_BY_PATH }?.result!!.asSuccess()!!
+                TYPE_GET_PRODUCTS + TYPE_GET_ALL_FAVORITES + TYPE_GET_IDS_PRODUCTS_FROM_BASKET -> {
+                    Log.i("TAG","fullType =  TYPE_GET_PRODUCTS + TYPE_GET_ALL_FAVORITES + TYPE_GET_IDS_PRODUCTS_FROM_BASKET")
+                    val resultGetProducts = listRequests.find { it.type == TYPE_GET_PRODUCTS }?.result!!.asSuccess()!!
                     val resultGetAllFavorites = listRequests.find { it.type == TYPE_GET_ALL_FAVORITES }?.result!!.asSuccess()!!
                     val resultGetIdsProductsFromBasket = listRequests.find { it.type == TYPE_GET_IDS_PRODUCTS_FROM_BASKET }?.result!!.asSuccess()!!
 
 
-                    val responseGetProductsByPath = resultGetProductsByPath.data as ResponseValueModel<*>
+                    val responseGetProducts = resultGetProducts.data as ResponseValueModel<*>
                     val responseGetAllFavorites = resultGetAllFavorites.data as ResponseValueModel<*>
                     val responseGetIdsProductsFromBasket = resultGetIdsProductsFromBasket.data as ResponseValueModel<*>
 
-                    val _listAllProducts = responseGetProductsByPath.value as List<*>
+                    val _listAllProducts = responseGetProducts.value as List<*>
                     val listAllProducts = _listAllProducts.map { it as ProductModel }
 
                     val _listAllFavorite = responseGetAllFavorites.value as List<*>
@@ -305,8 +309,8 @@ class ProductsFragment : Fragment(), ResultProcessing {
         updateUI(FLAG_ERROR_RESULT, messageError = getString(message))
     }
 
-    private fun installAdapter(mutableListProductsInCatalog: MutableList<ProductInCatalogModel>) = with(binding){
-        productsViewModel.installAdapter { userId, isEmptyList, sizeListAllProducts ->
+    private fun installUI(mutableListProductsInCatalog: MutableList<ProductInCatalogModel>) = with(binding){
+        productsViewModel.installAdapter { userId, isEmptyList,isVisibleConfigurationPane, isVisibleFilter ->
             val colorUtils = ColorUtils(context = requireContext())
 
             val buttonModel = ButtonModel(
@@ -318,8 +322,9 @@ class ProductsFragment : Fragment(), ResultProcessing {
                 textSecondary = getString(R.string.in_the_shopping_cart)
             )
 
-            // Если товаров по ,выбранной категории, вообще нет, то панель с кнопками "Сортировать" и "Фильтровать" не отображается
-            layoutConfigurationPanel.visibility = if (sizeListAllProducts == 0) View.GONE else View.VISIBLE
+            layoutConfigurationPanel.visibility = if (isVisibleConfigurationPane) View.VISIBLE else View.GONE
+
+            bFilters.visibility = if (isVisibleFilter) View.VISIBLE else View.GONE
 
             // Если список товаров пуст, то отображается текст - "Список пуст" иначе отображается список
             if (isEmptyList){

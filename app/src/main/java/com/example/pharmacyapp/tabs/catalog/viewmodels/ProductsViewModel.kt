@@ -17,11 +17,14 @@ import com.example.domain.catalog.models.ProductInCatalogModel
 import com.example.domain.favorite.models.FavoriteModel
 import com.example.domain.catalog.models.ProductModel
 import com.example.domain.catalog.usecases.GetProductsByPathUseCase
+import com.example.domain.catalog.usecases.GetProductsBySearchUseCase
 import com.example.domain.favorite.usecases.AddFavoriteUseCase
 import com.example.domain.favorite.usecases.DeleteByIdUseCase
 import com.example.domain.favorite.usecases.GetAllFavoritesUseCase
 import com.example.domain.models.RequestModel
 import com.example.pharmacyapp.EMPTY_STRING
+import com.example.pharmacyapp.FLAG_PRODUCTS_BY_PATH
+import com.example.pharmacyapp.FLAG_PRODUCTS_BY_SEARCH
 import com.example.pharmacyapp.MIN_DELAY
 import com.example.pharmacyapp.TYPE_ADD_FAVORITE
 import com.example.pharmacyapp.TYPE_ADD_PRODUCT_IN_BASKET
@@ -29,6 +32,7 @@ import com.example.pharmacyapp.TYPE_DELETE_PRODUCT_FROM_BASKET
 import com.example.pharmacyapp.TYPE_GET_ALL_FAVORITES
 import com.example.pharmacyapp.TYPE_GET_IDS_PRODUCTS_FROM_BASKET
 import com.example.pharmacyapp.TYPE_GET_PRODUCTS_BY_PATH
+import com.example.pharmacyapp.TYPE_GET_PRODUCTS_BY_SEARCH
 import com.example.pharmacyapp.TYPE_REMOVE_FAVORITES
 import com.example.pharmacyapp.UNAUTHORIZED_USER
 import com.example.pharmacyapp.getPrice
@@ -88,6 +92,10 @@ class ProductsViewModel(
     private var priceUpTo: Int = defaultPriceUpTo
     private var arrayListIdsSelectedAddresses: ArrayList<Int> = arrayListOf()
 
+    private var flag = FLAG_PRODUCTS_BY_PATH
+
+    private var searchText = EMPTY_SEARCH
+
     private var listAllProductsInCatalog = listOf<ProductInCatalogModel>()
 
     private var currentProductInCatalog: ProductInCatalogModel? = null
@@ -95,16 +103,28 @@ class ProductsViewModel(
     private var listAllProducts = listOf<ProductModel>()
 
     fun initValues(
+        flag: String?,
         userId: Int,
-        path: String?
+        path: String?,
+        searchText: String?
     ){
         try {
             if (isInit){
-                this.userId = userId
-                this.path = path?:throw NullPointerException()
+                this.flag = flag?:FLAG_PRODUCTS_BY_PATH
 
-                isInit = false
+                this.userId = userId
+
+                when(this.flag) {
+                    FLAG_PRODUCTS_BY_PATH -> {
+                        this.path = path?:throw NullPointerException()
+                    }
+                    FLAG_PRODUCTS_BY_SEARCH -> {
+                        this.searchText = searchText?:EMPTY_SEARCH
+                    }
+                }
+
             }
+            isInit = false
         }
         catch (e: Exception){
             Log.e("TAG",e.stackTraceToString())
@@ -121,15 +141,6 @@ class ProductsViewModel(
 
                     onLoading()
 
-                    if (path == EMPTY_STRING){
-                        _stateScreen.value = Result.Error(exception = IllegalArgumentException())
-                        return@checkNetworkStatus
-                    }
-
-                    val getProductsByPathUseCase = GetProductsByPathUseCase(
-                        catalogRepository = catalogRepositoryImpl,
-                        path = path
-                    )
                     val getAllFavoritesUseCase = GetAllFavoritesUseCase(
                         favoriteRepository = favoriteRepositoryImpl
                     )
@@ -137,50 +148,78 @@ class ProductsViewModel(
                         basketRepository = basketRepositoryImpl,
                         userId = userId
                     )
+
                     viewModelScope.launch {
-                        val resultGetProductsByPath = getProductsByPathUseCase.execute().map { result ->
-                            return@map RequestModel(
-                                type = TYPE_GET_PRODUCTS_BY_PATH,
-                                result = result
-                            )
-                        }
-
-                        val resultGetAllFavorites = getAllFavoritesUseCase.execute().map { result ->
-                            return@map RequestModel(
-                                type = TYPE_GET_ALL_FAVORITES,
-                                result = result
-                            )
-                        }
-
-                        val resultGetIdsProductsFromBasket = getIdsProductsFromBasketUseCase.execute().map { result ->
-                            return@map RequestModel(
-                                type = TYPE_GET_IDS_PRODUCTS_FROM_BASKET,
-                                result = result
-                            )
-                        }
-
-                        val combinedFlow = combine(
-                            resultGetProductsByPath,
-                            resultGetAllFavorites,
-                            resultGetIdsProductsFromBasket) { productsByPath, allFavorites, idsProductsFromBasket ->
-
-                            return@combine listOf(
-                                productsByPath,
-                                allFavorites,
-                                idsProductsFromBasket
-                            )
-                        }
-
-                        combinedFlow.collect{ listResults ->
-                            listResults.forEach { requestModel ->
-                                if (requestModel.result is Result.Error){
-                                    _stateScreen.value = requestModel.result
-                                    return@collect
+                        try {
+                            val resultGetProducts = when(flag){
+                                FLAG_PRODUCTS_BY_PATH -> {
+                                    GetProductsByPathUseCase(
+                                        catalogRepository = catalogRepositoryImpl,
+                                        path = path
+                                    ).execute().map {
+                                            result ->
+                                        return@map RequestModel(
+                                            type = TYPE_GET_PRODUCTS,
+                                            result = result
+                                        )
+                                    }
                                 }
+                                FLAG_PRODUCTS_BY_SEARCH -> {
+                                    GetProductsBySearchUseCase(
+                                        catalogRepository = catalogRepositoryImpl,
+                                        searchText = searchText
+                                    ).execute().map {
+                                            result ->
+                                        return@map RequestModel(
+                                            type = TYPE_GET_PRODUCTS,
+                                            result = result
+                                        )
+                                    }
+                                }
+                                else -> throw IllegalArgumentException()
                             }
-                            _stateScreen.value = Result.Success(
-                                data = listResults
-                            )
+
+                            val resultGetAllFavorites = getAllFavoritesUseCase.execute().map { result ->
+                                return@map RequestModel(
+                                    type = TYPE_GET_ALL_FAVORITES,
+                                    result = result
+                                )
+                            }
+
+                            val resultGetIdsProductsFromBasket = getIdsProductsFromBasketUseCase.execute().map { result ->
+                                return@map RequestModel(
+                                    type = TYPE_GET_IDS_PRODUCTS_FROM_BASKET,
+                                    result = result
+                                )
+                            }
+
+                            val combinedFlow = combine(
+                                resultGetProducts,
+                                resultGetAllFavorites,
+                                resultGetIdsProductsFromBasket) { products, allFavorites, idsProductsFromBasket ->
+
+                                return@combine listOf(
+                                    products,
+                                    allFavorites,
+                                    idsProductsFromBasket
+                                )
+                            }
+
+                            combinedFlow.collect{ listResults ->
+                                listResults.forEach { requestModel ->
+                                    if (requestModel.result is Result.Error){
+                                        _stateScreen.value = requestModel.result
+                                        return@collect
+                                    }
+                                }
+                                _stateScreen.value = Result.Success(
+                                    data = listResults
+                                )
+                            }
+                        }
+                        catch (e: Exception){
+                            Log.e("TAG",e.stackTraceToString())
+                            _stateScreen.value = Result.Error(exception = e)
                         }
                     }
 
@@ -414,12 +453,15 @@ class ProductsViewModel(
         }
     }
 
-    fun installAdapter(block:(Int, Boolean, Int) -> Unit){
+    fun installAdapter(block:(Int, Boolean, Boolean, Boolean) -> Unit){
         val isEmptyList = _listProductsInCatalog.value.isEmpty()
         val sizeListAllProducts = listAllProducts.size
-        if (isInstallAdapter) block(userId,isEmptyList,sizeListAllProducts)
+        val isVisibleConfigurationPane = sizeListAllProducts != 0
+        val isVisibleFiler = searchText == EMPTY_SEARCH
+        if (isInstallAdapter) block(userId,isEmptyList,isVisibleConfigurationPane,isVisibleFiler)
 
         if (sizeListAllProducts != 0) isInstallAdapter = false
+
     }
 
     fun onClickFavorite(
@@ -659,5 +701,10 @@ class ProductsViewModel(
         return sortedListProducts
     }
 
+    companion object {
+        const val TYPE_GET_PRODUCTS = "TYPE_GET_PRODUCTS"
+
+        private const val EMPTY_SEARCH = "EMPTY_SEARCH"
+    }
 
 }

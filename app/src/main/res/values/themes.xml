@@ -9,9 +9,10 @@
         <item name="colorPrimaryContainer">@color/green100</item>
         <item name="colorOnPrimaryContainer">@color/green900</item>
 
-
         <item name="colorSecondaryContainer">@color/green100</item>
         <item name="colorOnSecondaryContainer">@color/green900</item>
+
+        <item name="colorSurfaceContainerHigh">@color/gray50</item>
 
         <item name="background">@color/gray200</item>
 

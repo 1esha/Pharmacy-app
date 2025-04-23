@@ -52,4 +52,8 @@
         android:id="@+id/readyOrderFragment"
         android:name="com.example.pharmacyapp.main.ReadyOrderFragment"
         android:label="ReadyOrderFragment" />
+    <fragment
+        android:id="@+id/searchFragment"
+        android:name="com.example.pharmacyapp.main.SearchFragment"
+        android:label="SearchFragment" />
 </navigation>

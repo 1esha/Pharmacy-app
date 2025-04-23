@@ -1,4 +1,4 @@
-package com.example.pharmacyapp.tabs
+package com.example.pharmacyapp.tabs.catalog
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
@@ -15,9 +16,12 @@ import com.example.pharmacyapp.KEY_PATH_MAIN
 import com.example.pharmacyapp.R
 import com.example.pharmacyapp.ToolbarSettingsModel
 import com.example.pharmacyapp.databinding.FragmentCatalogBinding
+import com.example.pharmacyapp.getSupportActivity
 import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 import com.example.pharmacyapp.tabs.catalog.adapters.CatalogMainAdapter
 import com.example.pharmacyapp.toPath
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class CatalogFragment : Fragment() {
 
@@ -27,6 +31,22 @@ class CatalogFragment : Fragment() {
     private lateinit var navControllerCatalog: NavController
 
     private val toolbarViewModel: ToolbarViewModel by activityViewModels()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        getSupportActivity().setFragmentResultListener(KEY_RESULT_FROM_SEARCH_PRODUCTS) { _, bundle ->
+            checkIsStateSaved {
+                findNavController().navigate(R.id.productsFragment,bundle)
+            }
+        }
+
+        getSupportActivity().setFragmentResultListener(KEY_RESULT_FROM_SEARCH_PRODUCT_ID) { _, bundle ->
+            checkIsStateSaved {
+                findNavController().navigate(R.id.productInfoFragment,bundle)
+            }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -41,7 +61,10 @@ class CatalogFragment : Fragment() {
 
         navControllerCatalog = findNavController()
 
-        toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.catalog)){})
+        toolbarViewModel.installToolbar(
+            isInstallSearchBar = true,
+            toolbarSettingsModel = ToolbarSettingsModel(title = getString(R.string.catalog)){}
+        )
         toolbarViewModel.clearMenu()
 
         val listItems = listOf(
@@ -65,6 +88,18 @@ class CatalogFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    private fun checkIsStateSaved(block: () -> Unit){
+        lifecycleScope.launch {
+            if (!isStateSaved()) {
+                block()
+            }
+            else{
+                delay(100)
+                checkIsStateSaved(block = block)
+            }
+        }
     }
 
     private fun onClickCatalogMain(path: String) {
@@ -171,6 +206,11 @@ class CatalogFragment : Fragment() {
         bundle.putString(KEY_PATH_MAIN,path)
         bundle.putStringArrayList(KEY_ARRAY_LIST_CURRENT_ITEMS, arrayListCurrentItems)
         navControllerCatalog.navigate(R.id.action_catalogFragment_to_subdirectoryFragment, bundle)
+    }
+
+    companion object {
+        const val KEY_RESULT_FROM_SEARCH_PRODUCT_ID = "KEY_RESULT_FROM_SEARCH_PRODUCT_ID"
+        const val KEY_RESULT_FROM_SEARCH_PRODUCTS = "KEY_RESULT_FROM_SEARCH_PRODUCTS"
     }
 
 }
