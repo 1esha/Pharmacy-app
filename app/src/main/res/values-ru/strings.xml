@@ -212,8 +212,8 @@
     <string name="registration_date">Дата оформления:</string>
     <string name="date_of_purchase">Дата покупки:</string>
     <string name="quantity">Количество:</string>
-    <string name="the_order_has_been_placed">Заказ оформлен: %1$s</string>
     <string name="the_order_has_been_placed">Оформлен: %1$s</string>
     <string name="to_find">Найти</string>
     <string name="clear_the_history">Очистить историю</string>
+    <string name="we_recommend_it">Рекомендуем</string>
 </resources>
