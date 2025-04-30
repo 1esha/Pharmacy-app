@@ -413,15 +413,15 @@ class OrderMakingViewModel(
                     )
                 }
 
-                val combineFlow = combine(
-                    resultDeleteProductsFromBasket,
-                    resultUpdateNumbersProductsInBasket,
-                    resultUpdateNumbersProductsInPharmacy,
-                    resultCreateOrder
-                ) { deleteProductsFromBasket,updateNumbersProductsInBasket,updateNumbersProductsInPharmacy,createOrder ->
-                    return@combine when{
-                        // И удаляем и обновляем
-                        listIdsProductsForDeleteInBasket.isNotEmpty() && listNumberProductsForUpdateInBasket.isNotEmpty() -> {
+                val combineFlow = when {
+                    listIdsProductsForDeleteInBasket.isNotEmpty() && listNumberProductsForUpdateInBasket.isNotEmpty() -> {
+                        combine(
+                            resultDeleteProductsFromBasket,
+                            resultUpdateNumbersProductsInBasket,
+                            resultUpdateNumbersProductsInPharmacy,
+                            resultCreateOrder
+                        ) { deleteProductsFromBasket,updateNumbersProductsInBasket,updateNumbersProductsInPharmacy,createOrder ->
+                            // И удаляем и обновляем
                             listOf(
                                 deleteProductsFromBasket,
                                 updateNumbersProductsInBasket,
@@ -429,24 +429,36 @@ class OrderMakingViewModel(
                                 createOrder
                             )
                         }
-                        // Только удаляем
-                        listIdsProductsForDeleteInBasket.isNotEmpty() -> {
-                            listOf(
-                                deleteProductsFromBasket,
-                                updateNumbersProductsInPharmacy,
-                                createOrder
-                            )
-                        }
-                        // Только обновляем
-                        listNumberProductsForUpdateInBasket.isNotEmpty() -> {
-                            listOf(
-                                updateNumbersProductsInBasket,
-                                updateNumbersProductsInPharmacy,
-                                createOrder
-                            )
-                        }
-                        else -> throw IllegalArgumentException()
                     }
+                    listIdsProductsForDeleteInBasket.isNotEmpty() -> {
+                        combine(
+                            resultDeleteProductsFromBasket,
+                            resultUpdateNumbersProductsInPharmacy,
+                            resultCreateOrder
+                        ) { deleteProductsFromBasket,updateNumbersProductsInPharmacy,createOrder ->
+                            // Только удаляем
+                            listOf(
+                                deleteProductsFromBasket,
+                                updateNumbersProductsInPharmacy,
+                                createOrder
+                            )
+                        }
+                    }
+                    listNumberProductsForUpdateInBasket.isNotEmpty() -> {
+                        combine(
+                            resultUpdateNumbersProductsInBasket,
+                            resultUpdateNumbersProductsInPharmacy,
+                            resultCreateOrder
+                        ) { updateNumbersProductsInBasket,updateNumbersProductsInPharmacy,createOrder ->
+                            // Только обновляем
+                            listOf(
+                                updateNumbersProductsInBasket,
+                                updateNumbersProductsInPharmacy,
+                                createOrder
+                            )
+                        }
+                    }
+                    else -> throw IllegalArgumentException()
                 }
 
                 combineFlow.collect { listResults ->
