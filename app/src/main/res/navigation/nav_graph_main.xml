@@ -56,4 +56,8 @@
         android:id="@+id/searchFragment"
         android:name="com.example.pharmacyapp.main.SearchFragment"
         android:label="SearchFragment" />
+    <fragment
+        android:id="@+id/instructionManualFragment"
+        android:name="com.example.pharmacyapp.main.InstructionManualFragment"
+        android:label="InstructionManualFragment" />
 </navigation>

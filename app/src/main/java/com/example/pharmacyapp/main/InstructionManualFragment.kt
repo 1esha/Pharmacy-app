@@ -1,11 +1,10 @@
-package com.example.pharmacyapp.tabs.catalog
+package com.example.pharmacyapp.main
 
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -13,9 +12,8 @@ import com.example.domain.models.DetailsProductModel
 import com.example.pharmacyapp.KEY_ARRAY_LIST_BODY_INSTRUCTION
 import com.example.pharmacyapp.KEY_ARRAY_LIST_TITLES_INSTRUCTION
 import com.example.pharmacyapp.R
-import com.example.pharmacyapp.ToolbarSettingsModel
+import com.example.pharmacyapp.ToolbarSettings
 import com.example.pharmacyapp.databinding.FragmentInstructionManualBinding
-import com.example.pharmacyapp.main.viewmodels.ToolbarViewModel
 import com.example.pharmacyapp.tabs.catalog.adapters.InstructionManualAdapter
 
 class InstructionManualFragment: Fragment() {
@@ -23,15 +21,7 @@ class InstructionManualFragment: Fragment() {
     private var _binding: FragmentInstructionManualBinding? = null
     private val binding get() = _binding!!
 
-    private val toolbarViewModel: ToolbarViewModel by activityViewModels()
-
-    private lateinit var navControllerCatalog: NavController
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        navControllerCatalog = findNavController()
-    }
+    private lateinit var navControllerMain: NavController
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -44,20 +34,22 @@ class InstructionManualFragment: Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) = with(binding) {
 
+        navControllerMain = findNavController()
+
         val arrayListTitles = arguments?.getStringArrayList(KEY_ARRAY_LIST_TITLES_INSTRUCTION) ?:
         throw NullPointerException("InstructionManualFragment arrayListTitles = null")
 
         val arrayListBody = arguments?.getStringArrayList(KEY_ARRAY_LIST_BODY_INSTRUCTION) ?:
         throw NullPointerException("InstructionManualFragment arrayListBody = null")
 
-        toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(
+        val toolbarSettings = ToolbarSettings(toolbar = layoutToolbarMainInstructionManual.toolbarMain)
+
+        toolbarSettings.installToolbarMain(
             title = getString(R.string.instruction_manual),
             icon = R.drawable.ic_back
-        ) {
-            navControllerCatalog.navigateUp()
-        })
-
-        toolbarViewModel.clearMenu()
+        ){
+            navControllerMain.navigateUp()
+        }
 
         val listDetailsProduct = getListDetailsProduct(
             arrayListTitles = arrayListTitles,

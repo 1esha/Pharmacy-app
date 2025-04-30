@@ -251,7 +251,7 @@ class ProductInfoFragment : Fragment(), ResultProcessing {
                     putStringArrayList(KEY_ARRAY_LIST_BODY_INSTRUCTION, arrayListBody)
                 }
 
-                navControllerCatalog.navigate(R.id.action_productInfoFragment_to_instructionManualFragment, bundle)
+                navControllerMain.navigate(R.id.instructionManualFragment,bundle)
             }
         }
     }

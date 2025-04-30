@@ -6,6 +6,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="?attr/background"
+    android:fitsSystemWindows="true"
     tools:context=".tabs.catalog.ProductInfoFragment">
 
     <include
