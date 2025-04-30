@@ -30,7 +30,7 @@ class InitAdapter(
 
         val page = listPages[position]
         tvDescription.text = page.description
-
+        ivPage.setImageResource(page.image)
         bGoToLogIn.setOnClickListener { onClickGoToLogIn() }
 
     }

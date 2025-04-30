@@ -45,9 +45,9 @@ class InitFragment : Fragment() {
         sharedPreferences = requireContext().getSharedPreferences(NAME_SHARED_PREFERENCES, Context.MODE_PRIVATE)
 
         val listPages = listOf(
-            PageModel(getString(R.string.book_products_at_pharmacies_at_a_bargain_price), 0),
-            PageModel(getString(R.string.get_discounts), 0),
-            PageModel(getString(R.string.log_in_to_get_more_benefits), 0)
+            PageModel(getString(R.string.book_products_at_pharmacies_at_a_bargain_price), R.drawable.booking_of_goods),
+            PageModel(getString(R.string.get_discounts), R.drawable.get_discounts),
+            PageModel(getString(R.string.log_in_to_get_more_benefits), R.drawable.log_in_to_receive_more_benefits)
         )
         val initAdapter = InitAdapter(
             listPages = listPages,
