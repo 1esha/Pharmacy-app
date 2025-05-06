@@ -270,6 +270,40 @@ class ProfileRepositoryDataSourceRemoteImpl(
         }
     }.flowOn(Dispatchers.IO)
 
+    override fun changeUserPasswordFlow(
+        userId: Int,
+        oldUserPassword: Int,
+        newUserPassword: Int
+    ): Flow<ResultDataSource> = flow{
+        Log.d("TAG","changeUserPasswordFlow")
+        try {
+            val response = client.request {
+                url(CHANGE_USER_PASSWORD)
+                method = HttpMethod.Post
+                setBody(
+                    object {
+                        val userId = userId
+                        val oldUserPassword = oldUserPassword
+                        val newUserPassword = newUserPassword
+                    }
+                )
+                contentType(ContentType.Application.Json)
+            }
+            val data = response.body<ResponseDataSourceModel>()
+
+            if (data.status in 200..299) {
+                val result = ResultDataSource.Success(data = data)
+                emit(result)
+            }
+            else {
+                emit(ResultDataSource.Error(exception = ServerException(serverMessage = data.message)))
+            }
+        }
+        catch (e: Exception){
+            emit(ResultDataSource.Error(exception = e))
+        }
+    }.flowOn(Dispatchers.IO)
+
     companion object {
 
         const val SUCCESS = "Успешно"
@@ -283,6 +317,7 @@ class ProfileRepositoryDataSourceRemoteImpl(
         const val EDIT_USER_URL ="/user/edit"
         const val DELETE_USER_URL = "/user/delete"
         const val GET_CITY_BY_USER_ID = "/city/user_id"
+        const val CHANGE_USER_PASSWORD = "/user/edit/password"
     }
 
 

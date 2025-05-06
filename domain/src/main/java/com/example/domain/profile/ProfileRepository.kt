@@ -24,4 +24,6 @@ interface ProfileRepository{
     fun deleteUserFlow(userId: Int): Flow<Result>
 
     fun getCityByUserIdFlow(userId: Int): Flow<Result>
+
+    fun changeUserPasswordFlow(userId: Int, oldUserPassword: Int, newUserPassword: Int): Flow<Result>
 }

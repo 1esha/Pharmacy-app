@@ -24,4 +24,6 @@ interface ProfileRepositoryDataSourceRemote{
     fun deleteUserFlow(userId: Int): Flow<ResultDataSource>
 
     fun getCityByUserIdFlow(userId: Int): Flow<ResultDataSource>
+
+    fun changeUserPasswordFlow(userId: Int, oldUserPassword: Int, newUserPassword: Int): Flow<ResultDataSource>
 }

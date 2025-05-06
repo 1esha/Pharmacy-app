@@ -291,4 +291,37 @@ class ProfileRepositoryImpl : ProfileRepository {
         }
     }.flowOn(Dispatchers.IO)
 
+    override fun changeUserPasswordFlow(
+        userId: Int,
+        oldUserPassword: Int,
+        newUserPassword: Int
+    ): Flow<Result> = flow{
+        try {
+            profileRepositoryDataSourceRemote.changeUserPasswordFlow(
+                userId = userId,
+                oldUserPassword = oldUserPassword,
+                newUserPassword = newUserPassword
+            ).collect{ resultDataSource ->
+                val response = resultDataSource.asSuccess()?.data as ResponseDataSourceModel?
+
+                if (response != null) {
+                    val data = response.toResponseModel()
+
+                    emit(Result.Success(data = data))
+                }
+                else {
+                    val resultError = resultDataSource.asError()
+                    if (resultError != null) {
+                        emit(Result.Error(exception = resultError.exception))
+                    }
+                    else throw IllegalArgumentException("Несуществующий тип результата")
+                }
+
+            }
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }.flowOn(Dispatchers.IO)
+
 }
