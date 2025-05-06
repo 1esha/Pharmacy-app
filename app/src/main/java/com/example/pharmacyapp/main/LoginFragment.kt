@@ -151,7 +151,7 @@ class LoginFragment : Fragment(), ResultProcessing {
                     val userModel = responseGetUser.value as UserModel
 
                     val userId = userModel.userId
-                    val numberPhone = userModel.userInfoModel.phoneNumber
+                    val numberPhone = userModel.userInfoModel.decrypt().phoneNumber
 
                     sharedPreferences.edit().apply {
                         putBoolean(KEY_IS_INIT, false).apply()

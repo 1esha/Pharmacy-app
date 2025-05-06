@@ -5,6 +5,6 @@ data class UserInfoDataSourceModel(
     val lastName: String,
     val email: String,
     val phoneNumber: String,
-    val userPassword: String,
+    val userPasswordHashCode: Int,
     val city: String
 )

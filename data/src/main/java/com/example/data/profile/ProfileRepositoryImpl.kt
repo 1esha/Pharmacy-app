@@ -43,7 +43,7 @@ class ProfileRepositoryImpl : ProfileRepository {
      */
     override fun createUserFlow(userInfoModel: UserInfoModel): Flow<Result> = flow{
         try {
-            val userInfoDataSourceModel = userInfoModel.toUserInfoDataSourceModel()
+            val userInfoDataSourceModel = userInfoModel.toUserInfoDataSourceModel(isGeneratedHashCode = true)
             profileRepositoryDataSourceRemote.createUserFlow(
                 userInfoDataSourceModel = userInfoDataSourceModel
             ).collect{ resultDataSource ->
@@ -119,7 +119,7 @@ class ProfileRepositoryImpl : ProfileRepository {
      */
     override fun getUserIdFlow(userInfoModel: UserInfoModel): Flow<Result> = flow{
         try {
-            val userInfoDataSourceModel = userInfoModel.toUserInfoDataSourceModel()
+            val userInfoDataSourceModel = userInfoModel.toUserInfoDataSourceModel(isGeneratedHashCode = true)
             profileRepositoryDataSourceRemote.getUserIdFlow(
                 userInfoDataSourceModel = userInfoDataSourceModel
             ).collect{ resultDataSource ->
@@ -164,7 +164,12 @@ class ProfileRepositoryImpl : ProfileRepository {
 
                 if (response != null) {
                     val userDataSourceModel = response.value as UserDataSourceModel
-                    val userModel = userDataSourceModel.toUserModel()
+                    val _userModel = userDataSourceModel.toUserModel()
+
+                    val userModel = UserModel(
+                        userId = _userModel.userId,
+                        userInfoModel = _userModel.userInfoModel.decrypt()
+                    )
 
                     val data = ResponseValueModel(
                         value = userModel,

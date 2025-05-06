@@ -1,5 +1,7 @@
 package com.example.domain.profile.models
 
+import com.example.domain.EncryptionUtils
+
 data class UserInfoModel(
     val firstName: String,
     val lastName: String,
@@ -17,5 +19,31 @@ data class UserInfoModel(
                 userInfoModel.phoneNumber.isEmpty() || userInfoModel.phoneNumber.isBlank() ||
                 userInfoModel.userPassword.isEmpty() || userInfoModel.userPassword.isBlank() ||
                 userInfoModel.city.isEmpty() || userInfoModel.city.isBlank()
+    }
+
+    fun encrypt(): UserInfoModel {
+        val encryptionUtils = EncryptionUtils()
+        val encryptUserInfoModel = this.copy(
+            firstName = encryptionUtils.encrypt(text = this.firstName),
+            lastName = encryptionUtils.encrypt(text = this.lastName),
+            email = encryptionUtils.encrypt(text = this.email),
+            phoneNumber = encryptionUtils.encrypt(text = this.phoneNumber),
+            city = encryptionUtils.encrypt(text = this.city)
+        )
+
+        return encryptUserInfoModel
+    }
+
+    fun decrypt(): UserInfoModel {
+        val encryptionUtils = EncryptionUtils()
+        val decryptUserInfoModel = this.copy(
+            firstName = encryptionUtils.decrypt(text = this.firstName),
+            lastName = encryptionUtils.decrypt(text = this.lastName),
+            email = encryptionUtils.decrypt(text = this.email),
+            phoneNumber = encryptionUtils.decrypt(text = this.phoneNumber),
+            city = encryptionUtils.decrypt(text = this.city)
+        )
+
+        return decryptUserInfoModel
     }
 }

@@ -6,7 +6,7 @@ import com.example.domain.profile.models.UserInfoModel
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Класс [GetUserByIdUseCase] является UseCase для получения идентификатора пользователя по его данным.
+ * Класс [GetUserByIdUseCase] является UseCase для получения идентификатора пользователя по его зашифрованным данным.
  *
  * Параметры:
  * [profileRepository] - репозиторий с функционалом;
@@ -19,7 +19,7 @@ class GetUserIdUseCase(
 
     fun execute(): Flow<Result> {
         val result = profileRepository.getUserIdFlow(
-            userInfoModel = userInfoModel
+            userInfoModel = userInfoModel.encrypt()
         )
         return result
     }

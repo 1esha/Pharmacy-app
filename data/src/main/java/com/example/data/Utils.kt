@@ -1,5 +1,6 @@
 package com.example.data
 
+import android.util.Log
 import com.example.data.basket.datasource.models.NumberProductsDataSourceModel
 import com.example.data.catalog.datasource.models.OperatingModeDataSourceModel
 import com.example.data.favorite.datasource.entity.FavoriteEntity
@@ -61,16 +62,25 @@ private fun NumberProductsModel.toNumberProductsDataSourceModel(): NumberProduct
 
 // ProfileRepository
 
-fun UserInfoModel.toUserInfoDataSourceModel(): UserInfoDataSourceModel {
+fun UserInfoModel.toUserInfoDataSourceModel(isGeneratedHashCode: Boolean = false): UserInfoDataSourceModel {
+    val userPasswordHashCode = if (isGeneratedHashCode) this.userPassword.hashCode() else {
+        try {
+            userPassword.toInt()
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+        }
+    }
 
     return UserInfoDataSourceModel(
         firstName = this.firstName,
         lastName = this.lastName,
         email = this.email,
         phoneNumber = this.phoneNumber,
-        userPassword = this.userPassword,
+        userPasswordHashCode = userPasswordHashCode,
         city = this.city
     )
+
 }
 
 fun UserInfoDataSourceModel.toUserInfoModel(): UserInfoModel {
@@ -79,7 +89,7 @@ fun UserInfoDataSourceModel.toUserInfoModel(): UserInfoModel {
         lastName = this.lastName,
         email = this.email,
         phoneNumber = this.phoneNumber,
-        userPassword = this.userPassword,
+        userPassword = this.userPasswordHashCode.toString(),
         city = this.city
     )
 }
@@ -94,14 +104,14 @@ fun UserDataSourceModel.toUserModel(): UserModel{
 fun LogInModel.toLogInDataSourceModel(): LogInDataSourceModel {
     return LogInDataSourceModel(
         login = this.login,
-        userPassword = this.userPassword
+        userPasswordHashCode = this.userPassword.hashCode()
     )
 }
 
 fun UserModel.toUserDataSourceModel(): UserDataSourceModel{
     return UserDataSourceModel(
         userId = this.userId,
-        userInfoModel = this.userInfoModel.toUserInfoDataSourceModel()
+        userInfoModel = this.userInfoModel.toUserInfoDataSourceModel(isGeneratedHashCode = false)
     )
 }
 

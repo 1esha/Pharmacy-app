@@ -19,7 +19,7 @@ class CreateUserUseCase(
 
     fun execute(): Flow<Result> {
         val result = profileRepository.createUserFlow(
-            userInfoModel = userInfoModel
+            userInfoModel = userInfoModel.encrypt()
         )
 
         return result
