@@ -16,6 +16,11 @@ class IdentificationException: Exception()
 class InputDataException: Exception()
 
 /**
+ * Класс [InvalidDataException] - исключение возникающее при вводе неверных данных.
+ */
+class InvalidDataException(val invalidMessage: String?): Exception()
+
+/**
  * Класс [ServerException] - исключение возникающее при получении ответа с сервера, когда статус код не успешный.
  *
  * Параметры:

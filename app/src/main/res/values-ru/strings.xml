@@ -217,4 +217,5 @@
     <string name="clear_the_history">Очистить историю</string>
     <string name="we_recommend_it">Рекомендуем</string>
     <string name="pharmacy_name">Аптека</string>
+    <string name="wrong_phone_number_dialed">Неправильно набран номер телефона</string>
 </resources>

@@ -30,6 +30,7 @@ import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.KEY_USER_NUMBER_PHONE
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
+import com.example.pharmacyapp.TYPE_CREATE_USER
 import com.example.pharmacyapp.TYPE_GET_USER_ID
 import com.example.pharmacyapp.ToolbarSettings
 import com.example.pharmacyapp.databinding.FragmentRegistrationBinding
@@ -46,7 +47,7 @@ class RegistrationFragment() : Fragment(), ResultProcessing {
     private val binding get() = _binding!!
 
     private val registrationViewModel: RegistrationViewModel by viewModels(
-        factoryProducer = { RegistrationViewModelFactory() }
+        factoryProducer = { RegistrationViewModelFactory(context = requireContext()) }
     )
 
     private lateinit var sharedPreferences: SharedPreferences
@@ -159,7 +160,12 @@ class RegistrationFragment() : Fragment(), ResultProcessing {
             }
 
             when(fullType){
+                TYPE_CREATE_USER -> {
+                    Log.i("TAG","TYPE_CREATE_USER")
+                    registrationViewModel.getUserId(isNetworkStatus = isNetworkStatus)
+                }
                 TYPE_GET_USER_ID -> {
+                    Log.i("TAG","TYPE_GET_USER_ID")
                     val resultGetUserId = listRequests.find { it.type == TYPE_GET_USER_ID }?.result!!.asSuccess()!!
 
                     val responseGetUserId = resultGetUserId.data as ResponseValueModel<*>
@@ -193,7 +199,6 @@ class RegistrationFragment() : Fragment(), ResultProcessing {
     override fun onErrorResultListener(exception: Exception) {
         registrationViewModel.onError(
             exception = exception,
-            enterTheData = getString(R.string.enter_the_data),
             toast = {
                 getSupportActivity().showToast(message = it ?: getString(R.string.unknown_error))
                 updateUI(flag = FLAG_SUCCESS_RESULT)

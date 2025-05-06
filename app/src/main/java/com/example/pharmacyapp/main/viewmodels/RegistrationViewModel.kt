@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.profile.ProfileRepositoryImpl
 import com.example.domain.DisconnectionException
 import com.example.domain.InputDataException
+import com.example.domain.InvalidDataException
 import com.example.domain.Network
 import com.example.domain.Result
 import com.example.domain.ServerException
@@ -14,6 +15,7 @@ import com.example.domain.profile.models.UserInfoModel
 import com.example.domain.profile.usecases.CreateUserUseCase
 import com.example.domain.profile.usecases.GetUserIdUseCase
 import com.example.pharmacyapp.MIN_DELAY
+import com.example.pharmacyapp.TYPE_CREATE_USER
 import com.example.pharmacyapp.TYPE_GET_USER_ID
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +24,9 @@ import kotlinx.coroutines.launch
 
 
 class RegistrationViewModel(
-    private val profileRepositoryImpl: ProfileRepositoryImpl
+    private val profileRepositoryImpl: ProfileRepositoryImpl,
+    private val enterTheData: String,
+    private val wrongPhoneNumberDialed: String
 ) : ViewModel() {
 
     private val _stateScreen = MutableStateFlow<Result>(Result.Success(data = null))
@@ -35,6 +39,8 @@ class RegistrationViewModel(
     val isSetupCityText = MutableStateFlow(true)
 
     private var numberPhone: String? = null
+
+    private var userInfoModel: UserInfoModel? = null
 
     fun register(isNetworkStatus: Boolean,userInfoModel: UserInfoModel){
         try {
@@ -49,10 +55,10 @@ class RegistrationViewModel(
                         return@checkNetworkStatus
                     }
 
-                    val getUserIdUseCase = GetUserIdUseCase(
-                        profileRepository = profileRepositoryImpl,
-                        userInfoModel = userInfoModel
-                    )
+                    if (userInfoModel.phoneNumber.length !in 11..12){
+                        _stateScreen.value = Result.Error(exception = InvalidDataException(invalidMessage = wrongPhoneNumberDialed))
+                        return@checkNetworkStatus
+                    }
 
                     val createUserUseCase = CreateUserUseCase(
                         profileRepository = profileRepositoryImpl,
@@ -69,21 +75,63 @@ class RegistrationViewModel(
                                 return@collect
                             }
 
-                            getUserIdUseCase.execute().collect { resultGetUserId ->
-                                if (resultGetUserId is Result.Error){
-                                    _stateScreen.value = resultGetUserId
-                                }
-                                else{
-                                    numberPhone = userInfoModel.phoneNumber
+                            this@RegistrationViewModel.userInfoModel = userInfoModel
 
-                                    _stateScreen.value = Result.Success(
-                                        data = listOf(RequestModel(
-                                            type = TYPE_GET_USER_ID,
-                                            result = resultGetUserId
-                                        ))
-                                    )
-                                }
+                            _stateScreen.value = Result.Success(
+                                data = listOf(RequestModel(
+                                    type = TYPE_CREATE_USER,
+                                    result = resultCreateUser
+                                ))
+                            )
+                        }
+                    }
+                },
+                disconnectionListener = ::onDisconnect
+            )
+        }
+        catch (e: Exception){
+            Log.e("TAG",e.stackTraceToString())
+            _stateScreen.value = Result.Error(exception = e)
+        }
+    }
+
+    fun getUserId(isNetworkStatus: Boolean){
+        try {
+            network.checkNetworkStatus(
+                isNetworkStatus = isNetworkStatus,
+                connectionListener = {
+
+                    onLoading()
+
+                    if (userInfoModel == null){
+                        _stateScreen.value = Result.Error(exception = NullPointerException())
+                        return@checkNetworkStatus
+                    }
+
+                    Log.i("TAG","userInfoModel = $userInfoModel")
+                    val getUserIdUseCase = GetUserIdUseCase(
+                        profileRepository = profileRepositoryImpl,
+                        userInfoModel = userInfoModel!!
+                    )
+
+
+
+                    viewModelScope.launch {
+                        delay(MIN_DELAY)
+
+                        getUserIdUseCase.execute().collect { resultGetUserId ->
+                            if (resultGetUserId is Result.Error){
+                                _stateScreen.value = resultGetUserId
+                                return@collect
                             }
+                            numberPhone = userInfoModel!!.phoneNumber
+
+                            _stateScreen.value = Result.Success(
+                                data = listOf(RequestModel(
+                                    type = TYPE_GET_USER_ID,
+                                    result = resultGetUserId
+                                ))
+                            )
                         }
                     }
                 },
@@ -104,12 +152,13 @@ class RegistrationViewModel(
         _stateScreen.value = Result.Error(exception = DisconnectionException())
     }
 
-    fun onError(exception: Exception,enterTheData: String,toast: (String?) -> Unit,block: () -> Unit){
+    fun onError(exception: Exception,toast: (String?) -> Unit,block: () -> Unit){
         try {
-            if (exception is ServerException || exception is InputDataException){
+            if (exception is ServerException || exception is InputDataException || exception is InvalidDataException){
                 val messageToast = when(exception){
                     is ServerException -> exception.serverMessage
                     is InputDataException -> enterTheData
+                    is InvalidDataException -> exception.invalidMessage
                     else -> throw IllegalArgumentException()
                 }
                 if (isShownToast) toast(messageToast)
