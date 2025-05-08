@@ -60,4 +60,8 @@
         android:id="@+id/instructionManualFragment"
         android:name="com.example.pharmacyapp.main.InstructionManualFragment"
         android:label="InstructionManualFragment" />
+    <fragment
+        android:id="@+id/changeUserPasswordFragment"
+        android:name="com.example.pharmacyapp.main.ChangeUserPasswordFragment"
+        android:label="ChangeUserPasswordFragment" />
 </navigation>

@@ -26,7 +26,7 @@
         android:layout_height="0dp"
         android:layout_weight="10"
         android:gravity="center"
-        android:layout_marginHorizontal="32dp"
+        android:layout_marginHorizontal="16dp"
         android:orientation="vertical">
 
         <LinearLayout
@@ -39,14 +39,16 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:text="@string/edit_data"
-                android:textSize="30sp" />
+                android:textSize="30sp"
+                android:textAppearance="@style/TextAppearance.Material3.TitleLarge"/>
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
+                android:layout_marginTop="8dp"
                 android:text="@string/edit_data_your_account"
-                android:textSize="16sp" />
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"/>
         </LinearLayout>
 
         <LinearLayout
@@ -108,20 +110,6 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                app:endIconMode="password_toggle">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etPasswordForEdit"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/password"
-                    android:imeOptions="actionDone"
-                    android:inputType="textPassword" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/layoutCityForEdit"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                 android:layout_width="match_parent"
@@ -147,7 +135,7 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:layout_marginBottom="16dp"
-        android:layout_marginHorizontal="32dp"
+        android:layout_marginHorizontal="16dp"
         android:orientation="vertical">
 
         <LinearLayout
@@ -188,19 +176,35 @@
 
         </LinearLayout>
 
-        <LinearLayout
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="horizontal">
+            android:layout_height="match_parent">
 
-            <Button
-                android:id="@+id/bDeleteAccount"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom"
-                style="@style/PharmacyApp.ButtonDelete.TextButton.Icon"
-                android:text="@string/delete_an_account" />
-        </LinearLayout>
+                android:orientation="vertical">
+
+                <Button
+                    android:id="@+id/bGoToChangeUserPassword"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:text="@string/change_password" />
+
+                <Button
+                    android:id="@+id/bDeleteAccount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    style="@style/PharmacyApp.ButtonDelete.TextButton.Icon"
+                    android:text="@string/delete_an_account" />
+
+            </LinearLayout>
+
+        </FrameLayout>
 
     </LinearLayout>
 

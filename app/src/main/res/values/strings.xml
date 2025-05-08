@@ -218,5 +218,12 @@
     <string name="clear_the_history">Clear the history</string>
     <string name="we_recommend_it">We recommend it</string>
     <string name="pharmacy_name">Pharmacy</string>
+    <string name="change_password">Change password</string>
+    <string name="current_password">Current password</string>
+    <string name="new_password">New password</string>
+    <string name="repeat_the_current_password">Repeat the current password</string>
+    <string name="invalid_current_password">Invalid current password</string>
+    <string name="successful_password_change">Successful password change</string>
+    <string name="password_change">Password change</string>
     <string name="wrong_phone_number_dialed">Wrong phone number dialed</string>
 </resources>

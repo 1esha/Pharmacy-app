@@ -46,6 +46,7 @@ import com.example.pharmacyapp.main.viewmodels.EditViewModel
 import com.example.pharmacyapp.main.viewmodels.factories.EditViewModelFactory
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
+import kotlin.properties.Delegates
 
 
 class EditFragment : Fragment(), ResultProcessing{
@@ -60,6 +61,8 @@ class EditFragment : Fragment(), ResultProcessing{
     private lateinit var navControllerMain: NavController
 
     private lateinit var sharedPreferences: SharedPreferences
+
+    private var userPassword by Delegates.notNull<String>()
 
     private val isNetworkStatus get() = getSupportActivity().isNetworkStatus(context = requireContext())
 
@@ -151,6 +154,11 @@ class EditFragment : Fragment(), ResultProcessing{
         bCancel.setOnClickListener {
             navControllerMain.popBackStack()
         }
+
+        bGoToChangeUserPassword.setOnClickListener {
+            navControllerMain.navigate(R.id.changeUserPasswordFragment)
+        }
+
     }
 
     override fun onDestroyView() {
@@ -201,6 +209,8 @@ class EditFragment : Fragment(), ResultProcessing{
                     val responseValueModel = result.data as ResponseValueModel<*>
 
                     val userModel = responseValueModel.value as UserModel
+
+                    userPassword = userModel.userInfoModel.userPassword
 
                     editViewModel.fillData(userModel = userModel)
                 }
@@ -271,7 +281,7 @@ class EditFragment : Fragment(), ResultProcessing{
             lastName = etLastNameForEdit.text.toString(),
             email = etEmailForEdit.text.toString(),
             phoneNumber = etPhoneNumberForEdit.text.toString(),
-            userPassword = etPasswordForEdit.text.toString(),
+            userPassword = userPassword,
             city = actvCityForEdit.text.toString(),
         )
         editViewModel.onEditUser(
@@ -287,7 +297,6 @@ class EditFragment : Fragment(), ResultProcessing{
             etLastNameForEdit.setText(userModel.userInfoModel.lastName)
             etEmailForEdit.setText(userModel.userInfoModel.email)
             etPhoneNumberForEdit.setText(userModel.userInfoModel.phoneNumber)
-            etPasswordForEdit.setText(userModel.userInfoModel.userPassword)
             actvCityForEdit.setText(userModel.userInfoModel.city)
         }
         setupCityText()

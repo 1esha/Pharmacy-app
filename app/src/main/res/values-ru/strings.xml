@@ -217,5 +217,12 @@
     <string name="clear_the_history">Очистить историю</string>
     <string name="we_recommend_it">Рекомендуем</string>
     <string name="pharmacy_name">Аптека</string>
+    <string name="change_password">Сменить пароль</string>
+    <string name="current_password">Текущий пароль</string>
+    <string name="new_password">Новый пароль</string>
+    <string name="repeat_the_current_password">Повторите текущий пароль</string>
+    <string name="invalid_current_password">Неверный текущий пароль</string>
+    <string name="successful_password_change">Успешное изменение пароля</string>
+    <string name="password_change">Смена пароля</string>
     <string name="wrong_phone_number_dialed">Неправильно набран номер телефона</string>
 </resources>

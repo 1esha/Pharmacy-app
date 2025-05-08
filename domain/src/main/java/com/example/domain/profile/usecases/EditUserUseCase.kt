@@ -19,7 +19,10 @@ class EditUserUseCase(
 
     fun execute(): Flow<Result> {
         val result = profileRepository.editUserFlow(
-            userModel = userModel
+            userModel = UserModel(
+                userId = userModel.userId,
+                userInfoModel = userModel.userInfoModel.encrypt()
+            )
         )
 
         return result
