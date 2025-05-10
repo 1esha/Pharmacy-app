@@ -33,7 +33,11 @@
     <fragment
         android:id="@+id/favoriteFragment"
         android:name="com.example.pharmacyapp.tabs.profile.FavoriteFragment"
-        android:label="FavoriteFragment" />
+        android:label="FavoriteFragment" >
+        <action
+            android:id="@+id/action_favoriteFragment_to_productInfoFragmentProfile"
+            app:destination="@id/productInfoFragmentProfile" />
+    </fragment>
     <fragment
         android:id="@+id/purchaseHistoryFragment"
         android:name="com.example.pharmacyapp.tabs.profile.PurchaseHistoryFragment"
@@ -51,4 +55,9 @@
         android:id="@+id/contactsFragment"
         android:name="com.example.pharmacyapp.tabs.profile.ContactsFragment"
         android:label="ContactsFragment" />
+    <fragment
+        android:id="@+id/productInfoFragmentProfile"
+        android:name="com.example.pharmacyapp.tabs.catalog.ProductInfoFragment"
+        android:label="fragment_product_info"
+        tools:layout="@layout/fragment_product_info" />
 </navigation>

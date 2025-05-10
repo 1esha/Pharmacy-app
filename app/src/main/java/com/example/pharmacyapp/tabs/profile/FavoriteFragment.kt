@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.os.bundleOf
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -26,6 +27,7 @@ import com.example.domain.profile.models.ResponseValueModel
 import com.example.pharmacyapp.FLAG_ERROR_RESULT
 import com.example.pharmacyapp.FLAG_PENDING_RESULT
 import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
+import com.example.pharmacyapp.KEY_PRODUCT_ID
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
@@ -76,8 +78,6 @@ class FavoriteFragment : Fragment(), ResultProcessing {
             userId =sharedPreferences.getInt(KEY_USER_ID, UNAUTHORIZED_USER)
         )
 
-        navControllerProfile = findNavController()
-
         favoriteViewModel.sendingRequests(isNetworkStatus = isNetworkStatus)
 
         lifecycleScope.launch {
@@ -117,6 +117,8 @@ class FavoriteFragment : Fragment(), ResultProcessing {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?): Unit = with(binding){
+
+        navControllerProfile = findNavController()
 
         // Установка toolbar
         toolbarViewModel.installToolbar(toolbarSettingsModel = ToolbarSettingsModel(
@@ -249,6 +251,7 @@ class FavoriteFragment : Fragment(), ResultProcessing {
                         mutableListFavouriteBasketModel = mutableListFavouriteBasketModel,
                         deleteFromFavoritesListener = ::onClickDeleteFromFavorites,
                         addInBasketFromFavoritesListener = ::onClickAddInBasketFromFavorites,
+                        navigateToProductInfo = ::navigateToProductInfo,
                         textCategory = getString(R.string.category)
                     )
 
@@ -265,5 +268,12 @@ class FavoriteFragment : Fragment(), ResultProcessing {
 
     private fun onClickAddInBasketFromFavorites(productId: Int) {
         favoriteViewModel.onClickAddInBasketFromFavorites(productId = productId)
+    }
+
+    private fun navigateToProductInfo(productId: Int) {
+        navControllerProfile.navigate(
+            R.id.action_favoriteFragment_to_productInfoFragmentProfile,
+            bundleOf(KEY_PRODUCT_ID to productId)
+        )
     }
 }

@@ -20,12 +20,14 @@ import kotlin.math.roundToInt
  * [mutableListFavouriteBasketModel] - список товаров;
  * [deleteFromFavoritesListener] - обработка удаления из "Избранного";
  * [addInBasketFromFavoritesListener] - обработка добавления в корзину;
+ * [navigateToProductInfo] - обработка перехода на экран с подробной информацией о товаре;
  * [textCategory] - текст категории товара.
  */
 class FavoriteAdapter(
     private val mutableListFavouriteBasketModel: MutableList<FavouriteBasketModel>,
     private val deleteFromFavoritesListener: (Int) -> Unit,
     private val addInBasketFromFavoritesListener: (Int) -> Unit,
+    private val navigateToProductInfo: (Int) -> Unit,
     private val textCategory: String
     ): RecyclerView.Adapter<FavoriteAdapter.FavoriteHolder>() {
 
@@ -98,7 +100,10 @@ class FavoriteAdapter(
                 Log.e("TAG",e.stackTraceToString())
             }
 
+        }
 
+        layoutFavoritePanel.setOnClickListener {
+            navigateToProductInfo(item.favoriteModel.productId)
         }
 
         // Обработка добавления в корзину
