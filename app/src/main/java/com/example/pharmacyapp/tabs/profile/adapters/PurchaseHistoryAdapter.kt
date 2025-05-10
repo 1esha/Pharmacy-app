@@ -10,7 +10,8 @@ import com.example.pharmacyapp.databinding.ItemPurchaseHistoryBinding
 import com.example.pharmacyapp.toDateTime
 
 class PurchaseHistoryAdapter(
-    private val listOrderProductModel: List<OrderProductModel>
+    private val listOrderProductModel: List<OrderProductModel>,
+    private val navigateToProductInfo: (Int) -> Unit
 ): Adapter<PurchaseHistoryAdapter.PurchaseHistoryHolder>() {
 
     class PurchaseHistoryHolder(val binding: ItemPurchaseHistoryBinding): ViewHolder(binding.root)
@@ -35,6 +36,10 @@ class PurchaseHistoryAdapter(
 
         tvOrderDate.text = item.orderModel.orderDate.toDateTime()
         tvEndDate.text = item.orderModel.endDate!!.toDateTime()
+
+        root.setOnClickListener {
+            navigateToProductInfo(item.productModel.productId)
+        }
     }
 
 }

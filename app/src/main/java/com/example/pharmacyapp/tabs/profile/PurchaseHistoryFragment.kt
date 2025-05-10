@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.os.bundleOf
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -27,6 +28,7 @@ import com.example.domain.profile.models.ResponseValueModel
 import com.example.pharmacyapp.FLAG_ERROR_RESULT
 import com.example.pharmacyapp.FLAG_PENDING_RESULT
 import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
+import com.example.pharmacyapp.KEY_PRODUCT_ID
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
@@ -230,10 +232,18 @@ class PurchaseHistoryFragment : Fragment(), ResultProcessing {
             rvPurchaseHistory.visibility = View.VISIBLE
 
             purchaseHistoryAdapter = PurchaseHistoryAdapter(
-                listOrderProductModel = listOrderProductModel
+                listOrderProductModel = listOrderProductModel,
+                navigateToProductInfo = ::navigateToProductInfo
             )
             rvPurchaseHistory.adapter = purchaseHistoryAdapter
             rvPurchaseHistory.layoutManager = LinearLayoutManager(requireContext())
         }
+    }
+
+    private fun navigateToProductInfo(productId: Int) {
+        navControllerProfile.navigate(
+            R.id.action_purchaseHistoryFragment_to_productInfoFragmentProfile,
+            bundleOf(KEY_PRODUCT_ID to productId)
+        )
     }
 }

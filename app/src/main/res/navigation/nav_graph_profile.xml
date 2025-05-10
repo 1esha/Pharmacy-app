@@ -41,7 +41,11 @@
     <fragment
         android:id="@+id/purchaseHistoryFragment"
         android:name="com.example.pharmacyapp.tabs.profile.PurchaseHistoryFragment"
-        android:label="PurchaseHistoryFragment" />
+        android:label="PurchaseHistoryFragment" >
+        <action
+            android:id="@+id/action_purchaseHistoryFragment_to_productInfoFragmentProfile"
+            app:destination="@id/productInfoFragmentProfile" />
+    </fragment>
     <fragment
         android:id="@+id/bookedGoodsFragment"
         android:name="com.example.pharmacyapp.tabs.profile.BookedGoodsFragment"
