@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.os.bundleOf
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -27,6 +28,7 @@ import com.example.domain.profile.models.ResponseValueModel
 import com.example.pharmacyapp.FLAG_ERROR_RESULT
 import com.example.pharmacyapp.FLAG_PENDING_RESULT
 import com.example.pharmacyapp.FLAG_SUCCESS_RESULT
+import com.example.pharmacyapp.KEY_PRODUCT_ID
 import com.example.pharmacyapp.KEY_USER_ID
 import com.example.pharmacyapp.NAME_SHARED_PREFERENCES
 import com.example.pharmacyapp.R
@@ -233,10 +235,18 @@ class BookedGoodsFragment : Fragment(), ResultProcessing {
                 listOrderProductModel = listOrderProductModel,
                 getStringOrderDate = { dateTime ->
                     getString(R.string.the_order_has_been_placed, dateTime)
-                }
+                },
+                navigateToProductInfo = ::navigateToProductInfo
             )
             rvBookedGoods.adapter = bookedGoodsAdapter
             rvBookedGoods.layoutManager = GridLayoutManager(requireContext(),2)
         }
+    }
+
+    private fun navigateToProductInfo(productId: Int) {
+        navControllerProfile.navigate(
+            R.id.action_bookedGoodsFragment_to_productInfoFragmentProfile,
+            bundleOf(KEY_PRODUCT_ID to productId)
+        )
     }
 }

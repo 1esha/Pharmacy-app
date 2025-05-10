@@ -11,7 +11,8 @@ import com.example.pharmacyapp.toDateTime
 
 class BookedGoodsAdapter(
     private val listOrderProductModel: List<OrderProductModel>,
-    private val getStringOrderDate: (String) -> String
+    private val getStringOrderDate: (String) -> String,
+    private val navigateToProductInfo: (Int) -> Unit
 ): Adapter<BookedGoodsAdapter.BookedGoodsHolder>() {
 
     class BookedGoodsHolder(val binding: ItemBookedGoodsBinding): ViewHolder(binding.root)
@@ -35,6 +36,10 @@ class BookedGoodsAdapter(
         tvNumberPiecesBookedGoods.text = item.orderModel.numberProduct.toString()
 
         tvOrderDateBookedGoods.text = getStringOrderDate(item.orderModel.orderDate.toDateTime())
+
+        root.setOnClickListener {
+            navigateToProductInfo(item.productModel.productId)
+        }
     }
 
 }

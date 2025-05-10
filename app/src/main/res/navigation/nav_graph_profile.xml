@@ -45,7 +45,11 @@
     <fragment
         android:id="@+id/bookedGoodsFragment"
         android:name="com.example.pharmacyapp.tabs.profile.BookedGoodsFragment"
-        android:label="BookedGoodsFragment" />
+        android:label="BookedGoodsFragment" >
+        <action
+            android:id="@+id/action_bookedGoodsFragment_to_productInfoFragmentProfile"
+            app:destination="@id/productInfoFragmentProfile" />
+    </fragment>
     <fragment
         android:id="@+id/privacyPolicyFragment"
         android:name="com.example.pharmacyapp.tabs.profile.PrivacyPolicyFragment"
