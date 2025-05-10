@@ -7,6 +7,7 @@ import com.example.data.NOT_SELECTED
 import com.example.data.catalog.CatalogRepositoryImpl
 import com.example.data.profile.ProfileRepositoryImpl
 import com.example.domain.DisconnectionException
+import com.example.domain.EncryptionUtils
 import com.example.domain.Network
 import com.example.domain.Result
 import com.example.domain.catalog.models.PharmacyAddressesDetailsModel
@@ -190,7 +191,6 @@ class MapViewModel(
                                 )
                             }
                         }
-
                     },
                     disconnectionListener = ::onDisconnect
                 )
@@ -254,16 +254,17 @@ class MapViewModel(
         cheboksary: String,
         block: (Double,GeoPoint) -> Unit
     ){
+
         // Установка начальных данных карты в зависимости от города
         if (city == NOT_SELECTED) {
-
             val defaultGeoPoint = GeoPoint(61.19, 92.81)
 
             block(4.0,defaultGeoPoint)
         }
         else {
+            val decryptCity = EncryptionUtils().decrypt(text = city)
             val centerGeoPoint = getStartPositionByCity(
-                city = city,
+                city = decryptCity,
                 novocheboksarsk = novocheboksarsk,
                 cheboksary = cheboksary
             )
