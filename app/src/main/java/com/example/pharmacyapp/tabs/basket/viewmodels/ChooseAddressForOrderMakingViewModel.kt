@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.catalog.CatalogRepositoryImpl
 import com.example.data.profile.ProfileRepositoryImpl
 import com.example.domain.DisconnectionException
+import com.example.domain.EncryptionUtils
 import com.example.domain.Network
 import com.example.domain.Result
 import com.example.domain.catalog.models.PharmacyAddressesModel
@@ -196,8 +197,10 @@ class ChooseAddressForOrderMakingViewModel(
     ){
         if (isShownFillData){
 
+            val decryptCity = EncryptionUtils().decrypt(text = city)
+
             this.listProductAvailabilityModel = listProductAvailabilityModel
-            this.city = city
+            this.city = decryptCity
 
             val mapProductAvailabilityModel = listProductAvailabilityModel.groupBy { it.addressId }
 
@@ -243,7 +246,7 @@ class ChooseAddressForOrderMakingViewModel(
             }
 
             _listAvailabilityProductsForOrderMakingModel.value = mutableListAllAvailabilityProductsForOrderMakingModel.filter {
-                it.city.substringAfterLast(' ') == city
+                it.city.substringAfterLast(' ') == decryptCity
             }
 
         }
