@@ -68,7 +68,7 @@ class CatalogFragment : Fragment() {
         toolbarViewModel.clearMenu()
 
         val listItems = listOf(
-            CatalogMainModel(image = R.drawable.medicinal_products, title = getString(R.string.medicines_and_dietary_supplements)),
+            CatalogMainModel(image = R.drawable.medicines_and_dietary_supplements, title = getString(R.string.medicines_and_dietary_supplements)),
             CatalogMainModel(image = R.drawable.medical_devices, title = getString(R.string.medical_devices)),
             CatalogMainModel(image = R.drawable.hygiene_and_care, title = getString(R.string.hygiene_and_care)),
             CatalogMainModel(image = R.drawable.optics, title = getString(R.string.optics)),
