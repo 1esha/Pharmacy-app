@@ -1,5 +1,6 @@
 package com.example.pharmacyapp.tabs.catalog.adapters
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView.Adapter
@@ -31,8 +32,13 @@ class CatalogMainAdapter(
         tvTitleMainCatalog.text = item.title
 
         cardMainCatalog.setOnClickListener {
-            val path = item.title.toPath()
-            onClick(path)
+            try {
+                val path = item.title.toPath()
+                onClick(path)
+            }
+            catch (e: Exception){
+                Log.e("TAG","Ошибка навигации")
+            }
         }
     }
 }
