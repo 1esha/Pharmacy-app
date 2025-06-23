@@ -20,8 +20,8 @@
             <ImageView
                 android:id="@+id/ivProduct"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:scaleType="centerCrop"
+                android:layout_height="180dp"
+                android:scaleType="centerInside"
                 app:srcCompat="@drawable/ic_default" />
 
             <ImageView
@@ -138,14 +138,21 @@
 
         </LinearLayout>
 
-        <Button
-            android:id="@+id/bInBasketProduct"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginHorizontal="4dp"
-            android:layout_marginBottom="4dp"
-            tools:text="В корзину"/>
+            android:layout_height="match_parent">
+
+            <Button
+                android:id="@+id/bInBasketProduct"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:layout_marginHorizontal="4dp"
+                android:layout_marginBottom="4dp"
+                tools:text="В корзину"/>
+
+        </FrameLayout>
+
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

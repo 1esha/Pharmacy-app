@@ -38,7 +38,7 @@
                         android:id="@+id/ivProductFromBasket"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:scaleType="centerCrop"
+                        android:scaleType="centerInside"
                         app:srcCompat="@drawable/ic_default" />
 
                 </com.google.android.material.circularreveal.cardview.CircularRevealCardView>
